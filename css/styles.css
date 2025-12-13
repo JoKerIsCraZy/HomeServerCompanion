@@ -1,0 +1,849 @@
+:root {
+  --sidebar-bg: #1a1b1e;
+  --sidebar-width: 60px;
+  --content-bg: #f8f9fa;
+  --accent-sab: #ff9100;
+  --accent-sonarr: #2196f3;
+  --accent-radarr: #ffc107;
+  --accent-tautulli: #282a2d; /* Dark theme default */
+  --accent-unraid: #f15a2c;
+  --text-primary: #333;
+  --text-secondary: #666;
+  --card-bg: #fff;
+  --border-radius: 8px;
+}
+
+/* Dark Mode Variables */
+body.dark-mode {
+  --content-bg: #121212;
+  --text-primary: #e0e0e0;
+  --text-secondary: #aaaaaa;
+  --card-bg: #1e1e1e;
+}
+
+/* Dark Mode Overrides for specific elements that don't use variables */
+body.dark-mode #main-header {
+    background: #1e1e1e;
+    border-bottom-color: #333;
+}
+
+body.dark-mode .calendar-item {
+    border-bottom-color: #333;
+}
+
+body.dark-mode .calendar-left {
+    border-right-color: #333;
+}
+
+body.dark-mode .status-badge {
+    background-color: #333;
+}
+
+/* Theme Toggle Button */
+#theme-toggle {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+#theme-toggle:hover {
+    background: rgba(0,0,0,0.1);
+}
+
+body.dark-mode #theme-toggle:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Dark Mode Refinements */
+body.dark-mode .card { border-color: #333; }
+body.dark-mode .progress-bar { background: #333; }
+body.dark-mode .nav-item { color: #eee; }
+
+body {
+  width: 600px;
+  height: 600px;
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--content-bg);
+  color: var(--text-primary); /* Critical Fix for Dark Mode Text */
+  overflow: hidden; /* Hide scrollbars on body */
+}
+
+.app-container {
+  display: flex;
+  height: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+  flex-shrink: 0;
+}
+
+.nav-item {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.nav-item:hover {
+  opacity: 1;
+  background: rgba(255,255,255,0.1);
+}
+
+.nav-item.active {
+  opacity: 1;
+  background: rgba(255,255,255,0.2);
+  transform: scale(1.05);
+}
+
+.icon-placeholder {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.sabnzbd-icon { color: var(--accent-sab); }
+.sonarr-icon { color: var(--accent-sonarr); }
+.radarr-icon { color: var(--accent-radarr); }
+.tautulli-icon { color: #dbdbdb; }
+.unraid-icon { color: var(--accent-unraid); }
+
+.spacer { flex: 1; }
+
+.settings-btn {
+  margin-bottom: 20px;
+}
+
+/* Content Area */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--content-bg);
+  overflow: hidden;
+}
+
+#main-header {
+  padding: 15px 20px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+#main-header h1 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+#header-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Consistent spacing */
+}
+
+.view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  display: none;
+}
+
+.view.active {
+  display: block;
+  animation: fadeIn 0.2s;
+}
+
+/* Sub Tabs (Unraid) */
+.sub-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+    padding: 0 10px;
+}
+
+.sub-tab-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 16px;
+    border-radius: 20px; /* Pill shape */
+    transition: all 0.2s ease;
+}
+
+body.light-theme .sub-tab-btn {
+    background: rgba(0,0,0,0.05);
+    border-color: rgba(0,0,0,0.1);
+}
+
+.sub-tab-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--text-primary);
+}
+
+.sub-tab-btn.active {
+    background: #ff9800; /* Unraid Orange */
+    color: #fff;
+    border-color: #ff9800;
+    box-shadow: 0 2px 5px rgba(255, 152, 0, 0.3);
+}
+
+/* Tabs inside views */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 5px 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+.sub-view.hidden { display: none; }
+
+/* Cards & Items */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #f0f0f0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.filename {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent-sab); /* Default, overridden by JS/specific classes */
+  width: 0%;
+  transition: width 0.3s;
+}
+
+/* Colors for progress bars */
+#sabnzbd-view .progress-bar-fill { background: var(--accent-sab); }
+#sonarr-view .progress-bar-fill { background: var(--accent-sonarr); }
+#radarr-view .progress-bar-fill { background: var(--accent-radarr); }
+
+.card-footer, .card-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.status-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #eee;
+  font-size: 11px;
+}
+
+.status-badge.Completed { background: #e8f5e9; color: #2e7d32; }
+.status-badge.Failed { background: #ffebee; color: #c62828; }
+.status-badge.Airing { background: #e3f2fd; color: #1565c0; }
+
+.error-banner {
+    background: #ffebee;
+    color: #c62828;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    text-align: center;
+}
+.hidden { display: none; }
+
+/* Unraid */
+.status-card {
+    text-align: center;
+    padding: 30px;
+}
+.status-indicator {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #ffd600; /* Checking */
+}
+.status-indicator.online { color: #4caf50; }
+.status-indicator.offline { color: #f44336; }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #bbb;
+}
+
+/* Calendar specific overrides */
+.date-group {
+    margin-bottom: 20px;
+}
+
+.date-header {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-left: 4px;
+    border-left: 3px solid var(--accent-sab); /* Default, changed by JS */
+}
+
+.calendar-item {
+    display: flex;
+    align-items: center;
+    background: var(--card-bg);
+    padding: 12px;
+    margin-bottom: 1px; /* Divider look if background is colored */
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s;
+}
+
+.calendar-item:last-child {
+    border-bottom: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+.calendar-item:first-of-type {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.calendar-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    flex-shrink: 0;
+    margin-right: 15px;
+    text-align: right;
+    border-right: 1px solid #eee;
+    padding-right: 10px;
+}
+
+.cal-time {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.cal-ampm {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.calendar-main {
+    flex: 1;
+    overflow: hidden;
+}
+
+.cal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cal-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cal-status-line {
+    width: 4px;
+    height: 30px;
+    border-radius: 2px;
+    margin-left: 10px;
+    background: #ccc;
+    flex-shrink: 0;
+}
+
+/* Service Colors for Headers */
+#sonarr-view .date-header { border-left-color: var(--accent-sonarr); color: var(--accent-sonarr); }
+#radarr-view .date-header { border-left-color: var(--accent-radarr); color: var(--accent-radarr); }
+
+/* Status Badges - Vibrant Colors with White Text */
+.status-Downloaded, .status-badge.Completed, .status-badge.Imported { background-color: #4caf50 !important; color: white !important; }
+.status-Missing, .status-badge.Failed { background-color: #f44336 !important; color: white !important; }
+.status-Airing, .status-badge.Available { background-color: #2196f3 !important; color: white !important; }
+.status-Unaired, .status-badge.Upcoming { background-color: #9e9e9e !important; color: white !important; }
+
+/* SABnzbd Status Card */
+#sab-status-card {
+    background: linear-gradient(135deg, var(--accent-sab), #ffb74d);
+    color: white;
+    padding: 15px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(255, 145, 0, 0.2);
+}
+
+#sab-status-card .card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-box {
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.action-btn {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    background: rgba(255,255,255,0.4);
+    transform: scale(1.1);
+}
+
+.action-btn.paused {
+    background: #fff;
+    color: var(--accent-sab);
+}
+
+/* Delete Button */
+.delete-btn {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+}
+
+
+/* Tautulli Rich Card */
+.tautulli-item {
+    transition: transform 0.2s;
+}
+
+.tautulli-item:hover {
+    transform: scale(1.02);
+}
+
+
+/* Fancy Header for Tautulli */
+.fancy-header {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent-tautulli);
+    margin: 10px 0 15px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--accent-tautulli);
+    padding-bottom: 5px;
+    display: inline-block;
+}
+
+body.dark-mode .fancy-header {
+    color: #ffc107;
+    border-color: #ffc107;
+}
+
+
+/* Disk Dropdown Styles */
+.disk-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+    font-size: 0.85em;
+}
+
+.disk-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+}
+
+.disk-name { color: var(--text-primary); font-weight: 500; }
+.disk-temp { 
+    background: rgba(255,255,255,0.1); 
+    padding: 1px 6px; 
+    border-radius: 4px; 
+    font-size: 0.8em;
+}
+.disk-temp.hot { color: #f44336; } /* Red if hot */
+
+.disk-mini-track {
+    background-color: rgba(255,255,255,0.05);
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+body.light-theme .disk-mini-track { background-color: rgba(0,0,0,0.05); }
+
+.disk-mini-fill {
+    height: 100%;
+    background: #4caf50;
+    width: 0%;
+}
+.disk-mini-fill.parity { background: #2196f3; } /* Blue for parity */
+.storage-card {
+    background-color: var(--card-bg); /* Dark card background */
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.storage-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    font-size: 0.9em;
+    letter-spacing: 0.5px;
+}
+
+.storage-icon {
+    width: 24px;
+    height: 24px;
+    /* Generic Server Icon SVG or similar could go here */
+    background-image: url('data:image/svg+xml;utf8,<svg fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 5v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2zm2 0h16v14H4V5zm2 2h12v2H6V7zm0 4h12v2H6v-2zm0 4h12v2H6v-2z"/></svg>'); 
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.8;
+}
+/* Filter for dark mode icon check */
+body.light-theme .storage-icon { filter: invert(1); }
+
+.storage-usage-text {
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    margin-bottom: 8px;
+}
+
+.progress-track {
+    background-color: rgba(255,255,255,0.1);
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Light Theme override for track */
+body.light-theme .progress-track { background-color: rgba(0,0,0,0.1); }
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #8bc34a); /* Unraid Green-ish */
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.5s ease-out;
+}
+
+/* Warning/Critical Colors */
+.progress-fill.warning { background: linear-gradient(90deg, #ff9800, #ffc107); }
+.progress-fill.critical { background: linear-gradient(90deg, #f44336, #ff5722); }
+
+/* Docker Controls */
+.status-dot.running { background: #4caf50 !important; box-shadow: 0 0 5px #4caf50; }
+.status-dot.stopped { background: #f44336 !important; }
+
+.control-btn {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 28px; 
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+body.dark-mode .control-btn { border-color: #444; color: #ccc; }
+
+.control-btn:hover { background: #eee; color: #333; }
+body.dark-mode .control-btn:hover { background: #333; color: #fff; }
+
+.start-btn:hover { color: #4caf50; border-color: #4caf50; }
+.stop-btn:hover { color: #f44336; border-color: #f44336; }
+.restart-btn:hover { color: #ff9800; border-color: #ff9800; }
+
+/* --- Unified Card Style --- */
+.card, .system-card, .storage-card, .docker-item {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+body.dark-mode .card, 
+body.dark-mode .system-card, 
+body.dark-mode .storage-card, 
+body.dark-mode .docker-item {
+    background: #1e1e1e;
+    border-color: rgba(255,255,255,0.08); /* Subtle border in dark mode */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Docker Item Polish */
+.docker-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+}
+
+/* Unraid System Tab Styles (Exact Replication) */
+.system-card {
+    /* Base card styles inherited from list above, specific overrides here if needed */
+    margin: 10px 15px;
+}
+
+.uk-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.uk-title-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.uk-title {
+    font-weight: 700;
+    font-size: 1em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+.uk-subtitle {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+}
+
+.uk-icon {
+    width: 32px; 
+    height: 32px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.9;
+}
+.uk-icon.info { background-image: url('data:image/svg+xml;utf8,<svg fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>'); }
+.uk-icon.array { background-image: url('data:image/svg+xml;utf8,<svg fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 5v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2zm2 0h16v14H4V5zm2 2h12v2H6V7zm0 4h12v2H6v-2zm0 4h12v2H6v-2z"/></svg>'); }
+.uk-icon.system { background-image: url('data:image/svg+xml;utf8,<svg fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>'); }
+body.light-theme .uk-icon { filter: invert(1); }
+
+/* Info Rows */
+.uk-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+}
+.uk-info-icon { opacity: 0.7; width: 16px; text-align: center; }
+.green-text { color: #4caf50; font-weight: 600; }
+
+/* Large Progress Bar (Array) */
+.uk-progress-lg-track {
+    background: rgba(0,0,0,0.1); /* Default Light Mode: Dark transparent */
+    height: 24px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    margin-top: 10px;
+}
+body.dark-mode .uk-progress-lg-track { background: rgba(255,255,255,0.1); }
+
+.uk-progress-lg-fill {
+    height: 100%;
+    background: #ff9800; /* Orange default from screenshot */
+    width: 0%;
+    transition: width 0.5s;
+}
+.uk-progress-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.75em;
+    font-weight: 600;
+    color: #fff; /* Text always white inside orange bar */
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* System Grid (CPU/RAM) */
+.uk-sys-grid {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+.uk-sys-left { flex: 1; }
+.uk-sys-right { width: 80px; display: flex; justify-content: center; }
+
+.cpu-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9em;
+    margin-bottom: 20px;
+}
+.cpu-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(0,0,0,0.1); /* Default Light Mode */
+    border-radius: 4px;
+    overflow: hidden;
+}
+body.dark-mode .cpu-track { background: rgba(255,255,255,0.1); }
+
+.cpu-fill { height: 100%; background: #4caf50; width: 0%; }
+
+/* RAM Circle */
+.ram-circle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: conic-gradient(#4caf50 var(--pct, 0%), rgba(0,0,0,0.1) 0); /* Default Light Mode */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+body.dark-mode .ram-circle { background: conic-gradient(#4caf50 var(--pct, 0%), rgba(255,255,255,0.1) 0); }
+
+.ram-inner {
+    width: 60px;
+    height: 60px;
+    background: var(--card-bg);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75em;
+    line-height: 1.1;
+}
+.ram-val { font-size: 1.2em; font-weight: 700; }
