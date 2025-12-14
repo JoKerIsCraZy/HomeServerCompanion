@@ -28,9 +28,37 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("theme-toggle").textContent = "☀️";
     }
 
-    // Default to first configured or SABnzbd
+    // Determine Service Order
+    let order = ['sabnzbd', 'sonarr', 'radarr', 'tautulli', 'unraid'];
+    if (items.serviceOrder && Array.isArray(items.serviceOrder)) {
+        order = items.serviceOrder;
+    }
+
+    // Reorder Sidebar
+    const sidebar = document.querySelector('.sidebar');
+    const spacer = sidebar.querySelector('.spacer');
+    // Remove existing nav items (except settings/spacer if needed, but easier to just re-append)
+    // Actually we can just re-append them in order, DOM will move them.
+    order.forEach(service => {
+        const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
+        if (el) sidebar.insertBefore(el, spacer);
+    });
+
+    // Default to first service in order
+    const defaultService = order[0];
+    
     initNavigation();
-    loadService(state.activeService);
+    
+    // Check if we have a saved active state, otherwise default
+    // Ideally we always default to the first one as requested by user ("bei jedem öffnen... Unraid")
+    // So we ignore previous state if we want to force top item.
+    // Let's force top item as requested.
+    state.activeService = defaultService;
+    
+    // Simulate click on active to init view
+    const activeEl = sidebar.querySelector(`.nav-item[data-target="${defaultService}"]`);
+    if (activeEl) activeEl.click();
+    else loadService(defaultService); // Fallback
   });
 
   // Theme Toggle Logic

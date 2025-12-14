@@ -137,7 +137,10 @@ const testConnection = async (service) => {
 };
 
 // --- Event Listeners ---
-document.addEventListener('DOMContentLoaded', loadOptions);
+document.addEventListener('DOMContentLoaded', () => {
+    loadOptions();
+    renderOrderList();
+});
 
 services.forEach(service => {
     const saveBtn = document.getElementById(`save${service.charAt(0).toUpperCase() + service.slice(1)}`);
@@ -145,4 +148,113 @@ services.forEach(service => {
 
     if (saveBtn) saveBtn.addEventListener('click', () => saveService(service));
     if (testBtn) testBtn.addEventListener('click', () => testConnection(service));
+});
+
+// --- General / Reordering Logic ---
+let currentOrder = [...services]; // Default
+
+const renderOrderList = () => {
+    chrome.storage.sync.get(['serviceOrder'], (items) => {
+        if (items.serviceOrder) {
+            // Merge with default to ensure no services are lost if config is old
+            currentOrder = items.serviceOrder;
+            // Ensure all known services are present (in case of new ones added later)
+            services.forEach(s => {
+                if (!currentOrder.includes(s)) currentOrder.push(s);
+            });
+        }
+        
+        const container = document.getElementById('service-order-list');
+        container.innerHTML = '';
+        
+        currentOrder.forEach((service, index) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'padding: 10px 15px; background: white; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;';
+            if (index === currentOrder.length - 1) row.style.borderBottom = 'none';
+
+            const name = service.charAt(0).toUpperCase() + service.slice(1);
+            
+            const controls = document.createElement('div');
+            controls.style.display = 'flex';
+            controls.style.gap = '5px';
+
+            const upBtn = document.createElement('button');
+            upBtn.textContent = '\u2191'; // Up Arrow
+            upBtn.className = 'btn-secondary';
+            upBtn.style.padding = '5px 10px';
+            upBtn.disabled = index === 0;
+            upBtn.onclick = () => moveItem(index, -1);
+
+            const downBtn = document.createElement('button');
+            downBtn.textContent = '\u2193'; // Down Arrow
+            downBtn.className = 'btn-secondary';
+            downBtn.style.padding = '5px 10px';
+            downBtn.disabled = index === currentOrder.length - 1;
+            downBtn.onclick = () => moveItem(index, 1);
+
+            controls.appendChild(upBtn);
+            controls.appendChild(downBtn);
+
+            row.innerHTML = `<span>${name}</span>`;
+            row.appendChild(controls);
+            container.appendChild(row);
+        });
+    });
+};
+
+const moveItem = (index, direction) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= currentOrder.length) return;
+    
+    // Swap
+    [currentOrder[index], currentOrder[newIndex]] = [currentOrder[newIndex], currentOrder[index]];
+    
+    // Re-render (optimistic)
+    // We don't save yet, user must click Save
+    // But we need to update UI.
+    // To do this simply, we'll manually call the render part or just update the UI array
+    // Let's just re-save strictly to UI state? No, better to update the local variable and re-render.
+    // The render function fetches from storage, which is bad for immediate UI updates.
+    // Let's refactor render slightly to use local var if changed? 
+    // Actually, let's just update the UI directly since we have currentOrder.
+    const container = document.getElementById('service-order-list');
+    container.innerHTML = '';
+    currentOrder.forEach((service, i) => {
+        const row = document.createElement('div');
+         row.style.cssText = 'padding: 10px 15px; background: white; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;';
+        if (i === currentOrder.length - 1) row.style.borderBottom = 'none';
+
+        const name = service.charAt(0).toUpperCase() + service.slice(1);
+        
+        const controls = document.createElement('div');
+        controls.style.display = 'flex';
+        controls.style.gap = '5px';
+
+        const upBtn = document.createElement('button');
+        upBtn.textContent = '\u2191'; // Up Arrow
+        upBtn.className = 'btn-secondary';
+        upBtn.style.padding = '5px 10px';
+        upBtn.disabled = i === 0;
+        upBtn.onclick = () => moveItem(i, -1);
+
+        const downBtn = document.createElement('button');
+        downBtn.textContent = '\u2193'; // Down Arrow
+        downBtn.className = 'btn-secondary';
+        downBtn.style.padding = '5px 10px';
+        downBtn.disabled = i === currentOrder.length - 1;
+        downBtn.onclick = () => moveItem(i, 1);
+
+        controls.appendChild(upBtn);
+        controls.appendChild(downBtn);
+
+        row.innerHTML = `<span>${name}</span>`;
+        row.appendChild(controls);
+        container.appendChild(row);
+    });
+};
+
+document.getElementById('saveOrder').addEventListener('click', () => {
+    chrome.storage.sync.set({ serviceOrder: currentOrder }, () => {
+        showStatus('General', 'Order saved!', 'success');
+    });
 });
