@@ -117,23 +117,49 @@ function renderRadarrCalendar(movies, state) {
           statusText = "Upcoming";
         }
 
-        item.innerHTML = `
-                    <div class="calendar-left">
-                        <div class="cal-time" style="font-size:11px; text-transform:uppercase;">${type}</div>
-                    </div>
-                    <div class="calendar-main">
-                        <div class="cal-title clickable-link" data-slug="${
-                          movie.titleSlug
-                        }">${movie.title}</div>
-                        <div class="cal-meta">${movie.studio || ""}</div>
-                    </div>
-                     <div class="status-badge ${statusClass}" style="margin-left: 10px;">${statusText}</div>
-                `;
+        // --- SAFE DOM ---
+        
+        // Left (Type)
+        const leftDiv = document.createElement('div');
+        leftDiv.className = 'calendar-left';
+        
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'cal-time';
+        timeDiv.style.fontSize = '11px';
+        timeDiv.style.textTransform = 'uppercase';
+        timeDiv.textContent = type;
+        leftDiv.appendChild(timeDiv);
+
+        // Main
+        const mainDiv = document.createElement('div');
+        mainDiv.className = 'calendar-main';
+        
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'cal-title clickable-link';
+        if (movie.titleSlug) titleDiv.dataset.slug = movie.titleSlug;
+        titleDiv.textContent = movie.title;
+
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'cal-meta';
+        metaDiv.textContent = movie.studio || "";
+
+        mainDiv.appendChild(titleDiv);
+        mainDiv.appendChild(metaDiv);
+        
+        // Badge
+        const badgeDiv = document.createElement('div');
+        badgeDiv.className = `status-badge ${statusClass}`;
+        badgeDiv.style.marginLeft = '10px';
+        badgeDiv.textContent = statusText;
+
+        // Assemble
+        item.appendChild(leftDiv);
+        item.appendChild(mainDiv);
+        item.appendChild(badgeDiv);
 
         // Add click listener
-        const link = item.querySelector(".clickable-link");
-        if (link && movie.titleSlug) {
-          link.addEventListener("click", (e) => {
+        if (movie.titleSlug) {
+          titleDiv.addEventListener("click", (e) => {
             e.stopPropagation();
             const url = state.configs.radarrUrl;
             chrome.tabs.create({ url: `${url}/movie/${movie.titleSlug}` });

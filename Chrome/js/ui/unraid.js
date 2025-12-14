@@ -80,219 +80,304 @@ function renderUnraidSystem(data, url, key, state) {
       return `${days} days, ${hours} hours, ${mins} minutes`;
     };
 
+    // Helper for system cards
+    const createSystemCard = (iconClass, title, subtitle) => {
+        const div = document.createElement('div');
+        div.className = 'system-card';
+        
+        const header = document.createElement('div');
+        header.className = 'uk-header';
+        
+        const icon = document.createElement('div');
+        icon.className = `uk-icon ${iconClass}`;
+        
+        const titleSection = document.createElement('div');
+        titleSection.className = 'uk-title-section';
+        
+        const t = document.createElement('div');
+        t.className = 'uk-title';
+        t.textContent = title;
+        
+        const s = document.createElement('div');
+        s.className = 'uk-subtitle';
+        s.textContent = subtitle;
+        
+        titleSection.appendChild(t);
+        titleSection.appendChild(s);
+        
+        header.appendChild(icon);
+        header.appendChild(titleSection);
+        
+        div.appendChild(header);
+        return { card: div, header, titleSection };
+    };
+
     // 1. UNRAID INFO CARD
-    const infoCard = document.createElement("div");
-    infoCard.className = "system-card";
-    infoCard.innerHTML = `
-                <div class="uk-header">
-                    <div class="uk-icon info"></div>
-                    <div class="uk-title-section">
-                        <div class="uk-title">UNRAID</div>
-                        <div class="uk-subtitle">Version: ${
-                          data.system.version
-                        }</div>
-                    </div>
-                </div>
-                <div class="uk-info-row">
-                    <span class="uk-info-icon">🪪</span>
-                    <span>Registration: Unraid OS <strong>${
-                      data.system.registration
-                    }</strong></span>
-                </div>
-                <div class="uk-info-row">
-                    <span class="uk-info-icon">🕒</span>
-                    <span>Uptime: ${getUptime(
-                      data.system.uptimeBoot
-                    )}</span>
-                </div>
-                <div class="uk-info-row">
-                    <span class="uk-info-icon">💾</span>
-                    <span>Array: <span class="green-text">${
-                      data.array.status === "STARTED"
-                        ? "Started"
-                        : data.array.status
-                    }</span></span>
-                </div>
-            `;
+    const { card: infoCard } = createSystemCard('info', 'UNRAID', `Version: ${data.system.version}`);
+    
+    // Registration
+    const regRow = document.createElement('div');
+    regRow.className = 'uk-info-row';
+    const regIcon = document.createElement('span');
+    regIcon.className = 'uk-info-icon';
+    regIcon.textContent = '🪪';
+    const regText = document.createElement('span');
+    regText.textContent = 'Registration: Unraid OS ';
+    const regStrong = document.createElement('strong');
+    regStrong.textContent = data.system.registration;
+    regText.appendChild(regStrong);
+    regRow.appendChild(regIcon);
+    regRow.appendChild(regText);
+    infoCard.appendChild(regRow);
+
+    // Uptime
+    const uptimeRow = document.createElement('div');
+    uptimeRow.className = 'uk-info-row';
+    const uptimeIcon = document.createElement('span');
+    uptimeIcon.className = 'uk-info-icon';
+    uptimeIcon.textContent = '🕒';
+    const uptimeText = document.createElement('span');
+    uptimeText.textContent = `Uptime: ${getUptime(data.system.uptimeBoot)}`;
+    uptimeRow.appendChild(uptimeIcon);
+    uptimeRow.appendChild(uptimeText);
+    infoCard.appendChild(uptimeRow);
+
+    // Array Status
+    const statusRow = document.createElement('div');
+    statusRow.className = 'uk-info-row';
+    const statusIcon = document.createElement('span');
+    statusIcon.className = 'uk-info-icon';
+    statusIcon.textContent = '💾';
+    const statusText = document.createElement('span');
+    statusText.textContent = 'Array: ';
+    const statusVal = document.createElement('span');
+    statusVal.className = 'green-text';
+    const statusStr = data.array.status === "STARTED" ? "Started" : data.array.status;
+    statusVal.textContent = statusStr;
+    statusText.appendChild(statusVal);
+    statusRow.appendChild(statusIcon);
+    statusRow.appendChild(statusText);
+    infoCard.appendChild(statusRow);
+    
     systemTab.appendChild(infoCard);
 
     // 2. ARRAY CAPACITY CARD
     const arrayPct = (data.array.used / data.array.total) * 100 || 0;
-    const capCard = document.createElement("div");
-    capCard.className = "system-card";
-    capCard.innerHTML = `
-                <div class="uk-header">
-                    <div class="uk-icon array"></div>
-                    <div class="uk-title-section">
-                        <div class="uk-title">ARRAY CAPACITY</div>
-                        <div class="uk-subtitle">${formatBytes(
-                          data.array.total
-                        )} Total</div>
-                    </div>
-                </div>
-                <div class="uk-progress-lg-track">
-                    <div class="uk-progress-lg-fill" style="width: ${arrayPct}%"></div>
-                    <div class="uk-progress-text text-shadow">${formatBytes(
-                      data.array.used
-                    )} / ${formatBytes(data.array.total)}</div>
-                </div>
-            `;
+    const { card: capCard } = createSystemCard('array', 'ARRAY CAPACITY', `${formatBytes(data.array.total)} Total`);
+    
+    // Progress Bar
+    const progTrack = document.createElement('div');
+    progTrack.className = 'uk-progress-lg-track';
+    const progFill = document.createElement('div');
+    progFill.className = 'uk-progress-lg-fill';
+    progFill.style.width = `${arrayPct}%`;
+    const progText = document.createElement('div');
+    progText.className = 'uk-progress-text text-shadow';
+    progText.textContent = `${formatBytes(data.array.used)} / ${formatBytes(data.array.total)}`;
+    
+    progTrack.appendChild(progFill);
+    progTrack.appendChild(progText);
+    capCard.appendChild(progTrack);
     systemTab.appendChild(capCard);
 
     // 3. SYSTEM CARD (CPU/RAM)
-    const sysCard = document.createElement("div");
-    sysCard.className = "system-card";
-    sysCard.innerHTML = `
-                <div class="uk-header">
-                    <div class="uk-icon system"></div>
-                    <div class="uk-title-section">
-                        <div class="uk-title">SYSTEM</div>
-                        <div class="uk-subtitle"></div>
-                    </div>
-                </div>
-                
-                <!-- CPU -->
-                <div class="cpu-row" style="margin-bottom: 12px;">
-                    <div style="flex: 0 0 160px; display:flex; justify-content:space-between; padding-right:15px; align-items:center;">
-                        <span>CPU Load:</span>
-                        <span style="font-weight:bold;">${Math.round(
-                          data.cpu
-                        )}%</span>
-                    </div>
-                    <div class="cpu-track">
-                        <div class="cpu-fill ${
-                          data.cpu > 80 ? "critical" : ""
-                        }" style="width: ${data.cpu}%"></div>
-                    </div>
-                </div>
+    const { card: sysCard } = createSystemCard('system', 'SYSTEM', '');
+    
+    // CPU
+    const cpuRow = document.createElement('div');
+    cpuRow.className = 'cpu-row';
+    cpuRow.style.marginBottom = '12px';
+    
+    const cpuLabel = document.createElement('div');
+    cpuLabel.style.cssText = "flex: 0 0 160px; display:flex; justify-content:space-between; padding-right:15px; align-items:center;";
+    const cpuSpan = document.createElement('span');
+    cpuSpan.textContent = 'CPU Load:';
+    const cpuVal = document.createElement('span');
+    cpuVal.style.fontWeight = 'bold';
+    cpuVal.textContent = `${Math.round(data.cpu)}%`;
+    cpuLabel.appendChild(cpuSpan);
+    cpuLabel.appendChild(cpuVal);
+    
+    const cpuTrack = document.createElement('div');
+    cpuTrack.className = 'cpu-track';
+    const cpuFill = document.createElement('div');
+    cpuFill.className = `cpu-fill ${data.cpu > 80 ? 'critical' : ''}`;
+    cpuFill.style.width = `${data.cpu}%`;
+    cpuTrack.appendChild(cpuFill);
+    
+    cpuRow.appendChild(cpuLabel);
+    cpuRow.appendChild(cpuTrack);
+    sysCard.appendChild(cpuRow);
 
-                <!-- RAM -->
-                <div class="cpu-row">
-                     <div style="flex: 0 0 160px; display:flex; justify-content:space-between; padding-right:15px; align-items:center;">
-                        <span>RAM:</span>
-                        <div style="text-align:right;">
-                            <span style="font-weight:bold;">${Math.round(
-                              data.ram
-                            )}%</span>
-                            <span style="font-size:0.8em; color:var(--text-secondary); margin-left:4px;">/ ${formatBytes(
-                              data.system.memoryTotal
-                            )}</span>
-                        </div>
-                    </div>
-                    <div class="cpu-track">
-                        <div class="cpu-fill ${
-                          data.ram > 80
-                            ? "critical"
-                            : data.ram > 60
-                            ? "warning"
-                            : ""
-                        }" style="width: ${data.ram}%"></div>
-                    </div>
-                </div>
-            `;
+    // RAM
+    const ramRow = document.createElement('div');
+    ramRow.className = 'cpu-row';
+    
+    const ramLabel = document.createElement('div');
+    ramLabel.style.cssText = "flex: 0 0 160px; display:flex; justify-content:space-between; padding-right:15px; align-items:center;";
+    const ramSpan = document.createElement('span');
+    ramSpan.textContent = 'RAM:';
+    
+    const ramRight = document.createElement('div');
+    ramRight.style.textAlign = 'right';
+    const ramVal = document.createElement('span');
+    ramVal.style.fontWeight = 'bold';
+    ramVal.textContent = `${Math.round(data.ram)}%`;
+    const ramTotal = document.createElement('span');
+    ramTotal.style.fontSize = '0.8em';
+    ramTotal.style.color = 'var(--text-secondary)';
+    ramTotal.style.marginLeft = '4px';
+    ramTotal.textContent = `/ ${formatBytes(data.system.memoryTotal)}`;
+    
+    ramRight.appendChild(ramVal);
+    ramRight.appendChild(ramTotal);
+    ramLabel.appendChild(ramSpan);
+    ramLabel.appendChild(ramRight);
+    
+    const ramTrack = document.createElement('div');
+    ramTrack.className = 'cpu-track';
+    const ramFill = document.createElement('div');
+    let ramClass = '';
+    if (data.ram > 80) ramClass = 'critical';
+    else if (data.ram > 60) ramClass = 'warning';
+    
+    ramFill.className = `cpu-fill ${ramClass}`;
+    ramFill.style.width = `${data.ram}%`;
+    ramTrack.appendChild(ramFill);
+    
+    ramRow.appendChild(ramLabel);
+    ramRow.appendChild(ramTrack);
+    sysCard.appendChild(ramRow);
+    
     systemTab.appendChild(sysCard);
     
     // Storage Tab Populating
     const storageTab = document.getElementById("unraid-tab-storage");
 
     // Helper to create a Storage Card
-    const createCard = (title, used, total, free, items) => {
-      // Check persistent state (default to false/closed)
-      const isOpen =
-        state.storageCardState && state.storageCardState[title];
-      // Ensure state object exists
+    const createStorageCard = (title, used, total, free, items) => {
+      // Check persistent state
+      const isOpen = state.storageCardState && state.storageCardState[title];
       if (!state.storageCardState) state.storageCardState = {};
 
       const pct = total > 0 ? (used / total) * 100 : 0;
-      // If free is not provided, derive it
       const displayFree = free !== undefined ? free : total - used;
 
       const card = document.createElement("div");
       card.className = "storage-card";
-      card.innerHTML = `
-                     <div class="storage-header" style="cursor: pointer; display: flex; justify-content: space-between;">
-                         <div style="display: flex; align-items: center; gap: 10px;">
-                             <div class="storage-icon"></div>
-                             <span>${title}</span>
-                         </div>
-                         <div class="dropdown-arrow" style="transition: transform 0.3s; transform: rotate(${
-                           isOpen ? "180deg" : "0deg"
-                         });">▼</div>
-                     </div>
-                     <div class="storage-usage-text">
-                        <span style="color:var(--text-primary);">${formatBytes(
-                          displayFree
-                        )} free</span>
-                        <span style="opacity:0.7;"> / ${formatBytes(
-                          total
-                        )} total</span>
-                     </div>
-                     <div class="progress-track" style="margin-bottom: 15px;">
-                         <div class="progress-fill ${
-                           pct > 90 ? "critical" : pct > 70 ? "warning" : ""
-                         }" style="width: ${pct}%"></div>
-                     </div>
-                     
-                     <div class="storage-details-dropdown ${
-                       isOpen ? "" : "hidden"
-                     }" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-                        ${items
-                          .map((disk) => {
-                            let usageHtml = "";
-                            if (disk.type === "Parity" || !disk.total) {
-                              // Parity or simple devices
-                              usageHtml = `<div style="font-size:0.8em; color:#2196f3;">${
-                                disk.status || "OK"
-                              }</div>`;
-                            } else {
-                              const dPct = (disk.used / disk.total) * 100;
-                              usageHtml = `
-                                    <div class="disk-mini-track">
-                                        <div class="disk-mini-fill" style="width: ${dPct}%"></div>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between; margin-top:2px; font-size:0.75em; color:var(--text-secondary);">
-                                        <span>${formatBytes(
-                                          disk.used
-                                        )}</span>
-                                        <span style="color:var(--text-primary);">${formatBytes(
-                                          disk.free
-                                        )} free</span>
-                                    </div>
-                                `;
-                            }
-                            return `
-                                <div class="disk-row">
-                                    <div class="disk-meta">
-                                        <span class="disk-name">${
-                                          disk.name
-                                        }</span>
-                                        <span class="disk-temp ${
-                                          disk.temp > 45 ? "hot" : ""
-                                        }">${disk.temp || "--"}°C</span>
-                                    </div>
-                                    ${usageHtml}
-                                </div>
-                            `;
-                          })
-                          .join("")}
-                     </div>
-                `;
+      
+      const header = document.createElement("div");
+      header.className = "storage-header";
+      header.style.cssText = "cursor: pointer; display: flex; justify-content: space-between;";
+      
+      const headerLeft = document.createElement("div");
+      headerLeft.style.cssText = "display: flex; align-items: center; gap: 10px;";
+      const icon = document.createElement("div");
+      icon.className = "storage-icon";
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = title;
+      headerLeft.appendChild(icon);
+      headerLeft.appendChild(titleSpan);
+      
+      const arrow = document.createElement("div");
+      arrow.className = "dropdown-arrow";
+      arrow.style.cssText = `transition: transform 0.3s; transform: rotate(${isOpen ? "180deg" : "0deg"});`;
+      arrow.textContent = "▼";
+      
+      header.appendChild(headerLeft);
+      header.appendChild(arrow);
+      
+      const usageText = document.createElement("div");
+      usageText.className = "storage-usage-text";
+      const freeSpan = document.createElement("span");
+      freeSpan.style.color = "var(--text-primary)";
+      freeSpan.textContent = `${formatBytes(displayFree)} free`;
+      const totalSpan = document.createElement("span");
+      totalSpan.style.opacity = "0.7";
+      totalSpan.textContent = ` / ${formatBytes(total)} total`;
+      usageText.appendChild(freeSpan);
+      usageText.appendChild(totalSpan);
+      
+      const track = document.createElement("div");
+      track.className = "progress-track";
+      track.style.marginBottom = "15px";
+      const fill = document.createElement("div");
+      let fillClass = "";
+      if (pct > 90) fillClass = "critical";
+      else if (pct > 70) fillClass = "warning";
+      fill.className = `progress-fill ${fillClass}`;
+      fill.style.width = `${pct}%`;
+      track.appendChild(fill);
+      
+      const dropdown = document.createElement("div");
+      dropdown.className = `storage-details-dropdown ${isOpen ? "" : "hidden"}`;
+      dropdown.style.cssText = "margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;";
+      
+      items.forEach(disk => {
+          const row = document.createElement("div");
+          row.className = "disk-row";
+          
+          const meta = document.createElement("div");
+          meta.className = "disk-meta";
+          const nameS = document.createElement("span");
+          nameS.className = "disk-name";
+          nameS.textContent = disk.name;
+          const tempS = document.createElement("span");
+          tempS.className = `disk-temp ${disk.temp > 45 ? "hot" : ""}`;
+          tempS.textContent = `${disk.temp || "--"}°C`;
+          meta.appendChild(nameS);
+          meta.appendChild(tempS);
+          
+          row.appendChild(meta);
+          
+          if (disk.type === "Parity" || !disk.total) {
+              const statusDiv = document.createElement("div");
+              statusDiv.style.cssText = "font-size:0.8em; color:#2196f3;";
+              statusDiv.textContent = disk.status || "OK";
+              row.appendChild(statusDiv);
+          } else {
+              const dPct = (disk.used / disk.total) * 100;
+              const miniTrack = document.createElement("div");
+              miniTrack.className = "disk-mini-track";
+              const miniFill = document.createElement("div");
+              miniFill.className = "disk-mini-fill";
+              miniFill.style.width = `${dPct}%`;
+              miniTrack.appendChild(miniFill);
+              
+              const stats = document.createElement("div");
+              stats.style.cssText = "display:flex; justify-content:space-between; margin-top:2px; font-size:0.75em; color:var(--text-secondary);";
+              const usedDisk = document.createElement("span");
+              usedDisk.textContent = formatBytes(disk.used);
+              const freeDisk = document.createElement("span");
+              freeDisk.style.color = "var(--text-primary)";
+              freeDisk.textContent = `${formatBytes(disk.free)} free`;
+              
+              stats.appendChild(usedDisk);
+              stats.appendChild(freeDisk);
+              
+              row.appendChild(miniTrack);
+              row.appendChild(stats);
+          }
+          
+          dropdown.appendChild(row);
+      });
+
+      card.appendChild(header);
+      card.appendChild(usageText);
+      card.appendChild(track);
+      card.appendChild(dropdown);
 
       // Toggle Logic
-      const header = card.querySelector(".storage-header");
       header.addEventListener("click", () => {
-        const list = card.querySelector(".storage-details-dropdown");
-        const arrow = card.querySelector(".dropdown-arrow");
-
-        const isHidden = list.classList.contains("hidden");
+        const isHidden = dropdown.classList.contains("hidden");
         if (isHidden) {
-          list.classList.remove("hidden");
+          dropdown.classList.remove("hidden");
           arrow.style.transform = "rotate(180deg)";
-          state.storageCardState[title] = true; // Save open state
+          state.storageCardState[title] = true;
         } else {
-          list.classList.add("hidden");
+          dropdown.classList.add("hidden");
           arrow.style.transform = "rotate(0deg)";
-          state.storageCardState[title] = false; // Save closed state
+          state.storageCardState[title] = false;
         }
       });
 
@@ -300,13 +385,12 @@ function renderUnraidSystem(data, url, key, state) {
     };
 
     if (storageTab) {
-        // Clear and Rebuild (preserving state concept via the helper)
         storageTab.innerHTML = "";
 
         // 1. Array Pool
         const arrayDisks = [...data.array.parities, ...data.array.disks];
         storageTab.appendChild(
-          createCard(
+          createStorageCard(
             "Array",
             data.array.used,
             data.array.total,
@@ -330,7 +414,7 @@ function renderUnraidSystem(data, url, key, state) {
             0
           );
           storageTab.appendChild(
-            createCard(
+            createStorageCard(
               "Cache / Pools",
               cacheUsed,
               cacheTotal,
@@ -343,7 +427,7 @@ function renderUnraidSystem(data, url, key, state) {
         // 3. Boot / Flash
         if (data.array.boot) {
           storageTab.appendChild(
-            createCard(
+            createStorageCard(
               "Boot / Flash",
               data.array.boot.used,
               data.array.boot.total,

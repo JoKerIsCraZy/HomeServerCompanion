@@ -91,29 +91,55 @@ function renderSonarrCalendar(episodes, state) {
           statusText = "Airing";
         }
 
-        item.innerHTML = `
-                    <div class="calendar-left">
-                        <div class="cal-time">${timeStr}</div>
-                    </div>
-                    <div class="calendar-main">
-                        <div class="cal-title clickable-link" data-slug="${
-                          ep.series ? ep.series.titleSlug : ""
-                        }">${ep.series ? ep.series.title : "Unknown"}</div>
-                        <div class="cal-meta">S${ep.seasonNumber}E${
-          ep.episodeNumber
-        } - ${ep.title}</div>
-                    </div>
-                    <div class="status-badge ${statusClass}" style="margin-left: 10px;">${statusText}</div>
-                `;
+        // --- SAFE DOM CREATION ---
+        
+        // Left Column (Time)
+        const leftDiv = document.createElement('div');
+        leftDiv.className = 'calendar-left';
+        
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'cal-time';
+        timeDiv.textContent = timeStr;
+        leftDiv.appendChild(timeDiv);
 
+        // Main Column
+        const mainDiv = document.createElement('div');
+        mainDiv.className = 'calendar-main';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'cal-title clickable-link';
+        // DATA ATTRIBUTE IS SAFE
+        if (ep.series && ep.series.titleSlug) {
+            titleDiv.dataset.slug = ep.series.titleSlug; 
+        }
+        // SAFE TEXT CONTENT
+        titleDiv.textContent = ep.series ? ep.series.title : "Unknown";
+        
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'cal-meta';
+        metaDiv.textContent = `S${ep.seasonNumber}E${ep.episodeNumber} - ${ep.title}`;
+        
+        mainDiv.appendChild(titleDiv);
+        mainDiv.appendChild(metaDiv);
+
+        // Status Badge
+        const badgeDiv = document.createElement('div');
+        badgeDiv.className = `status-badge ${statusClass}`;
+        badgeDiv.style.marginLeft = '10px';
+        badgeDiv.textContent = statusText;
+
+        // Assemble
+        item.appendChild(leftDiv);
+        item.appendChild(mainDiv);
+        item.appendChild(badgeDiv);
+        
         // Add click listener
-        const link = item.querySelector(".clickable-link");
-        if (link && ep.series && ep.series.titleSlug) {
-          link.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const url = state.configs.sonarrUrl;
-            chrome.tabs.create({ url: `${url}/series/${ep.series.titleSlug}` });
-          });
+        if (ep.series && ep.series.titleSlug) {
+            titleDiv.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const url = state.configs.sonarrUrl;
+                chrome.tabs.create({ url: `${url}/series/${ep.series.titleSlug}` });
+            });
         }
 
         dateGroup.appendChild(item);

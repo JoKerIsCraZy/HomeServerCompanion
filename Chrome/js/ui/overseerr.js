@@ -38,14 +38,26 @@ export async function doSearch(url, key, query) {
         return;
     }
     const container = document.getElementById('overseerr-search-results');
-    if (container) container.innerHTML = '<div class="loading">Searching...</div>';
+    if (container) {
+        container.innerHTML = '';
+        const loading = document.createElement('div');
+        loading.className = 'loading';
+        loading.textContent = 'Searching...';
+        container.appendChild(loading);
+    }
     
     try {
       const results = await Overseerr.search(url, key, query);
       renderOverseerrSearch(results, url, key);
     } catch (e) {
       console.error("Search failed in doSearch:", e);
-      if (container) container.innerHTML = `<div class="error">Search Error: ${e.message}</div>`;
+      if (container) {
+          container.innerHTML = '';
+          const err = document.createElement('div');
+          err.className = 'error';
+          err.textContent = `Search Error: ${e.message}`;
+          container.appendChild(err);
+      }
     }
 }
 
@@ -137,14 +149,29 @@ function renderOverseerrSearch(results, url, key) {
         let statusText = "";
         let canRequest = true;
 
+        // Clear statusDiv safe
+        statusDiv.textContent = ''; 
+
         if (item.mediaInfo) {
             if (item.mediaInfo.status === 5) {
                 statusText = "Available";
-                statusDiv.innerHTML = `<span class="request-status" style="color:#4caf50; border-color: #4caf50; background: rgba(76,175,80,0.1);">${statusText}</span>`;
+                // Create span safely
+                const span = document.createElement('span');
+                span.className = 'request-status';
+                span.style.color = '#4caf50';
+                span.style.borderColor = '#4caf50';
+                span.style.background = 'rgba(76,175,80,0.1)';
+                span.textContent = statusText;
+                statusDiv.appendChild(span);
+
                 canRequest = false;
             } else if (item.mediaInfo.status === 2 || item.mediaInfo.status === 3) {
                  statusText = "Requested";
-                 statusDiv.innerHTML = `<span class="request-status">${statusText}</span>`;
+                 const span = document.createElement('span');
+                 span.className = 'request-status';
+                 span.textContent = statusText;
+                 statusDiv.appendChild(span);
+                 
                  canRequest = false;
             }
         }
