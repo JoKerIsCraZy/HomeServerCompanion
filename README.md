@@ -39,6 +39,14 @@ A comprehensive dashboard for your self-hosted services:
   - **Customizable Order**: Reorder services in the sidebar to fit your workflow.
   - **Direct Links**: One-click access to all your service Web UIs.
 
+## 📸 Screenshots
+
+<div align="center">
+  <img src="img/screenshot_1.png" alt="Dashboard View" width="250">
+  <img src="img/screenshot_2.png" alt="Requests View" width="250">
+  <img src="img/screenshot_3.png" alt="Settings View" width="250">
+</div>
+
 ## 🚀 Installation
 
 As this extension is currently in active development, it is installed via Chrome's "Developer Mode".
