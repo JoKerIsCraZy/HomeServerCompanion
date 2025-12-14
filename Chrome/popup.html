@@ -156,6 +156,7 @@
             <button class="sub-tab-btn active" data-target="unraid-tab-system">System</button>
             <button class="sub-tab-btn" data-target="unraid-tab-storage">Storage</button>
             <button class="sub-tab-btn" data-target="unraid-tab-docker">Docker</button>
+            <button class="sub-tab-btn" data-target="unraid-tab-vms">VMs</button>
         </div>
 
         <!-- 1. System Tab -->
@@ -190,6 +191,14 @@
             <div class="docker-controls">
                 <h3>Containers</h3>
                 <div id="unraid-docker-list"></div>
+        </div>
+        </div>
+
+        <!-- 4. VM Tab -->
+        <div id="unraid-tab-vms" class="sub-view hidden">
+            <div class="docker-controls">
+                <h3>Virtual Machines</h3>
+                <div id="unraid-vm-list"></div>
             </div>
         </div>
 

@@ -1224,3 +1224,23 @@ body.dark-mode .overseerr-tabs {
   background: #1976d2;
   transform: scale(1.05);
 }
+
+/* Force Docker/VM Item Visibility */
+.docker-item {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  background-color: var(--card-bg, rgba(255,255,255,0.05));
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  min-height: 50px;
+  color: var(--text-primary);
+}
+.docker-item:last-child {
+  border-bottom: none;
+}
+.docker-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

@@ -191,4 +191,43 @@ export const controlContainer = async (url, apiKey, id, action) => {
     return await graphQL(url, apiKey, mutation);
 };
 
+export const getVms = async (url, apiKey) => {
+    // Query based on vms.resolver.ts
+    const query = `{
+        vms {
+            domains {
+                id
+                name
+                state
+            }
+        }
+    }`;
+
+    try {
+        const data = await graphQL(url, apiKey, query);
+        // Map to cleaner objects
+        return (data.vms.domains || []).map(vm => ({
+            id: vm.id,
+            name: vm.name,
+            state: vm.state, // RUNNING, PAUSED, SHUTOFF, etc.
+            running: vm.state === 'RUNNING' || vm.state === 'PAUSED' // Treat paused as 'running' context for stop capability
+        }));
+    } catch (e) {
+        console.error("Failed to fetch VMs", e);
+        return [];
+    }
+};
+
+export const controlVm = async (url, apiKey, id, action) => {
+    // Mutation: mutation { vm { start(id: "...") } }
+    // Action: start, stop, pause, resume, forceStop, reboot, reset
+    const mutation = `
+    mutation {
+        vm {
+            ${action}(id: "${id}")
+        }
+    }`;
+    return await graphQL(url, apiKey, mutation);
+};
+
 
