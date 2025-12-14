@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="img/logo.png" alt="Logo" width="128">
+  <img src="images/logo.png" alt="Logo" width="128">
 </div>
 
 # Home Server Companion
@@ -42,9 +42,9 @@ A comprehensive dashboard for your self-hosted services:
 ## 📸 Screenshots
 
 <div align="center">
-  <img src="img/screenshot_1.png" alt="Dashboard View" width="250">
-  <img src="img/screenshot_2.png" alt="Requests View" width="250">
-  <img src="img/screenshot_3.png" alt="Settings View" width="250">
+  <img src="images/screenshot_1.png" alt="Dashboard View" width="250">
+  <img src="images/screenshot_2.png" alt="Requests View" width="250">
+  <img src="images/screenshot_3.png" alt="Settings View" width="250">
 </div>
 
 ## 🚀 Installation
