@@ -120,26 +120,18 @@ body {
   transform: scale(1.05);
 }
 
-.icon-placeholder {
-  font-weight: bold;
-  font-size: 18px;
+.nav-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    transition: transform 0.2s;
 }
 
-.sabnzbd-icon {
-  color: var(--accent-sab);
+.nav-item:hover .nav-icon {
+    transform: scale(1.1);
 }
-.sonarr-icon {
-  color: var(--accent-sonarr);
-}
-.radarr-icon {
-  color: var(--accent-radarr);
-}
-.tautulli-icon {
-  color: #dbdbdb;
-}
-.unraid-icon {
-  color: var(--accent-unraid);
-}
+
+
 
 .spacer {
   flex: 1;
