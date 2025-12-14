@@ -61,7 +61,13 @@ async function loadRequests(url, key, filter) {
            renderHydratedRequests(hydratedData, url, key);
         } catch(e) { console.error("Cache parse error", e); }
     } else {
-        if (container) container.innerHTML = `<div class="loading">Loading ${filter} requests...</div>`;
+        if (container) {
+            container.textContent = '';
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading';
+            loadingDiv.textContent = `Loading ${filter} requests...`;
+            container.appendChild(loadingDiv);
+        }
     }
     
     try {
