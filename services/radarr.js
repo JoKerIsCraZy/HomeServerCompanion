@@ -20,7 +20,7 @@ export const getRadarrMovies = async (url, apiKey) => {
 // Getting "Recent" movies via history might be better than fetching 1000 movies
 export const getRadarrHistory = async (url, apiKey) => {
     try {
-        const response = await fetch(`${url}/api/v3/history?page=1&pageSize=50&sortKey=date&sortDirection=descending&apikey=${apiKey}`);
+        const response = await fetch(`${url}/api/v3/history?page=1&pageSize=50&sortKey=date&sortDirection=descending&includeMovie=true&apikey=${apiKey}`);
         if (!response.ok) throw new Error(`Error: ${response.status}`);
         return await response.json();
     } catch (error) {
