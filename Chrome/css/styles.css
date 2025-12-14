@@ -121,17 +121,15 @@ body {
 }
 
 .nav-icon {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-    transition: transform 0.2s;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  transition: transform 0.2s;
 }
 
 .nav-item:hover .nav-icon {
-    transform: scale(1.1);
+  transform: scale(1.1);
 }
-
-
 
 .spacer {
   flex: 1;
@@ -597,8 +595,31 @@ body.light-theme .sub-tab-btn {
   transition: transform 0.2s;
 }
 
-.tautulli-item:hover {
-  transform: scale(1.02);
+/* Toggle Arrow Rotation */
+.tautulli-item.expanded .details-toggle {
+  transform: rotate(180deg);
+}
+
+/* Tautulli Actions */
+.kill-icon-btn:hover {
+    background: #f44336 !important;
+    color: white !important;
+    transform: scale(1.1);
+    box-shadow: 0 2px 5px rgba(244,67,54,0.4);
+}
+
+.terminate-btn:hover {
+  background: rgba(244, 67, 54, 0.2) !important;
+}
+
+/* Dark Mode Overrides for Tautulli Details */
+body.dark-mode .tautulli-details {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-top-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .progress-bar {
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Fancy Header for Tautulli */
@@ -1011,7 +1032,7 @@ body.dark-mode .ram-circle {
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   min-height: 140px;
 }
@@ -1042,14 +1063,14 @@ body.dark-mode .ram-circle {
   height: 105px;
   object-fit: cover;
   border-radius: 4px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   margin-right: 15px;
 }
 
 .overseerr-info {
   flex: 1;
   color: white; /* Always white on dark backdrop */
-  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .overseerr-info .media-title {
@@ -1093,7 +1114,7 @@ body.dark-mode .ram-circle {
   justify-content: center;
   font-size: 16px;
   transition: transform 0.1s, box-shadow 0.2s;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 .action-btn:hover {
@@ -1115,91 +1136,91 @@ body.dark-mode .ram-circle {
 
 /* Overseerr Search & Tabs */
 .overseerr-header {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 .overseerr-tabs {
-    display: flex;
-    background: #f0f0f0; /* Default light bg */
-    border-radius: 8px;
-    padding: 4px;
-    position: relative;
-    z-index: 10;
+  display: flex;
+  background: #f0f0f0; /* Default light bg */
+  border-radius: 8px;
+  padding: 4px;
+  position: relative;
+  z-index: 10;
 }
 
 /* Dark mode adjustment if needed, but keeping global styles for now or assuming variable usage */
 body.dark-mode .overseerr-tabs {
-    background: #444;
+  background: #444;
 }
 
 .tab {
-    flex: 1;
-    text-align: center;
-    padding: 8px;
-    cursor: pointer;
-    border-radius: 6px;
-    font-weight: 500;
-    transition: background 0.2s, color 0.2s;
-    color: var(--text-secondary);
-    user-select: none; /* Prevent text selection */
-    -webkit-user-select: none;
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+  color: var(--text-secondary);
+  user-select: none; /* Prevent text selection */
+  -webkit-user-select: none;
 }
 
 .tab.active {
-    background: var(--card-bg);
-    color: var(--accent-sab); /* Reuse accent */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: var(--card-bg);
+  color: var(--accent-sab); /* Reuse accent */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .overseerr-tab-content {
-    display: none;
+  display: none;
 }
 .overseerr-tab-content.active {
-    display: block;
-    animation: fadeIn 0.3s ease;
+  display: block;
+  animation: fadeIn 0.3s ease;
 }
 
 .search-bar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .search-bar input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    background: var(--card-bg);
-    color: var(--text-primary);
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .search-bar button {
-    padding: 0 15px;
-    border: none;
-    background: var(--accent-sab);
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
+  padding: 0 15px;
+  border: none;
+  background: var(--accent-sab);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 .loading {
-    text-align: center;
-    padding: 20px;
-    color: var(--text-secondary);
+  text-align: center;
+  padding: 20px;
+  color: var(--text-secondary);
 }
 
 .request-btn {
-    background: #2196F3; /* Blue for request */
-    color: white;
-    width: auto;
-    height: auto;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 14px;
+  background: #2196f3; /* Blue for request */
+  color: white;
+  width: auto;
+  height: auto;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 14px;
 }
 
 .request-btn:hover {
-    background: #1976D2;
-    transform: scale(1.05);
+  background: #1976d2;
+  transform: scale(1.05);
 }

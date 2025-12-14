@@ -1,395 +1,576 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>Extension Options</title>
-  <style>
-    :root {
-      --bg-color: #f4f4f9;
-      --card-bg: #ffffff;
-      --text-color: #333;
-      --accent: #6200ea;
-      --border: #ddd;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <title>Extension Options</title>
+    <style>
+      :root {
+        --bg-color: #f4f4f9;
+        --card-bg: #ffffff;
+        --text-color: #333;
+        --accent: #6200ea;
+        --border: #ddd;
+      }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      padding: 40px;
-    }
+      body.dark-mode {
+        --bg-color: #121212;
+        --card-bg: #1e1e1e;
+        --text-color: #e0e0e0;
+        --border: #333;
+        --accent: #bb86fc;
+      }
 
-    .container {
-      background: var(--card-bg);
-      width: 800px;
-      display: flex;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      overflow: hidden;
-      min-height: 500px;
-    }
+      body.dark-mode .sidebar {
+        background: #252525;
+        border-right-color: #333;
+      }
 
-    .sidebar {
-      width: 200px;
-      background: #fafafa;
-      border-right: 1px solid var(--border);
-      padding: 20px 0;
-      display: flex;
-      flex-direction: column;
-    }
+      body.dark-mode .nav-item {
+        color: #aaa;
+      }
 
-    .nav-item {
-      padding: 15px 25px;
-      cursor: pointer;
-      border-left: 4px solid transparent;
-      transition: all 0.2s;
-      font-weight: 500;
-      color: #666;
-    }
+      body.dark-mode .nav-item:hover {
+        background: #2c2c2c;
+        color: #fff;
+      }
 
-    .nav-item:hover {
-      background: #f0f0f0;
-      color: #333;
-    }
+      body.dark-mode .nav-item.active {
+        background: #333;
+        color: var(--accent);
+      }
+      
+      body.dark-mode h2 {
+          border-bottom-color: #333;
+          color: #fff;
+      }
 
-    .nav-item.active {
-      background: #fff;
-      border-left-color: var(--accent);
-      color: var(--accent);
-      font-weight: bold;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
+      body.dark-mode input[type="text"],
+      body.dark-mode input[type="password"],
+      body.dark-mode input[type="number"],
+      body.dark-mode select {
+        background: #2c2c2c;
+        border-color: #444;
+        color: #fff;
+      }
 
-    .content {
-      flex: 1;
-      padding: 30px;
-    }
+      body.dark-mode .input-group select {
+          background: #333;
+      }
+      
+      body.dark-mode label {
+          color: #bbb;
+      }
+      
+      body.dark-mode #service-order-list div {
+          background: #2c2c2c !important; 
+          border-bottom-color: #444 !important;
+          color: #fff;
+      }
+      
+      body.dark-mode .btn-secondary {
+          background: #444;
+          color: #ddd;
+      }
+      
+      body.dark-mode .btn-secondary:hover {
+          background: #555;
+      }
 
-    .section {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        padding: 40px;
+      }
 
-    .section.active {
-      display: block;
-    }
+      .container {
+        background: var(--card-bg);
+        width: 800px;
+        display: flex;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        min-height: 500px;
+      }
 
-    h2 {
-      margin-top: 0;
-      margin-bottom: 25px;
-      color: var(--text-color);
-      font-size: 24px;
-      border-bottom: 2px solid #f0f0f0;
-      padding-bottom: 15px;
-    }
+      .sidebar {
+        width: 200px;
+        background: #fafafa;
+        border-right: 1px solid var(--border);
+        padding: 20px 0;
+        display: flex;
+        flex-direction: column;
+      }
 
-    .form-group {
-      margin-bottom: 20px;
-    }
+      .nav-item {
+        padding: 15px 25px;
+        cursor: pointer;
+        border-left: 4px solid transparent;
+        transition: all 0.2s;
+        font-weight: 500;
+        color: #666;
+      }
 
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: #555;
-    }
+      .nav-item:hover {
+        background: #f0f0f0;
+        color: #333;
+      }
 
-    input[type="text"],
-    input[type="password"],
-    input[type="number"] {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      box-sizing: border-box;
-      font-size: 14px;
-      transition: border-color 0.2s;
-    }
+      .nav-item.active {
+        background: #fff;
+        border-left-color: var(--accent);
+        color: var(--accent);
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
 
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--accent);
-      z-index: 1; /* Bring to front on focus */
-    }
+      .content {
+        flex: 1;
+        padding: 30px;
+      }
 
-    .input-group select {
+      .section {
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .section.active {
+        display: block;
+      }
+
+      h2 {
+        margin-top: 0;
+        margin-bottom: 25px;
+        color: var(--text-color);
+        font-size: 24px;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 15px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #555;
+      }
+
+      input[type="text"],
+      input[type="password"],
+      input[type="number"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        box-sizing: border-box;
+        font-size: 14px;
+        transition: border-color 0.2s;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent);
+        z-index: 1; /* Bring to front on focus */
+      }
+
+      .input-group select {
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
         border-right: none;
         background-color: #fafafa;
         cursor: pointer;
-    }
+      }
 
-    .input-group input {
+      .input-group input {
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
-    }
-    
-    select {
+      }
+
+      select {
         padding: 10px;
         border: 1px solid var(--border);
         border-radius: 6px;
         font-size: 14px;
         outline: none;
         transition: border-color 0.2s;
-    }
+      }
 
-    .help-text {
-      font-size: 12px;
-      color: #888;
-      margin-top: 5px;
-    }
+      .help-text {
+        font-size: 12px;
+        color: #888;
+        margin-top: 5px;
+      }
 
-    .actions {
-      margin-top: 30px;
-      display: flex;
-      gap: 10px;
-    }
+      .actions {
+        margin-top: 30px;
+        display: flex;
+        gap: 10px;
+      }
 
-    button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: transform 0.1s, opacity 0.2s;
-    }
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: transform 0.1s, opacity 0.2s;
+      }
 
-    button:active {
-      transform: scale(0.98);
-    }
+      button:active {
+        transform: scale(0.98);
+      }
 
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-      box-shadow: 0 4px 10px rgba(98, 0, 234, 0.2);
-    }
+      .btn-primary {
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 4px 10px rgba(98, 0, 234, 0.2);
+      }
 
-    .btn-primary:hover {
-      background: #5000cc;
-    }
-    
-    .btn-secondary {
+      .btn-primary:hover {
+        background: #5000cc;
+      }
+
+      .btn-secondary {
         background: #e0e0e0;
         color: #333;
-    }
-    
-    .btn-secondary:hover {
-        background: #d5d5d5;
-    }
+      }
 
-    .status {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 14px;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    
-    .status.success {
+      .btn-secondary:hover {
+        background: #d5d5d5;
+      }
+
+      .status {
+        margin-top: 15px;
+        padding: 10px;
+        border-radius: 6px;
+        font-size: 14px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .status.success {
         background: #e8f5e9;
         color: #2e7d32;
         opacity: 1;
-    }
-    
-    .status.error {
+      }
+
+      .status.error {
         background: #ffebee;
         color: #c62828;
         opacity: 1;
-    }
+      }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
-</head>
-<body>
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="sidebar">
+        <div class="nav-item active" data-target="general">General</div>
+        <div class="nav-item" data-target="sabnzbd">SABnzbd</div>
+        <div class="nav-item" data-target="sonarr">Sonarr</div>
+        <div class="nav-item" data-target="radarr">Radarr</div>
+        <div class="nav-item" data-target="tautulli">Tautulli</div>
+        <div class="nav-item" data-target="overseerr">Overseerr</div>
+        <div class="nav-item" data-target="unraid">Unraid</div>
+      </div>
 
-<div class="container">
-  <div class="sidebar">
-    <div class="nav-item active" data-target="general">General</div>
-    <div class="nav-item" data-target="sabnzbd">SABnzbd</div>
-    <div class="nav-item" data-target="sonarr">Sonarr</div>
-    <div class="nav-item" data-target="radarr">Radarr</div>
-    <div class="nav-item" data-target="tautulli">Tautulli</div>
-    <div class="nav-item" data-target="overseerr">Overseerr</div>
-    <div class="nav-item" data-target="unraid">Unraid</div>
-  </div>
-
-  <div class="content">
-    <!-- General Section -->
-    <div id="general" class="section active">
-        <h2>General Settings</h2>
-        <div class="form-group">
+      <div class="content">
+        <!-- General Section -->
+        <div id="general" class="section active">
+          <h2>General Settings</h2>
+          <div class="form-group">
             <label>Service Order (Default View is Top Item)</label>
-            <div id="service-order-list" style="border: 1px solid var(--border); border-radius: 6px; overflow: hidden;">
-                <!-- Populated by JS -->
+            <div
+              id="service-order-list"
+              style="
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                overflow: hidden;
+              "
+            >
+              <!-- Populated by JS -->
             </div>
-            <div class="help-text">Use arrows to reorder. The top-most service will be opened by default.</div>
+            <div class="help-text">
+              Use arrows to reorder. The top-most service will be opened by
+              default.
+            </div>
+          </div>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; cursor: pointer">
+              <input
+                type="checkbox"
+                id="enablePersistence"
+                style="width: auto; margin-right: 10px"
+              />
+              Remember Last Open View
+            </label>
+            <div class="help-text">
+              If enabled, the extension will remember your last open tab for
+              supported services (Overseerr, Unraid, SABnzbd).
+            </div>
+          </div>
+          <div class="actions">
+            <button id="saveOrder" class="btn-primary">
+              Save General Settings
+            </button>
+          </div>
+          <div id="statusGeneral" class="status"></div>
         </div>
-        <div class="actions">
-            <button id="saveOrder" class="btn-primary">Save Order</button>
-        </div>
-        <div id="statusGeneral" class="status"></div>
-    </div>
 
-    <!-- SABnzbd Section -->
-    <div id="sabnzbd" class="section">
+        <!-- SABnzbd Section -->
+        <div id="sabnzbd" class="section">
       <h2>SABnzbd Settings</h2>
       <div class="form-group">
-        <label for="sabnzbdUrl">Server URL</label>
-        <div class="input-group" style="display: flex;">
-            <select id="sabnzbdProtocol" style="width: auto;">
+        <label style="display:flex; align-items:center; cursor:pointer;">
+            <input type="checkbox" id="sabnzbdEnabled" style="width:auto; margin-right:10px;">
+            Enable SABnzbd
+        </label>
+      </div>
+          <div class="form-group">
+            <label for="sabnzbdUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="sabnzbdProtocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
-            </select>
-            <input type="text" id="sabnzbdUrl" placeholder="localhost:8080" style="flex: 1;">
+              </select>
+              <input
+                type="text"
+                id="sabnzbdUrl"
+                placeholder="localhost:8080"
+                style="flex: 1"
+              />
+            </div>
+            <div class="help-text">
+              Enter host and port, e.g., 192.168.1.10:8080
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="sabnzbdKey">API Key</label>
+            <input type="password" id="sabnzbdKey" />
+          </div>
+          <div class="actions">
+            <button id="saveSabnzbd" class="btn-primary">Save SABnzbd</button>
+            <button id="testSabnzbd" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusSabnzbd" class="status"></div>
         </div>
-        <div class="help-text">Enter host and port, e.g., 192.168.1.10:8080</div>
-      </div>
-      <div class="form-group">
-        <label for="sabnzbdKey">API Key</label>
-        <input type="password" id="sabnzbdKey">
-      </div>
-      <div class="actions">
-        <button id="saveSabnzbd" class="btn-primary">Save SABnzbd</button>
-        <button id="testSabnzbd" class="btn-secondary">Test Connection</button>
-      </div>
-      <div id="statusSabnzbd" class="status"></div>
-    </div>
 
-    <!-- Sonarr Section -->
-    <div id="sonarr" class="section">
+        <!-- Sonarr Section -->
+        <div id="sonarr" class="section">
       <h2>Sonarr Settings</h2>
       <div class="form-group">
-        <label for="sonarrUrl">Server URL</label>
-        <div class="input-group" style="display: flex;">
-            <select id="sonarrProtocol" style="width: auto;">
+        <label style="display:flex; align-items:center; cursor:pointer;">
+            <input type="checkbox" id="sonarrEnabled" style="width:auto; margin-right:10px;">
+            Enable Sonarr
+        </label>
+      </div>
+          <div class="form-group">
+            <label for="sonarrUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="sonarrProtocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
-            </select>
-            <input type="text" id="sonarrUrl" placeholder="localhost:8989" style="flex: 1;">
+              </select>
+              <input
+                type="text"
+                id="sonarrUrl"
+                placeholder="localhost:8989"
+                style="flex: 1"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="sonarrKey">API Key</label>
+            <input type="password" id="sonarrKey" />
+          </div>
+          <div class="actions">
+            <button id="saveSonarr" class="btn-primary">Save Sonarr</button>
+            <button id="testSonarr" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusSonarr" class="status"></div>
         </div>
-      </div>
-      <div class="form-group">
-        <label for="sonarrKey">API Key</label>
-        <input type="password" id="sonarrKey">
-      </div>
-      <div class="actions">
-        <button id="saveSonarr" class="btn-primary">Save Sonarr</button>
-        <button id="testSonarr" class="btn-secondary">Test Connection</button>
-      </div>
-      <div id="statusSonarr" class="status"></div>
-    </div>
 
-    <!-- Radarr Section -->
-    <div id="radarr" class="section">
+        <!-- Radarr Section -->
+        <div id="radarr" class="section">
       <h2>Radarr Settings</h2>
       <div class="form-group">
-        <label for="radarrUrl">Server URL</label>
-        <div class="input-group" style="display: flex;">
-            <select id="radarrProtocol" style="width: auto;">
+        <label style="display:flex; align-items:center; cursor:pointer;">
+            <input type="checkbox" id="radarrEnabled" style="width:auto; margin-right:10px;">
+            Enable Radarr
+        </label>
+      </div>
+          <div class="form-group">
+            <label for="radarrUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="radarrProtocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
-            </select>
-            <input type="text" id="radarrUrl" placeholder="localhost:7878" style="flex: 1;">
+              </select>
+              <input
+                type="text"
+                id="radarrUrl"
+                placeholder="localhost:7878"
+                style="flex: 1"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="radarrKey">API Key</label>
+            <input type="password" id="radarrKey" />
+          </div>
+          <div class="actions">
+            <button id="saveRadarr" class="btn-primary">Save Radarr</button>
+            <button id="testRadarr" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusRadarr" class="status"></div>
         </div>
-      </div>
-      <div class="form-group">
-        <label for="radarrKey">API Key</label>
-        <input type="password" id="radarrKey">
-      </div>
-      <div class="actions">
-        <button id="saveRadarr" class="btn-primary">Save Radarr</button>
-        <button id="testRadarr" class="btn-secondary">Test Connection</button>
-      </div>
-      <div id="statusRadarr" class="status"></div>
-    </div>
 
-    <!-- Tautulli Section -->
-    <div id="tautulli" class="section">
+        <!-- Tautulli Section -->
+        <div id="tautulli" class="section">
         <h2>Tautulli Settings</h2>
         <div class="form-group">
-          <label for="tautulliUrl">Server URL</label>
-          <div class="input-group" style="display: flex;">
-            <select id="tautulliProtocol" style="width: auto;">
+            <label style="display:flex; align-items:center; cursor:pointer;">
+                <input type="checkbox" id="tautulliEnabled" style="width:auto; margin-right:10px;">
+                Enable Tautulli
+            </label>
+        </div>
+          <div class="form-group">
+            <label for="tautulliUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="tautulliProtocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
-            </select>
-            <input type="text" id="tautulliUrl" placeholder="localhost:8181" style="flex: 1;">
+              </select>
+              <input
+                type="text"
+                id="tautulliUrl"
+                placeholder="localhost:8181"
+                style="flex: 1"
+              />
+            </div>
           </div>
+          <div class="form-group">
+            <label for="tautulliKey">API Key</label>
+            <input type="password" id="tautulliKey" />
+          </div>
+          <div class="actions">
+            <button id="saveTautulli" class="btn-primary">Save Tautulli</button>
+            <button id="testTautulli" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusTautulli" class="status"></div>
         </div>
-        <div class="form-group">
-          <label for="tautulliKey">API Key</label>
-          <input type="password" id="tautulliKey">
-        </div>
-        <div class="actions">
-          <button id="saveTautulli" class="btn-primary">Save Tautulli</button>
-          <button id="testTautulli" class="btn-secondary">Test Connection</button>
-        </div>
-        <div id="statusTautulli" class="status"></div>
-      </div>
 
-      <!-- Overseerr Section -->
-      <div id="overseerr" class="section">
+        <!-- Overseerr Section -->
+        <div id="overseerr" class="section">
         <h2>Overseerr Settings</h2>
         <div class="form-group">
-          <label for="overseerrUrl">Server URL</label>
-          <div class="input-group" style="display: flex;">
-            <select id="overseerrProtocol" style="width: auto;">
+            <label style="display:flex; align-items:center; cursor:pointer;">
+                <input type="checkbox" id="overseerrEnabled" style="width:auto; margin-right:10px;">
+                Enable Overseerr
+            </label>
+        </div>
+          <div class="form-group">
+            <label for="overseerrUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="overseerrProtocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
-            </select>
-            <input type="text" id="overseerrUrl" placeholder="localhost:5055" style="flex: 1;">
+              </select>
+              <input
+                type="text"
+                id="overseerrUrl"
+                placeholder="localhost:5055"
+                style="flex: 1"
+              />
+            </div>
           </div>
+          <div class="form-group">
+            <label for="overseerrKey">API Key</label>
+            <input type="password" id="overseerrKey" />
+          </div>
+          <div class="actions">
+            <button id="saveOverseerr" class="btn-primary">
+              Save Overseerr
+            </button>
+            <button id="testOverseerr" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusOverseerr" class="status"></div>
         </div>
-        <div class="form-group">
-          <label for="overseerrKey">API Key</label>
-          <input type="password" id="overseerrKey">
-        </div>
-        <div class="actions">
-          <button id="saveOverseerr" class="btn-primary">Save Overseerr</button>
-          <button id="testOverseerr" class="btn-secondary">Test Connection</button>
-        </div>
-        <div id="statusOverseerr" class="status"></div>
-      </div>
-  
-      <!-- Unraid Section -->
-      <div id="unraid" class="section">
+
+        <!-- Unraid Section -->
+        <div id="unraid" class="section">
         <h2>Unraid Settings</h2>
         <div class="form-group">
-          <label for="unraidUrl">Server URL</label>
-          <div class="input-group" style="display: flex;">
-            <select id="unraidProtocol" style="width: auto;">
+            <label style="display:flex; align-items:center; cursor:pointer;">
+                <input type="checkbox" id="unraidEnabled" style="width:auto; margin-right:10px;">
+                Enable Unraid
+            </label>
+        </div>
+          <div class="form-group">
+            <label for="unraidUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="unraidProtocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
-            </select>
-            <input type="text" id="unraidUrl" placeholder="192.168.1.10" style="flex: 1;">
+              </select>
+              <input
+                type="text"
+                id="unraidUrl"
+                placeholder="192.168.1.10"
+                style="flex: 1"
+              />
+            </div>
+            <div class="help-text">
+              Direct IP or local hostname (e.g., tower.local)
+            </div>
           </div>
-          <div class="help-text">Direct IP or local hostname (e.g., tower.local)</div>
-        </div>
-        <div class="form-group">
+          <div class="form-group">
             <label for="unraidKey">API Key</label>
-            <input type="password" id="unraidKey">
-            <div class="help-text">Generate in Unraid Settings -> Management Access -> API Key</div>
+            <input type="password" id="unraidKey" />
+            <div class="help-text">
+              Generate in Unraid Settings -> Management Access -> API Key
+            </div>
+          </div>
+          <!-- Unraid doesn't have a standard API key for simple status checks usually, but we'll ask for one if users use a specific plugin, or just skip it for basic ping -->
+          <div class="actions">
+            <button id="saveUnraid" class="btn-primary">Save Unraid</button>
+            <button id="testUnraid" class="btn-secondary">
+              Test Reachability
+            </button>
+          </div>
+          <div id="statusUnraid" class="status"></div>
         </div>
-        <!-- Unraid doesn't have a standard API key for simple status checks usually, but we'll ask for one if users use a specific plugin, or just skip it for basic ping -->
-        <div class="actions">
-          <button id="saveUnraid" class="btn-primary">Save Unraid</button>
-          <button id="testUnraid" class="btn-secondary">Test Reachability</button>
-        </div>
-        <div id="statusUnraid" class="status"></div>
       </div>
+    </div>
 
-  </div>
-</div>
-
-<script src="js/options.js"></script>
-</body>
+    <script src="js/options.js"></script>
+  </body>
 </html>

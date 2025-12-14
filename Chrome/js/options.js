@@ -17,10 +17,37 @@ document.querySelectorAll('.nav-item').forEach(item => {
 // --- Save & Load ---
 const loadOptions = () => {
     chrome.storage.sync.get(null, (items) => {
+        // Apply Dark Mode
+        if (items.darkMode) {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
+        }
+
+        // Load Persistence Setting (default true if undefined)
+        const persistenceEl = document.getElementById('enablePersistence');
+        if (persistenceEl) {
+             if (items.enablePersistence === undefined) {
+                 persistenceEl.checked = true; // Default
+             } else {
+                 persistenceEl.checked = items.enablePersistence;
+             }
+        }
+
         services.forEach(service => {
             const urlEl = document.getElementById(`${service}Url`);
             const keyEl = document.getElementById(`${service}Key`);
             const protocolEl = document.getElementById(`${service}Protocol`);
+            const enabledEl = document.getElementById(`${service}Enabled`);
+            
+            // Load Enabled State (Default true)
+            if (enabledEl) {
+                if (items[`${service}Enabled`] === undefined) {
+                    enabledEl.checked = true;
+                } else {
+                    enabledEl.checked = items[`${service}Enabled`];
+                }
+            }
             
             if (urlEl && items[`${service}Url`]) {
                 let fullUrl = items[`${service}Url`];
@@ -45,12 +72,16 @@ const saveService = (service) => {
     const urlId = `${service}Url`;
     const keyId = `${service}Key`;
     const protocolId = `${service}Protocol`;
+    const enabledId = `${service}Enabled`;
     
     const urlEl = document.getElementById(urlId);
     const keyEl = document.getElementById(keyId);
     const protocolEl = document.getElementById(protocolId);
+    const enabledEl = document.getElementById(enabledId);
     
     const data = {};
+    if (enabledEl) data[enabledId] = enabledEl.checked;
+
     if (urlEl) {
         let val = urlEl.value.trim().replace(/\/$/, ""); // Strip trailing slash
         // Clean protocol if user pasted it
@@ -176,6 +207,23 @@ const testConnection = async (service) => {
 document.addEventListener('DOMContentLoaded', () => {
     loadOptions();
     renderOrderList();
+
+    // General Save Button
+    const saveOrderBtn = document.getElementById('saveOrder');
+    if (saveOrderBtn) {
+        saveOrderBtn.addEventListener('click', () => {
+             // const currentOrder = getCurrentOrder(); // Use window.currentOrder
+             const currentOrder = window.currentOrder;
+             const enablePersistence = document.getElementById('enablePersistence').checked;
+             
+             chrome.storage.sync.set({ 
+                 serviceOrder: window.currentOrder || currentOrder, // window.currentOrder is set below
+                 enablePersistence: enablePersistence
+             }, () => {
+                 showStatus('General', 'Settings saved!', 'success');
+             });
+        });
+    }
 });
 
 services.forEach(service => {
@@ -187,26 +235,27 @@ services.forEach(service => {
 });
 
 // --- General / Reordering Logic ---
-let currentOrder = [...services]; // Default
+window.currentOrder = [...services]; // Default attached to window for easy access in listener
 
 const renderOrderList = () => {
     chrome.storage.sync.get(['serviceOrder'], (items) => {
         if (items.serviceOrder) {
             // Merge with default to ensure no services are lost if config is old
-            currentOrder = items.serviceOrder;
+
+            window.currentOrder = items.serviceOrder;
             // Ensure all known services are present (in case of new ones added later)
             services.forEach(s => {
-                if (!currentOrder.includes(s)) currentOrder.push(s);
+                if (!window.currentOrder.includes(s)) window.currentOrder.push(s);
             });
         }
         
         const container = document.getElementById('service-order-list');
         container.innerHTML = '';
         
-        currentOrder.forEach((service, index) => {
+        window.currentOrder.forEach((service, index) => {
             const row = document.createElement('div');
             row.style.cssText = 'padding: 10px 15px; background: white; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;';
-            if (index === currentOrder.length - 1) row.style.borderBottom = 'none';
+            if (index === window.currentOrder.length - 1) row.style.borderBottom = 'none';
 
             const name = service.charAt(0).toUpperCase() + service.slice(1);
             
@@ -225,7 +274,7 @@ const renderOrderList = () => {
             downBtn.textContent = '\u2193'; // Down Arrow
             downBtn.className = 'btn-secondary';
             downBtn.style.padding = '5px 10px';
-            downBtn.disabled = index === currentOrder.length - 1;
+            downBtn.disabled = index === window.currentOrder.length - 1;
             downBtn.onclick = () => moveItem(index, 1);
 
             controls.appendChild(upBtn);
@@ -240,10 +289,10 @@ const renderOrderList = () => {
 
 const moveItem = (index, direction) => {
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= currentOrder.length) return;
+    if (newIndex < 0 || newIndex >= window.currentOrder.length) return;
     
     // Swap
-    [currentOrder[index], currentOrder[newIndex]] = [currentOrder[newIndex], currentOrder[index]];
+    [window.currentOrder[index], window.currentOrder[newIndex]] = [window.currentOrder[newIndex], window.currentOrder[index]];
     
     // Re-render (optimistic)
     // We don't save yet, user must click Save
@@ -255,10 +304,10 @@ const moveItem = (index, direction) => {
     // Actually, let's just update the UI directly since we have currentOrder.
     const container = document.getElementById('service-order-list');
     container.innerHTML = '';
-    currentOrder.forEach((service, i) => {
+    window.currentOrder.forEach((service, i) => {
         const row = document.createElement('div');
          row.style.cssText = 'padding: 10px 15px; background: white; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;';
-        if (i === currentOrder.length - 1) row.style.borderBottom = 'none';
+        if (i === window.currentOrder.length - 1) row.style.borderBottom = 'none';
 
         const name = service.charAt(0).toUpperCase() + service.slice(1);
         
@@ -277,7 +326,7 @@ const moveItem = (index, direction) => {
         downBtn.textContent = '\u2193'; // Down Arrow
         downBtn.className = 'btn-secondary';
         downBtn.style.padding = '5px 10px';
-        downBtn.disabled = i === currentOrder.length - 1;
+        downBtn.disabled = i === window.currentOrder.length - 1;
         downBtn.onclick = () => moveItem(i, 1);
 
         controls.appendChild(upBtn);
@@ -289,8 +338,9 @@ const moveItem = (index, direction) => {
     });
 };
 
-document.getElementById('saveOrder').addEventListener('click', () => {
-    chrome.storage.sync.set({ serviceOrder: currentOrder }, () => {
-        showStatus('General', 'Order saved!', 'success');
-    });
-});
+/* 
+   We replaced the dedicated saveOrder listener logic in DOMContentLoaded 
+   to handle both order and persistence.
+*/
+// document.getElementById('saveOrder').addEventListener('click', () => { ... });
+

@@ -11,7 +11,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const state = {
     configs: {},
     activeService: "sabnzbd",
+    expandedSessions: new Set() // Track expanded Tautulli sessions
   };
+
+  const EXCLUDED_FROM_PERSISTENCE = ['sonarr', 'radarr', 'tautulli'];
 
   // Elements
   const views = document.querySelectorAll(".view");
@@ -41,19 +44,35 @@ document.addEventListener("DOMContentLoaded", () => {
     // Remove existing nav items (except settings/spacer if needed, but easier to just re-append)
     // Actually we can just re-append them in order, DOM will move them.
     order.forEach(service => {
-        const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
-        if (el) sidebar.insertBefore(el, spacer);
+        // Check if service is enabled (default true)
+        if (items[`${service}Enabled`] !== false) {
+             const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
+             if (el) sidebar.insertBefore(el, spacer);
+        } else {
+             // Hide if disabled
+             const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
+             if (el) el.style.display = 'none';
+        }
     });
 
+    // Re-calculate visible order for defaulting
+    const visibleOrder = order.filter(s => items[`${s}Enabled`] !== false);
+    
     // Default to first service in order
-    const defaultService = order[0];
+    let defaultService = visibleOrder.length > 0 ? visibleOrder[0] : 'sabnzbd';
+
+    // PERSISTENCE: Restore Last Active Service
+    // Only if enablePersistence is NOT false (default true)
+    if (items.enablePersistence !== false) {
+        const lastService = localStorage.getItem('lastActiveService');
+        // Verify it still exists and is enabled
+        if (lastService && items[`${lastService}Enabled`] !== false && order.includes(lastService)) {
+            defaultService = lastService;
+        }
+    }
     
     initNavigation();
     
-    // Check if we have a saved active state, otherwise default
-    // Ideally we always default to the first one as requested by user ("bei jedem öffnen... Unraid")
-    // So we ignore previous state if we want to force top item.
-    // Let's force top item as requested.
     state.activeService = defaultService;
     
     // Simulate click on active to init view
@@ -106,9 +125,15 @@ document.addEventListener("DOMContentLoaded", () => {
         headerTitle.textContent =
           target.charAt(0).toUpperCase() + target.slice(1);
 
+        // PERSISTENCE: Save Active Service
+        if (state.configs.enablePersistence !== false) {
+             localStorage.setItem('lastActiveService', target);
+        }
+
         // Load Content
         hideError();
         loadService(target);
+        restoreView(target);
       });
     });
 
@@ -185,6 +210,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 if(input) input.focus();
             }
         }
+
+        // PERSISTENCE
+        // We only persist if the current ACTIVE SERVICE is not excluded AND persistence is enabled
+        if (!EXCLUDED_FROM_PERSISTENCE.includes(state.activeService)) {
+             if (state.configs.enablePersistence !== false) { // Default to true if undefined
+                 localStorage.setItem(`${state.activeService}_last_sub_tab`, targetId);
+             }
+        }
       });
     });
 
@@ -211,6 +244,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const targetSubView = parentView.querySelector(`#${prefix}-${tabName}`); // e.g. sab-queue, sonarr-calendar
         if (targetSubView) targetSubView.classList.remove("hidden");
+
+        // PERSISTENCE
+        if (!EXCLUDED_FROM_PERSISTENCE.includes(state.activeService)) {
+             if (state.configs.enablePersistence !== false) {
+                 localStorage.setItem(`${state.activeService}_last_tab`, tabName);
+             }
+        }
       });
     });
 
@@ -219,6 +259,37 @@ document.addEventListener("DOMContentLoaded", () => {
       if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
       else window.open("options.html");
     });
+
+  }
+
+  function restoreView(service) {
+      if (EXCLUDED_FROM_PERSISTENCE.includes(service)) return;
+      if (state.configs.enablePersistence === false) return; // Respect setting
+
+      // 1. Restore standard tabs (.tab-btn)
+      const lastTab = localStorage.getItem(`${service}_last_tab`);
+      if (lastTab) {
+           // We need to find the button inside the active view
+           const view = document.getElementById(`${service}-view`);
+           if (view) {
+               const btn = view.querySelector(`.tab-btn[data-tab="${lastTab}"]`);
+               if (btn) btn.click();
+           }
+      }
+
+      // 2. Restore sub-tabs (.sub-tab-btn) like in Overseerr / Unraid
+      const lastSubTabId = localStorage.getItem(`${service}_last_sub_tab`);
+      if (lastSubTabId) {
+          const view = document.getElementById(`${service}-view`);
+          if (view) {
+              const btn = view.querySelector(`.sub-tab-btn[data-target="${lastSubTabId}"]`);
+              if (btn) {
+                   // Avoid double-clicking if already active? 
+                   // The click handler manages UI state, so clicking is the safest way to ensure Consistency.
+                   btn.click(); 
+              }
+          }
+      }
   }
 
   // --- Service Loaders ---
@@ -819,48 +890,57 @@ document.addEventListener("DOMContentLoaded", () => {
     const tmpl = document.getElementById("tautulli-card");
     sessions.forEach((session) => {
       const clone = tmpl.content.cloneNode(true);
+      const card = clone.querySelector('.tautulli-item');
 
-      // Content
+      // --- Main Info ---
+      // Title logic: Grandparent - Title (Series) or Title (Movie)
       const title = session.grandparent_title
-        ? `${session.grandparent_title} - ${session.title}`
+        ? session.grandparent_title
         : session.title;
+      const subtitle = session.grandparent_title 
+        ? `${session.parent_media_index}x${session.media_index} • ${session.title}`
+        : session.year || '';
+        
       clone.querySelector(".media-title").textContent = title;
-      clone.querySelector(".user-name").textContent =
-        session.user || session.username;
+      clone.querySelector(".media-subtitle").textContent = subtitle;
 
-      // Details: Quality · Player · Transcode
+      // User & Time
+      clone.querySelector(".user-name").textContent = session.user || session.username;
+      
+      // Time Left Calculation
+      // duration (ms) - view_offset (ms)
+      let timeText = "";
+      if (session.duration && session.view_offset) {
+          const leftMs = session.duration - session.view_offset;
+          const leftMins = Math.round(leftMs / 1000 / 60);
+          timeText = `${leftMins}m left`;
+      }
+      clone.querySelector(".time-left").textContent = timeText;
+
+      // Meta Row: Direct Play • 7.7 Mbps • Original
+      const streamDecision = session.transcode_decision === 'direct play' ? 'Direct Play' : 'Transcode';
+      clone.querySelector(".stream-decision").textContent = streamDecision;
+      
+      const bandwidth = session.bandwidth ? `${(session.bandwidth / 1000).toFixed(1)} Mbps` : '';
+      clone.querySelector(".bandwidth").textContent = bandwidth;
+      
       const quality = session.quality_profile || session.video_resolution || "";
-      const player = session.player || "";
-      const streamType =
-        session.transcode_decision === "direct play"
-          ? "Direct Play"
-          : "Transcoding";
-      clone.querySelector(
-        ".stream-details"
-      ).textContent = `${quality} · ${streamType}`;
+      clone.querySelector(".quality").textContent = quality;
 
-      // Progress
-      clone.querySelector(
-        ".progress-bar-fill"
-      ).style.width = `${session.progress_percent}%`;
-      clone.querySelector(
-        ".state"
-      ).textContent = `${session.state} (${session.progress_percent}%)`;
-
+      // Progress Bar
+      clone.querySelector(".progress-bar-fill").style.width = `${session.progress_percent}%`;
+      
+      // State Border Color (Optional, maybe color the progress bar?)
+      // session.state is 'playing', 'paused', 'buffering'
+      
       // Images (Auth required for proxied images)
-      // Tautulli Image Proxy: /pms_image_proxy?img=/library/metadata/123/thumb/123.jpg&width=300&apikey=...
       if (session.art) {
         const backdropUrl = `${url}/pms_image_proxy?img=${session.art}&width=800&opacity=100&background=000000&apikey=${key}`;
-        clone.querySelector(
-          ".tautulli-backdrop"
-        ).style.backgroundImage = `url('${backdropUrl}')`;
+        clone.querySelector(".tautulli-backdrop").style.backgroundImage = `url('${backdropUrl}')`;
       }
-
-      // Posters: specific logic for Series vs Movies
-      // Grandparent = Series Poster
-      // Thumb = Episode Thumb (or Movie Poster)
+      
+      // --- Poster ---
       const posterImg = session.grandparent_thumb || session.thumb;
-
       if (posterImg) {
         const posterUrl = `${url}/pms_image_proxy?img=${posterImg}&width=300&apikey=${key}`;
         clone.querySelector(".poster-img").src = posterUrl;
@@ -868,13 +948,69 @@ document.addEventListener("DOMContentLoaded", () => {
         clone.querySelector(".tautulli-poster").style.display = "none";
       }
 
-      // Kill Button Logic
-      const killBtn = clone.querySelector(".kill-btn");
-      killBtn.onclick = async () => {
+      // --- Hidden Details ---
+      // Stream
+      clone.querySelector('.val-container').textContent = `${streamDecision} (${session.container.toUpperCase()})`;
+      clone.querySelector('.val-video').textContent = `${session.stream_video_decision.toUpperCase()} (${session.video_codec.toUpperCase()} ${session.video_resolution}p)`;
+      clone.querySelector('.val-audio').textContent = `${session.stream_audio_decision.toUpperCase()} (${session.audio_language.toUpperCase()} - ${session.audio_codec.toUpperCase()} ${session.audio_channels})`;
+      
+      // Subs
+      const subText = session.subtitle_decision === 'burn' ? 'Burn' : (session.selected_subtitle_codec ? 'Direct' : 'None');
+      clone.querySelector('.val-subs').textContent = subText;
+
+      // Player
+      clone.querySelector('.val-platform').textContent = session.platform;
+      clone.querySelector('.val-product').textContent = session.product;
+      clone.querySelector('.val-player').textContent = session.player;
+
+      // User / Network
+      clone.querySelector('.val-username').textContent = session.user || session.username;
+      
+      const isLan = session.ip_address_public === session.ip_address; // Simple check, Tautulli usually provides 'relayed' or 'local' flags but ip check is decent proxy if undefined
+      // Tautulli session object has `session.location` = 'lan' or 'wan'
+      const netText = session.location ? session.location.toUpperCase() : 'WAN';
+      clone.querySelector('.val-network').textContent = netText;
+      
+      if (session.secure !== '1' && session.secure !== true) {
+          clone.querySelector('.secure-icon').textContent = '🔓';
+          clone.querySelector('.secure-icon').title = 'Insecure';
+      }
+      
+      clone.querySelector('.val-ip').textContent = session.ip_address;
+
+
+      // --- Interactivity ---
+      // Toggle
+      const mainDiv = clone.querySelector('.tautulli-main');
+      const detailsDiv = clone.querySelector('.tautulli-details');
+      const toggleBtn = clone.querySelector('.details-toggle');
+      
+      // Check persistent state
+      if (state.expandedSessions.has(session.session_id)) {
+          detailsDiv.classList.remove('hidden');
+          card.classList.add('expanded');
+      }
+
+      const toggleDetails = () => {
+          const isHidden = detailsDiv.classList.contains('hidden');
+          if (isHidden) {
+              detailsDiv.classList.remove('hidden');
+              card.classList.add('expanded');
+              state.expandedSessions.add(session.session_id);
+          } else {
+              detailsDiv.classList.add('hidden');
+              card.classList.remove('expanded');
+              state.expandedSessions.delete(session.session_id);
+          }
+      };
+
+      mainDiv.addEventListener('click', toggleDetails); // Whole card clickable for ease
+
+      // Terminate Logic (Both button and icon)
+      const terminateLogic = async (e) => {
+        e.stopPropagation(); // Don't toggle
         const reason = prompt(
-          `Kill stream for user "${
-            session.user || session.username
-          }"?\nEnter a reason (optional):`,
+          `Kill stream for user "${session.user || session.username}"?\nEnter a reason (optional):`,
           "Terminated via Chrome Extension"
         );
         if (reason !== null) {
@@ -882,6 +1018,9 @@ document.addEventListener("DOMContentLoaded", () => {
           setTimeout(() => loadTautulli(url, key), 1000);
         }
       };
+
+      const killIcon = clone.querySelector('.kill-icon-btn');
+      if (killIcon) killIcon.addEventListener('click', terminateLogic);
 
       container.appendChild(clone);
     });
