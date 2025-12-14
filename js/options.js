@@ -20,8 +20,22 @@ const loadOptions = () => {
         services.forEach(service => {
             const urlEl = document.getElementById(`${service}Url`);
             const keyEl = document.getElementById(`${service}Key`);
+            const protocolEl = document.getElementById(`${service}Protocol`);
             
-            if (urlEl && items[`${service}Url`]) urlEl.value = items[`${service}Url`];
+            if (urlEl && items[`${service}Url`]) {
+                let fullUrl = items[`${service}Url`];
+                let protocol = 'http://';
+                
+                if (fullUrl.startsWith('https://')) {
+                    protocol = 'https://';
+                    fullUrl = fullUrl.substring(8);
+                } else if (fullUrl.startsWith('http://')) {
+                    fullUrl = fullUrl.substring(7);
+                }
+                
+                if (protocolEl) protocolEl.value = protocol;
+                urlEl.value = fullUrl;
+            }
             if (keyEl && items[`${service}Key`]) keyEl.value = items[`${service}Key`];
         });
     });
@@ -30,12 +44,21 @@ const loadOptions = () => {
 const saveService = (service) => {
     const urlId = `${service}Url`;
     const keyId = `${service}Key`;
+    const protocolId = `${service}Protocol`;
     
     const urlEl = document.getElementById(urlId);
     const keyEl = document.getElementById(keyId);
+    const protocolEl = document.getElementById(protocolId);
     
     const data = {};
-    if (urlEl) data[urlId] = urlEl.value.replace(/\/$/, ""); // Strip trailing slash
+    if (urlEl) {
+        let val = urlEl.value.trim().replace(/\/$/, ""); // Strip trailing slash
+        // Clean protocol if user pasted it
+        val = val.replace(/^https?:\/\//, '');
+        
+        const protocol = protocolEl ? protocolEl.value : 'http://';
+        data[urlId] = protocol + val;
+    }
     if (keyEl) data[keyId] = keyEl.value;
 
     chrome.storage.sync.set(data, () => {
@@ -57,7 +80,11 @@ const showStatus = (service, msg, type) => {
 
 // --- Connection Testing ---
 const testConnection = async (service) => {
-    const url = document.getElementById(`${service}Url`).value.replace(/\/$/, "");
+    const urlInput = document.getElementById(`${service}Url`).value.trim().replace(/\/$/, "");
+    const protocol = document.getElementById(`${service}Protocol`).value;
+    // Clean protocol if user pasted it
+    const cleanUrl = urlInput.replace(/^https?:\/\//, '');
+    const url = protocol + cleanUrl;
     const apiKey = document.getElementById(`${service}Key`) ? document.getElementById(`${service}Key`).value : '';
 
     if (!url) {
