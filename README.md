@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="images/logo.png" alt="Logo" width="128">
+  <img src="images/logo.png" alt="Logo" width="256">
 </div>
 
 # Home Server Companion
