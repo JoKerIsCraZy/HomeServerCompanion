@@ -2,6 +2,7 @@ import * as Sabnzbd from "../services/sabnzbd.js";
 import * as Sonarr from "../services/sonarr.js";
 import * as Radarr from "../services/radarr.js";
 import * as Tautulli from "../services/tautulli.js";
+import * as Overseerr from "../services/overseerr.js";
 import * as Unraid from "../services/unraid.js";
 import { formatSize } from "../services/utils.js";
 
@@ -29,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Determine Service Order
-    let order = ['sabnzbd', 'sonarr', 'radarr', 'tautulli', 'unraid'];
+    let order = ['sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'unraid'];
     if (items.serviceOrder && Array.isArray(items.serviceOrder)) {
         order = items.serviceOrder;
     }
@@ -128,25 +129,62 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // --- Unraid Sub-Tabs ---
+    // --- Overseerr Search Listener (Global) ---
+    const overseerrSearchBtn = document.getElementById('overseerr-search-btn');
+    const overseerrSearchInput = document.getElementById('overseerr-search-input');
+
+    if (overseerrSearchBtn) {
+        overseerrSearchBtn.addEventListener('click', () => {
+             const url = state.configs.overseerrUrl;
+             const key = state.configs.overseerrKey;
+             const query = overseerrSearchInput.value;
+             doSearch(url, key, query);
+        });
+    }
+
+    if (overseerrSearchInput) {
+        overseerrSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                 const url = state.configs.overseerrUrl;
+                 const key = state.configs.overseerrKey;
+                 const query = overseerrSearchInput.value;
+                 doSearch(url, key, query);
+            }
+        });
+    }
+
+    // --- Generic Sub-Tabs (Unraid & Overseerr) ---
     const subTabBtns = document.querySelectorAll(".sub-tab-btn");
     subTabBtns.forEach((btn) => {
       btn.addEventListener("click", (e) => {
-        // Remove active from all buttons
-        subTabBtns.forEach((b) => b.classList.remove("active"));
-        e.target.classList.add("active");
+        // Find parent view to scope the toggle
+        const parentView = btn.closest('.view') || document.getElementById('unraid-view'); // Fallback for safety if structure differs
+        
+        // Remove active from siblings in this container
+        const container = btn.parentElement;
+        container.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add("active");
 
-        // Hide all sub-views in the Unraid View
-        // Note: We need to be specific to Unraid View if we reuse this,
-        // but currently it's only for Unraid.
-        document.querySelectorAll("#unraid-view .sub-view").forEach((view) => {
+        // Hide all sub-views/tab-content in this View
+        // Unraid uses .sub-view, Overseerr uses .overseerr-tab-content. 
+        // Let's normalize or target both.
+        parentView.querySelectorAll(".sub-view, .overseerr-tab-content").forEach((view) => {
           view.classList.add("hidden");
+          view.classList.remove("active"); // Remove active class if used
         });
 
         // Show target
-        const targetId = e.target.getAttribute("data-target");
+        const targetId = btn.getAttribute("data-target");
         const targetView = document.getElementById(targetId);
-        if (targetView) targetView.classList.remove("hidden");
+        if (targetView) {
+            targetView.classList.remove("hidden");
+            targetView.classList.add("active");
+             // If search tab, auto-focus
+            if (targetId.includes('search')) {
+                const input = targetView.querySelector('input');
+                if(input) input.focus();
+            }
+        }
       });
     });
 
@@ -210,6 +248,9 @@ document.addEventListener("DOMContentLoaded", () => {
           break;
         case "tautulli":
           await loadTautulli(url, key);
+          break;
+        case "overseerr":
+          await loadOverseerr(url, key);
           break;
         case "unraid":
           await loadUnraid(url, key);
@@ -844,6 +885,394 @@ document.addEventListener("DOMContentLoaded", () => {
 
       container.appendChild(clone);
     });
+  }
+
+  // --- Implementation: Overseerr ---
+  let overseerrTab = 'requests'; // requests | search
+
+  async function loadOverseerr(url, key) {
+    console.log("loadOverseerr called with", url);
+    if (!url || !key) {
+        showError("Please configure Overseerr in options.");
+        return;
+    }
+    
+    // Setup Filter Listener (Ensure single binding)
+    const filterSelect = document.getElementById('overseerr-filter');
+    
+    // Set initial value from saved config
+    // Default to 'all' as requested by user ("damit man es bei einem neustart... automatic bei all requests") 
+    // Wait, user asks to SAVE it. So default can be 'pending' or whatever, but if they chose 'all', it should be 'all'.
+    if (filterSelect) {
+        if (state.configs.overseerrFilter) {
+            filterSelect.value = state.configs.overseerrFilter;
+        } else {
+             // Default if nothing saved. 
+             // "All requests wird gespeichert" implies they want the capability.
+             // Let's stick with 'pending' as default-default unless they change it.
+        }
+    }
+
+    if (filterSelect && !filterSelect.dataset.listenerAttached) {
+        filterSelect.addEventListener('change', () => {
+             // Save preference
+             const newVal = filterSelect.value;
+             state.configs.overseerrFilter = newVal; // Update local state
+             chrome.storage.sync.set({ overseerrFilter: newVal });
+
+             loadRequests();
+        });
+        filterSelect.dataset.listenerAttached = "true";
+    }
+
+    // Initial Load
+    loadRequests();
+    
+    async function loadRequests() {
+         const container = document.getElementById('overseerr-requests');
+         const filter = filterSelect ? filterSelect.value : 'pending';
+         const cacheKey = `overseerr_hydrated_${filter}`;
+         
+         // 1. Try Cache (Hydrated Data)
+         const cached = localStorage.getItem(cacheKey);
+         if (cached) {
+             try {
+                const hydratedData = JSON.parse(cached);
+                console.log("Rendering Overseerr from Hydrated Cache");
+                renderHydratedRequests(hydratedData, url, key);
+             } catch(e) { console.error("Cache parse error", e); }
+         } else {
+             if (container) container.innerHTML = `<div class="loading">Loading ${filter} requests...</div>`;
+         }
+         
+         try {
+            // 2. Fetch Fresh Raw Data
+            const rawData = await Overseerr.getRequests(url, key, filter);
+            const requests = rawData.results || [];
+
+            // 3. Hydrate Data (Fetch Details)
+            const hydratedRequests = await hydrateRequests(requests, url, key);
+
+            // 4. Save Cache & Render
+            localStorage.setItem(cacheKey, JSON.stringify(hydratedRequests));
+            renderHydratedRequests(hydratedRequests, url, key);
+
+        } catch (e) {
+            console.error(e);
+            if (!cached && container) container.innerHTML = `<div class="error-banner">Failed to load requests: ${e.message}</div>`;
+        }
+    }
+  }
+
+  async function doSearch(url, key, query) {
+      console.log("doSearch called with:", { url, key: key ? '***' : 'missing', query });
+      if (!query) {
+          console.warn("doSearch aborted: No query");
+          return;
+      }
+      const container = document.getElementById('overseerr-search-results');
+      if (container) container.innerHTML = '<div class="loading">Searching...</div>';
+      else console.error("Search results container not found!");
+      
+      try {
+        console.log("Calling Overseerr.search...");
+        const results = await Overseerr.search(url, key, query);
+        console.log("Search results received:", results);
+        renderOverseerrSearch(results, url, key);
+      } catch (e) {
+        console.error("Search failed in doSearch:", e);
+        if (container) container.innerHTML = `<div class="error">Search Error: ${e.message}</div>`;
+      }
+  }
+
+  function renderOverseerrSearch(results, url, key) {
+      const container = document.getElementById('overseerr-search-results');
+      container.innerHTML = '';
+      
+      if (results.length === 0) {
+          container.innerHTML = '<div class="card"><div class="card-header">No results found</div></div>';
+          return;
+      }
+
+      const tmpl = document.getElementById('overseerr-search-card');
+
+      results.filter(item => item.mediaType === 'movie' || item.mediaType === 'tv').forEach(item => {
+          const clone = tmpl.content.cloneNode(true);
+          
+          // Image
+          const posterImg = clone.querySelector('.poster-img');
+          if (item.posterPath) {
+             const posterUrl = `https://image.tmdb.org/t/p/w200${item.posterPath}`;
+             posterImg.src = posterUrl;
+          } else {
+             // Fallback if no path initially
+             posterImg.src = 'icons/icon48.png';
+          }
+          // Error Handler
+          posterImg.addEventListener('error', () => {
+              posterImg.src = 'icons/icon48.png';
+          });
+
+          if (item.backdropPath) {
+               const backdropUrl = `https://image.tmdb.org/t/p/w500${item.backdropPath}`;
+               clone.querySelector('.overseerr-backdrop').style.backgroundImage = `url('${backdropUrl}')`;
+          }
+
+          // Title
+          const title = item.title || item.name || 'Unknown';
+          const year = item.releaseDate ? item.releaseDate.split('-')[0] : (item.firstAirDate ? item.firstAirDate.split('-')[0] : '');
+          
+          clone.querySelector('.media-title').textContent = title;
+          clone.querySelector('.media-year').textContent = year;
+          clone.querySelector('.media-type').textContent = item.mediaType === 'movie' ? 'Movie' : 'TV';
+
+          // Status / Button
+          // Check mediaInfo to see if already available/requested?
+          // item.mediaInfo.status (2=Pending, 3=Processing, 4=Partially Available, 5=Available)
+          // If available, show "Available" and hide request btn.
+          
+          const btn = clone.querySelector('.request-btn');
+          const statusDiv = clone.querySelector('.search-status-container');
+          
+          let statusText = "";
+          let canRequest = true;
+
+          if (item.mediaInfo) {
+              if (item.mediaInfo.status === 5) {
+                  statusText = "Available";
+                  statusDiv.innerHTML = `<span class="request-status" style="color:#4caf50; border-color: #4caf50; background: rgba(76,175,80,0.1);">${statusText}</span>`;
+                  canRequest = false;
+              } else if (item.mediaInfo.status === 2 || item.mediaInfo.status === 3) {
+                   statusText = "Requested";
+                   statusDiv.innerHTML = `<span class="request-status">${statusText}</span>`;
+                   canRequest = false;
+              }
+          }
+          
+          if (!canRequest) {
+              btn.style.display = 'none';
+          } else {
+              btn.onclick = async () => {
+                  btn.textContent = "⏳";
+                  btn.disabled = true;
+                  try {
+                      // Request Payload
+                      // Defaulting rootFolder and profileId is tricky. 
+                      // Try sending minimal payload. If 500/400, catch.
+                      await Overseerr.request(url, key, {
+                          mediaId: item.id,
+                          mediaType: item.mediaType
+                      });
+                      btn.textContent = "✔";
+                      btn.title = "Requested";
+                  } catch (e) {
+                      console.error(e);
+                      btn.textContent = "❌";
+                      btn.title = "Failed: " + e.message;
+                      alert("Failed to request: " + e.message + "\nCheck Overseerr defaults.");
+                  }
+              };
+          }
+
+          container.appendChild(clone);
+      });
+  }
+
+  // Helper: Fetch details for all requests (Parallel)
+  async function hydrateRequests(requests, url, key) {
+      if (!requests) return [];
+      return await Promise.all(requests.map(async (req) => {
+          // Clone req to avoid mutating original if needed
+          const enhancedReq = { ...req }; 
+          const media = req.media;
+          
+          enhancedReq.details = {
+              title: "Unknown",
+              posterPath: "",
+              backdropPath: "",
+              year: ""
+          };
+
+          try {
+             if (req.type === 'movie') {
+                 // media.tmdbId is reliable for movies
+                 const d = await Overseerr.getMovie(url, key, media.tmdbId);
+                 if (d) {
+                     enhancedReq.details.title = d.title;
+                     enhancedReq.details.posterPath = d.posterPath;
+                     enhancedReq.details.backdropPath = d.backdropPath;
+                     enhancedReq.details.year = d.releaseDate ? d.releaseDate.split('-')[0] : "";
+                 }
+             } else if (req.type === 'tv') {
+                 const d = await Overseerr.getTv(url, key, media.tmdbId);
+                 if (d) {
+                     enhancedReq.details.title = d.name;
+                     enhancedReq.details.posterPath = d.posterPath;
+                     enhancedReq.details.backdropPath = d.backdropPath;
+                     enhancedReq.details.year = d.firstAirDate ? d.firstAirDate.split('-')[0] : "";
+                 }
+             }
+          } catch (e) {
+              console.error("Hydration failed for", req.id, e);
+          }
+          return enhancedReq;
+      }));
+  }
+
+  // Render function that expects already-hydrated data (no async fetching inside)
+  function renderHydratedRequests(requests, url, key) {
+      const container = document.getElementById('overseerr-requests');
+      container.innerHTML = '';
+
+      if (requests.length === 0) {
+          container.innerHTML = '<div class="card"><div class="card-header">No pending requests</div></div>';
+          return;
+      }
+
+      const tmpl = document.getElementById('overseerr-card');
+
+  // Helper: Fetch details for all requests (Parallel)
+
+
+      // Process requests (Synchronous, using hydrated details)
+      requests.forEach((req) => {
+          const clone = tmpl.content.cloneNode(true);
+          const media = req.media;
+          const details = req.details || {}; 
+          
+          const title = details.title || "Loading...";
+          const posterPath = details.posterPath || "";
+          const backdropPath = details.backdropPath || "";
+          const year = details.year || "";
+          
+          
+          const posterImg = clone.querySelector('.poster-img');
+          if (posterPath) {
+             const posterUrl = `https://image.tmdb.org/t/p/w200${posterPath}`;
+             posterImg.src = posterUrl;
+
+             if (backdropPath) {
+                 const backdropUrl = `https://image.tmdb.org/t/p/w500${backdropPath}`;
+                 clone.querySelector('.overseerr-backdrop').style.backgroundImage = `url('${backdropUrl}')`;
+             }
+          } else {
+             posterImg.src = 'icons/icon48.png';
+          }
+          // Error Handler
+          posterImg.addEventListener('error', () => {
+              posterImg.src = 'icons/icon48.png';
+          });
+
+          clone.querySelector('.media-title').textContent = title;
+          // You might want to add year if your template supports it
+          // querySelector('.media-year').textContent = year; 
+          
+          const requester = req.requestedBy ? (req.requestedBy.displayName || req.requestedBy.email) : 'Unknown';
+          const dateStr = new Date(req.createdAt).toLocaleDateString();
+          
+          const titleEl = clone.querySelector('.media-title');
+          titleEl.textContent = title;
+          titleEl.classList.add('clickable-link');
+          titleEl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              let baseUrl = url;
+              if (!baseUrl.startsWith('http')) { baseUrl = 'http://' + baseUrl; }
+              if (baseUrl.endsWith('/')) { baseUrl = baseUrl.slice(0, -1); }
+
+              let targetUrl = '';
+              if (req.type === 'movie') {
+                  targetUrl = `${baseUrl}/movie/${media.tmdbId}`;
+              } else if (req.type === 'tv') {
+                  targetUrl = `${baseUrl}/tv/${media.tmdbId}`;
+              }
+
+              if (targetUrl) {
+                  chrome.tabs.create({ url: targetUrl });
+              }
+          });
+          clone.querySelector('.requester-name').textContent = requester;
+          clone.querySelector('.request-date').textContent = dateStr;
+
+          // Request Status / Type
+          let statusText = "Pending Approval";
+          let statusColor = "#ffc107"; // Yellow
+          let statusBg = "rgba(255, 193, 7, 0.2)";
+          let statusBorder = "rgba(255, 193, 7, 0.4)";
+
+          // Request Status: 1=Pending, 2=Approved, 3=Declined
+          if (req.status === 1) {
+              statusText = "Pending Approval";
+          } else if (req.status === 2) {
+              statusText = "Approved";
+              statusColor = "#2196f3"; // Blue
+              statusBg = "rgba(33, 150, 243, 0.2)";
+              statusBorder = "rgba(33, 150, 243, 0.4)";
+
+              // Check Media Status if Approved
+              // MediaStatus: 1=Unknown, 2=Pending, 3=Processing, 4=Partial, 5=Available
+              if (media) {
+                  if (media.status === 3) {
+                      statusText = "Processing";
+                  } else if (media.status === 4) {
+                      statusText = "Partially Available";
+                      statusColor = "#4caf50"; 
+                      statusBg = "rgba(76, 175, 80, 0.2)";
+                      statusBorder = "rgba(76, 175, 80, 0.4)";
+                  } else if (media.status === 5) {
+                      statusText = "Available";
+                      statusColor = "#4caf50"; // Green
+                      statusBg = "rgba(76, 175, 80, 0.2)";
+                      statusBorder = "rgba(76, 175, 80, 0.4)";
+                  }
+              }
+          } else if (req.status === 3) {
+              statusText = "Declined";
+              statusColor = "#f44336"; // Red
+              statusBg = "rgba(244, 67, 54, 0.2)";
+              statusBorder = "rgba(244, 67, 54, 0.4)";
+          }
+          
+          const statusEl = clone.querySelector('.request-status');
+          statusEl.textContent = statusText;
+          statusEl.style.color = statusColor;
+          statusEl.style.background = statusBg;
+          statusEl.style.borderColor = statusBorder;
+
+          // Actions - Only show if Pending (1)
+          const actionsDiv = clone.querySelector('.overseerr-actions');
+          if (req.status !== 1) {
+              actionsDiv.style.display = 'none';
+          } else {
+              const approveBtn = clone.querySelector('.approve-btn');
+              const declineBtn = clone.querySelector('.decline-btn');
+
+              if (approveBtn) {
+                 approveBtn.onclick = async () => {
+                    approveBtn.disabled = true;
+                    const success = await Overseerr.approveRequest(url, key, req.id);
+                    if (success) {
+                        loadOverseerr(url, key);
+                    }
+                 };
+              }
+
+              if (declineBtn) {
+                  declineBtn.onclick = async () => {
+                      declineBtn.disabled = true;
+                      if (confirm(`Decline request for ${title}?`)) {
+                          const success = await Overseerr.declineRequest(url, key, req.id);
+                          if (success) {
+                               loadOverseerr(url, key);
+                          }
+                      } else {
+                          declineBtn.disabled = false;
+                      }
+                  };
+              }
+          }
+
+          container.appendChild(clone);
+      });
   }
 
   // --- Implementation: Unraid ---

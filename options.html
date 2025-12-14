@@ -218,6 +218,7 @@
     <div class="nav-item" data-target="sonarr">Sonarr</div>
     <div class="nav-item" data-target="radarr">Radarr</div>
     <div class="nav-item" data-target="tautulli">Tautulli</div>
+    <div class="nav-item" data-target="overseerr">Overseerr</div>
     <div class="nav-item" data-target="unraid">Unraid</div>
   </div>
 
@@ -333,6 +334,30 @@
           <button id="testTautulli" class="btn-secondary">Test Connection</button>
         </div>
         <div id="statusTautulli" class="status"></div>
+      </div>
+
+      <!-- Overseerr Section -->
+      <div id="overseerr" class="section">
+        <h2>Overseerr Settings</h2>
+        <div class="form-group">
+          <label for="overseerrUrl">Server URL</label>
+          <div class="input-group" style="display: flex;">
+            <select id="overseerrProtocol" style="width: auto;">
+                <option value="http://">http://</option>
+                <option value="https://">https://</option>
+            </select>
+            <input type="text" id="overseerrUrl" placeholder="localhost:5055" style="flex: 1;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="overseerrKey">API Key</label>
+          <input type="password" id="overseerrKey">
+        </div>
+        <div class="actions">
+          <button id="saveOverseerr" class="btn-primary">Save Overseerr</button>
+          <button id="testOverseerr" class="btn-secondary">Test Connection</button>
+        </div>
+        <div id="statusOverseerr" class="status"></div>
       </div>
   
       <!-- Unraid Section -->

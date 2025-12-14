@@ -21,6 +21,9 @@
       <div class="nav-item" data-target="tautulli" title="Tautulli">
         <img src="icons/tautulli.png" class="nav-icon" alt="Tautulli">
       </div>
+      <div class="nav-item" data-target="overseerr" title="Overseerr">
+        <img src="icons/overseerr.png" alt="Overseerr" class="nav-icon" />
+      </div>
       <div class="nav-item" data-target="unraid" title="Unraid">
         <img src="icons/unraid.png" class="nav-icon" alt="Unraid">
       </div>
@@ -102,6 +105,43 @@
       <div id="tautulli-view" class="view hidden">
         <h2 class="fancy-header">Current Activity</h2>
         <div id="tautulli-activity"></div>
+      </div>
+
+      <!-- Overseerr View -->
+      <div id="overseerr-view" class="view hidden">
+        <div class="overseerr-header">
+            <div class="sub-tabs">
+                <button class="sub-tab-btn active" data-target="overseerr-requests-tab">Requests</button>
+                <button class="sub-tab-btn" data-target="overseerr-search-tab">Search</button>
+            </div>
+        </div>
+
+        <!-- Requests Tab -->
+        <div id="overseerr-requests-tab" class="overseerr-tab-content active">
+             <div class="filter-bar" style="margin-bottom: 15px; display: flex; justify-content: flex-end; align-items: center;">
+                 <select id="overseerr-filter" style="padding: 6px; border-radius: 6px; border: 1px solid var(--text-secondary); background: var(--card-bg); color: var(--text-primary); font-size: 13px; cursor: pointer;">
+                     <option value="pending" selected>Pending Approval</option>
+                     <option value="approved">Approved</option>
+                     <option value="processing">Processing</option>
+                     <option value="available">Available</option>
+                     <option value="all">All Requests</option>
+                 </select>
+             </div>
+             <div id="overseerr-requests" class="grid-container">
+                <!-- Populated by JS -->
+             </div>
+        </div>
+
+        <!-- Search Tab -->
+        <div id="overseerr-search-tab" class="overseerr-tab-content">
+            <div class="search-bar">
+                <input type="text" id="overseerr-search-input" placeholder="Search Movies & TV...">
+                <button id="overseerr-search-btn">🔍</button>
+            </div>
+            <div id="overseerr-search-results" class="grid-container">
+                <!-- Results -->
+            </div>
+        </div>
       </div>
 
       <div id="unraid-view" class="view hidden">
@@ -269,6 +309,47 @@
         </div>
     </div>
   </template>
+
+    <!-- Overseerr Card Template -->
+    <template id="overseerr-card">
+        <div class="overseerr-card">
+            <div class="overseerr-backdrop"></div>
+            <div class="overseerr-content">
+                <img class="poster-img" src="" alt="Poster">
+                <div class="overseerr-info">
+                    <div class="media-title">Title</div>
+                    <div class="request-info">
+                        <span class="requester-name">User</span> · <span class="request-date">Date</span>
+                    </div>
+                    <div class="request-status">Pending Approval</div>
+                </div>
+                <div class="overseerr-actions">
+                    <button class="action-btn approve-btn" title="Approve">✔</button>
+                    <button class="action-btn decline-btn" title="Decline">✖</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Overseerr Search Card Template -->
+    <template id="overseerr-search-card">
+        <div class="overseerr-card">
+            <div class="overseerr-backdrop"></div>
+            <div class="overseerr-content">
+                <img class="poster-img" src="" alt="Poster">
+                <div class="overseerr-info">
+                    <div class="media-title">Title</div>
+                    <div class="request-info">
+                        <span class="media-year">Year</span> · <span class="media-type">Type</span>
+                    </div>
+                    <div class="search-status-container"></div> 
+                </div>
+                <div class="overseerr-actions">
+                    <button class="action-btn request-btn" title="Request">➕</button>
+                </div>
+            </div>
+        </div>
+    </template>
 
   <script type="module" src="js/popup.js"></script>
 </body>

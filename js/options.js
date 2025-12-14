@@ -1,4 +1,4 @@
-const services = ['sabnzbd', 'sonarr', 'radarr', 'tautulli', 'unraid'];
+const services = ['sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'unraid'];
 
 // --- UI Navigation ---
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -108,6 +108,9 @@ const testConnection = async (service) => {
         case 'tautulli':
             testUrl = `${url}/api/v2?apikey=${apiKey}&cmd=get_activity`;
             break;
+        case 'overseerr':
+            testUrl = `${url}/api/v1/status`; // Overseerr status endpoint
+            break;
         case 'unraid':
             if (apiKey) {
                 // Test Auth with a simple GraphQL query
@@ -137,6 +140,12 @@ const testConnection = async (service) => {
                  'X-API-Key': apiKey 
              };
              options.body = JSON.stringify({ query: "{ info { versions { core { unraid } } } }" }); // Simple query
+        }
+
+        if (service === 'overseerr') {
+             options.headers = {
+                 'X-Api-Key': apiKey
+             };
         }
 
         const response = await fetch(testUrl, options);
