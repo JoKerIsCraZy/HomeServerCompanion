@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Home Server Companion",
-  "version": "2.0",
+  "version": "2.1",
   "description": "Manage SABnzbd, Sonarr, Radarr, Tautulli, and Unraid",
   "permissions": ["storage"],
   "host_permissions": ["<all_urls>"],
