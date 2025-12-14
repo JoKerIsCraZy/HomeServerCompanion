@@ -2,7 +2,7 @@ export const getSonarrCalendar = async (url, apiKey) => {
     try {
         // Get calendar for next 7 days
         const today = new Date().toISOString().split('T')[0];
-        const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const nextWeek = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         
         const response = await fetch(`${url}/api/v3/calendar?start=${today}&end=${nextWeek}&includeSeries=true&apikey=${apiKey}`);
         if (!response.ok) throw new Error(`Calendar Error: ${response.status}`);

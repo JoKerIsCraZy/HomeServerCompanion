@@ -163,21 +163,49 @@ function renderUnraidSystem(data, url, key, state) {
 
     // 2. ARRAY CAPACITY CARD
     const arrayPct = (data.array.used / data.array.total) * 100 || 0;
+    const arrayFree = data.array.total - data.array.used;
+    
+    // Disk Runway Calculation
+    const avg1080p = 10 * 1024 * 1024 * 1024; // 10 GB
+    const avg4K = 55 * 1024 * 1024 * 1024;    // 55 GB
+    const count1080p = Math.floor(arrayFree / avg1080p);
+    const count4K = Math.floor(arrayFree / avg4K);
+
     const { card: capCard } = createSystemCard('array', 'ARRAY CAPACITY', `${formatBytes(data.array.total)} Total`);
     
     // Progress Bar
     const progTrack = document.createElement('div');
     progTrack.className = 'uk-progress-lg-track';
+    
     const progFill = document.createElement('div');
     progFill.className = 'uk-progress-lg-fill';
     progFill.style.width = `${arrayPct}%`;
+    
     const progText = document.createElement('div');
     progText.className = 'uk-progress-text text-shadow';
     progText.textContent = `${formatBytes(data.array.used)} / ${formatBytes(data.array.total)}`;
     
+    // Runway Info
+    const runwayDiv = document.createElement('div');
+    runwayDiv.style.cssText = "display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px; padding: 0 4px;";
+    
+    const runwayLeft = document.createElement('span');
+    runwayLeft.textContent = `Free: ${formatBytes(arrayFree)}`;
+    
+    const runwayRight = document.createElement('span');
+    runwayRight.textContent = `~${count1080p}x 1080p  |  ~${count4K}x 4K`;
+    runwayRight.title = "based on 10GB (1080p) and 55GB (4K) avg size";
+    runwayRight.style.cursor = "help";
+
+    runwayDiv.appendChild(runwayLeft);
+    runwayDiv.appendChild(runwayRight);
+
     progTrack.appendChild(progFill);
     progTrack.appendChild(progText);
+    
     capCard.appendChild(progTrack);
+    capCard.appendChild(runwayDiv); // Add the new info below the bar
+
     systemTab.appendChild(capCard);
 
     // 3. SYSTEM CARD (CPU/RAM)

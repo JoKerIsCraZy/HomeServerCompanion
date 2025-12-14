@@ -63,6 +63,20 @@ export async function doSearch(url, key, query) {
 
 async function loadRequests(url, key, filter) {
     const container = document.getElementById('overseerr-requests');
+    // If trending, use a different cache/logic
+    if (filter === 'trending') {
+         if (container) {
+             container.innerHTML = '<div class="loading">Loading Trending Check...</div>';
+         }
+         try {
+             const trending = await Overseerr.getTrending(url, key);
+             renderTrending(trending, url, key);
+         } catch (e) {
+             if(container) container.innerHTML = `<div class="error-banner">Failed to load trending: ${e.message}</div>`;
+         }
+         return;
+    }
+
     const cacheKey = `overseerr_hydrated_${filter}`;
     
     // 1. Try Cache (Hydrated Data)
@@ -98,6 +112,57 @@ async function loadRequests(url, key, filter) {
        console.error(e);
        if (!cached && container) container.innerHTML = `<div class="error-banner">Failed to load requests: ${e.message}</div>`;
    }
+}
+
+function renderTrending(results, url, key) {
+    const container = document.getElementById('overseerr-requests');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const scrollContainer = document.createElement('div');
+    scrollContainer.className = 'trending-scroll-container';
+    scrollContainer.style.cssText = "display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; scrollbar-width: thin;";
+
+    results.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'trending-card';
+        card.style.cssText = "flex: 0 0 100px; cursor: pointer; position: relative;";
+        
+        const posterPath = item.posterPath;
+        const posterUrl = posterPath ? `https://image.tmdb.org/t/p/w200${posterPath}` : 'icons/icon48.png';
+        
+        const img = document.createElement('img');
+        img.src = posterUrl;
+        img.style.cssText = "width: 100%; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);";
+        
+        const title = item.title || item.name || 'Unknown';
+        
+        card.appendChild(img);
+        
+        // Add click listener to request
+        card.onclick = async () => {
+             if(confirm(`Request "${title}"?`)) {
+                 try {
+                     await Overseerr.request(url, key, {
+                        mediaId: item.id,
+                        mediaType: item.mediaType
+                     });
+                     alert("Requested!");
+                 } catch(e) {
+                     alert("Request failed: " + e.message);
+                 }
+             }
+        };
+        
+        scrollContainer.appendChild(card);
+    });
+    
+    container.appendChild(scrollContainer);
+    
+    const hint = document.createElement('div');
+    hint.textContent = "Click poster to request";
+    hint.style.cssText = "text-align: center; font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;";
+    container.appendChild(hint);
 }
 
 function renderOverseerrSearch(results, url, key) {

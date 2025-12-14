@@ -85,89 +85,109 @@ function renderRadarrCalendar(movies, state) {
       header.textContent = headerText;
       dateGroup.appendChild(header);
 
+      // Grid Container
+      const grid = document.createElement("div");
+      grid.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 5px;";
+
       grouped[dateKey].forEach((movie) => {
-        const item = document.createElement("div");
-        item.className = "calendar-item";
-
-        let type = "Cinema";
-        if (
-          movie.digitalRelease &&
-          new Date(movie.digitalRelease).toDateString() ===
-            dateObj.toDateString()
-        )
-          type = "Digital";
-        else if (
-          movie.physicalRelease &&
-          new Date(movie.physicalRelease).toDateString() ===
-            dateObj.toDateString()
-        )
-          type = "Physical";
-
-        let statusClass = "status-Airing";
-        let statusText = "Upcoming";
-
-        if (movie.hasFile) {
-          statusClass = "status-Downloaded";
-          statusText = "Downloaded";
-        } else if (movie.isAvailable) {
-          statusClass = "status-Airing";
-          statusText = "Available";
-        } else {
-          statusClass = "status-Unaired";
-          statusText = "Upcoming";
+        // Find Image
+        let posterUrl = 'icons/icon48.png';
+        if (movie.images) {
+             const posterObj = movie.images.find(img => img.coverType.toLowerCase() === 'poster');
+             if (posterObj) {
+                if (posterObj.url) {
+                     // Local URL (needs auth usually)
+                     let baseUrl = state.configs.radarrUrl || "";
+                     if(baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+                     
+                     let imgPath = posterObj.url;
+                     if(!imgPath.startsWith('http')) {
+                         if (!imgPath.startsWith('/')) imgPath = '/' + imgPath;
+                         posterUrl = `${baseUrl}${imgPath}`;
+                         
+                         const joinChar = posterUrl.includes('?') ? '&' : '?';
+                         posterUrl += `${joinChar}apikey=${state.configs.radarrKey}`;
+                     } else {
+                         posterUrl = imgPath;
+                     }
+                } else if (posterObj.remoteUrl) {
+                    // Remote URL (direct link)
+                    posterUrl = posterObj.remoteUrl;
+                }
+            }
         }
 
-        // --- SAFE DOM ---
+        const card = document.createElement("div");
+        card.style.cssText = "background: var(--card-bg); border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.2s;";
+        card.onmouseover = () => card.style.transform = "translateY(-2px)";
+        card.onmouseout = () => card.style.transform = "translateY(0)";
+
+        // Poster
+        const imgDiv = document.createElement("div");
+        // Use aspect-ratio to keep poster shape (2:3 is standard)
+        imgDiv.style.cssText = "width: 100%; aspect-ratio: 2/3; overflow: hidden;";
+        const img = document.createElement("img");
+        img.src = posterUrl;
+        img.style.cssText = "width: 100%; height: 100%; object-fit: cover;";
         
-        // Left (Type)
-        const leftDiv = document.createElement('div');
-        leftDiv.className = 'calendar-left';
+        img.addEventListener('error', () => { 
+            if (img.src !== 'icons/icon48.png') img.src = 'icons/icon48.png'; 
+        });
+        imgDiv.appendChild(img);
+
+        // Overlay Info
+        const infoDiv = document.createElement("div");
+        // Stronger gradient for better readability
+        infoDiv.style.cssText = "padding: 8px; position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 50%, transparent 100%); color: white; text-shadow: 1px 1px 2px black;";
+
+        const title = document.createElement("div");
+        title.textContent = movie.title;
+        title.style.cssText = "font-weight: bold; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
         
-        const timeDiv = document.createElement('div');
-        timeDiv.className = 'cal-time';
-        timeDiv.style.fontSize = '11px';
-        timeDiv.style.textTransform = 'uppercase';
-        timeDiv.textContent = type;
-        leftDiv.appendChild(timeDiv);
+        const studio = document.createElement("div");
+        studio.textContent = movie.studio || "";
+        studio.style.cssText = "font-size: 0.75em; opacity: 0.8;";
 
-        // Main
-        const mainDiv = document.createElement('div');
-        mainDiv.className = 'calendar-main';
+        // Release Type Tag
+        let releaseType = "Cinema";
+        if (movie.digitalRelease && new Date(movie.digitalRelease).toDateString() === dateObj.toDateString()) releaseType = "Digital";
+        else if (movie.physicalRelease && new Date(movie.physicalRelease).toDateString() === dateObj.toDateString()) releaseType = "Physical";
         
-        const titleDiv = document.createElement('div');
-        titleDiv.className = 'cal-title clickable-link';
-        if (movie.titleSlug) titleDiv.dataset.slug = movie.titleSlug;
-        titleDiv.textContent = movie.title;
+        const typeDiv = document.createElement("div");
+        typeDiv.textContent = releaseType;
+        typeDiv.style.cssText = "font-size: 0.7em; text-transform: uppercase; color: #ffeb3b; margin-top: 2px;";
 
-        const metaDiv = document.createElement('div');
-        metaDiv.className = 'cal-meta';
-        metaDiv.textContent = movie.studio || "";
+        infoDiv.appendChild(title);
+        infoDiv.appendChild(studio);
+        infoDiv.appendChild(typeDiv);
 
-        mainDiv.appendChild(titleDiv);
-        mainDiv.appendChild(metaDiv);
-        
-        // Badge
-        const badgeDiv = document.createElement('div');
-        badgeDiv.className = `status-badge ${statusClass}`;
-        badgeDiv.style.marginLeft = '10px';
-        badgeDiv.textContent = statusText;
+        // Status Ribbon
+        let statusColor = "#9e9e9e";
+        if (movie.hasFile) statusColor = "#4caf50"; // Downloaded
+        else if (movie.isAvailable) statusColor = "#2196f3"; // Available
+        else statusColor = "#ff9800"; // Upcoming/Cinema
 
-        // Assemble
-        item.appendChild(leftDiv);
-        item.appendChild(mainDiv);
-        item.appendChild(badgeDiv);
+        const ribbon = document.createElement("div");
+        ribbon.style.cssText = `position: absolute; top: 8px; right: 8px; width: 10px; height: 10px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 5px ${statusColor};`;
+        ribbon.title = movie.hasFile ? "Downloaded" : (movie.isAvailable ? "Available" : "In Cinemas/Upcoming");
 
-        // Add click listener
+        card.appendChild(imgDiv);
+        card.appendChild(infoDiv);
+        card.appendChild(ribbon);
+
+        // Click
         if (movie.titleSlug) {
-          titleDiv.addEventListener("click", (e) => {
+          card.style.cursor = "pointer";
+          card.addEventListener("click", (e) => {
             e.stopPropagation();
             const url = state.configs.radarrUrl;
             chrome.tabs.create({ url: `${url}/movie/${movie.titleSlug}` });
           });
         }
-
-        dateGroup.appendChild(item);
+        
+        grid.appendChild(card);
       });
+      dateGroup.appendChild(grid);
       container.appendChild(dateGroup);
     });
 }

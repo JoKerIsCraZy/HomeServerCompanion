@@ -65,86 +65,113 @@ function renderSonarrCalendar(episodes, state) {
       header.textContent = headerText;
       dateGroup.appendChild(header);
 
+      // Grid Container
+      const grid = document.createElement("div");
+      grid.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 5px;";
+
       // Items
       grouped[dateStr].forEach((ep) => {
-        const item = document.createElement("div");
-        item.className = "calendar-item";
+        // Find Image (Poster)
+        let posterUrl = 'icons/icon48.png';
+        if (ep.series && ep.series.images) {
+            const posterObj = ep.series.images.find(img => img.coverType.toLowerCase() === 'poster');
+            if (posterObj) {
+                if (posterObj.url) {
+                     // Local URL (needs auth usually)
+                     let baseUrl = state.configs.sonarrUrl || "";
+                     if(baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+                     
+                     let imgPath = posterObj.url;
+                     if(!imgPath.startsWith('http')) {
+                         if (!imgPath.startsWith('/')) imgPath = '/' + imgPath;
+                         posterUrl = `${baseUrl}${imgPath}`;
+                         
+                         const joinChar = posterUrl.includes('?') ? '&' : '?';
+                         posterUrl += `${joinChar}apikey=${state.configs.sonarrKey}`;
+                     } else {
+                         posterUrl = imgPath;
+                     }
+                } else if (posterObj.remoteUrl) {
+                    // Remote URL (direct link to Metadata provider)
+                    posterUrl = posterObj.remoteUrl;
+                }
+            }
+        }
 
-        const airTime = new Date(ep.airDateUtc);
-        const timeStr = airTime.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
+        const card = document.createElement("div");
+        card.style.cssText = "background: var(--card-bg); border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.2s;";
+        card.onmouseover = () => card.style.transform = "translateY(-2px)";
+        card.onmouseout = () => card.style.transform = "translateY(0)";
+
+        const imgDiv = document.createElement("div");
+        // Use aspect-ratio to keep poster shape (2:3 is standard)
+        imgDiv.style.cssText = "width: 100%; aspect-ratio: 2/3; overflow: hidden;";
+        const img = document.createElement("img");
+        img.src = posterUrl;
+        img.style.cssText = "width: 100%; height: 100%; object-fit: cover;";
+        
+        // Error Handler
+        img.addEventListener('error', () => { 
+            if (img.src !== 'icons/icon48.png') img.src = 'icons/icon48.png'; 
         });
-
-        let statusClass = "status-Unaired";
-        let statusText = "Unaired";
-
-        if (ep.hasFile) {
-          statusClass = "status-Downloaded";
-          statusText = "Downloaded";
-        } else if (new Date() > airTime) {
-          statusClass = "status-Missing";
-          statusText = "Missing";
-        } else {
-          statusClass = "status-Airing";
-          statusText = "Airing";
-        }
-
-        // --- SAFE DOM CREATION ---
         
-        // Left Column (Time)
-        const leftDiv = document.createElement('div');
-        leftDiv.className = 'calendar-left';
+        imgDiv.appendChild(img);
         
-        const timeDiv = document.createElement('div');
-        timeDiv.className = 'cal-time';
+        // Overlay Info
+        const infoDiv = document.createElement("div");
+        // Stronger gradient for better readability
+        infoDiv.style.cssText = "padding: 8px; position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 50%, transparent 100%); color: white; text-shadow: 1px 1px 2px black;";
+        
+        // Series Title
+        const sTitle = document.createElement("div");
+        sTitle.textContent = ep.series ? ep.series.title : "Unknown";
+        sTitle.style.cssText = "font-weight: bold; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
+        
+        // Episode Info
+        const epInfo = document.createElement("div");
+        const sNum = String(ep.seasonNumber).padStart(2, '0');
+        const eNum = String(ep.episodeNumber).padStart(2, '0');
+        epInfo.textContent = `S${sNum}E${eNum}`;
+        epInfo.style.cssText = "font-size: 0.8em; opacity: 0.9;";
+        
+        // Time
+        const airTime = new Date(ep.airDateUtc);
+        const timeStr = airTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+        const timeDiv = document.createElement("div");
         timeDiv.textContent = timeStr;
-        leftDiv.appendChild(timeDiv);
+        timeDiv.style.cssText = "font-size: 0.75em; opacity: 0.8; margin-top: 2px;";
 
-        // Main Column
-        const mainDiv = document.createElement('div');
-        mainDiv.className = 'calendar-main';
+        infoDiv.appendChild(sTitle);
+        infoDiv.appendChild(epInfo);
+        infoDiv.appendChild(timeDiv);
 
-        const titleDiv = document.createElement('div');
-        titleDiv.className = 'cal-title clickable-link';
-        // DATA ATTRIBUTE IS SAFE
+        // Status Ribbon (Top Right)
+        let statusColor = "#9e9e9e";
+        if (ep.hasFile) statusColor = "#4caf50";
+        else if (new Date() > airTime) statusColor = "#f44336"; // Missing
+        else statusColor = "#2196f3"; // Airing/Upcoming
+
+        const ribbon = document.createElement("div");
+        ribbon.style.cssText = `position: absolute; top: 8px; right: 8px; width: 10px; height: 10px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 5px ${statusColor};`;
+        ribbon.title = ep.hasFile ? "Downloaded" : (new Date() > airTime ? "Missing" : "Upcoming");
+
+        card.appendChild(imgDiv);
+        card.appendChild(infoDiv);
+        card.appendChild(ribbon);
+
+        // Click
         if (ep.series && ep.series.titleSlug) {
-            titleDiv.dataset.slug = ep.series.titleSlug; 
-        }
-        // SAFE TEXT CONTENT
-        titleDiv.textContent = ep.series ? ep.series.title : "Unknown";
-        
-        const metaDiv = document.createElement('div');
-        metaDiv.className = 'cal-meta';
-        metaDiv.textContent = `S${ep.seasonNumber}E${ep.episodeNumber} - ${ep.title}`;
-        
-        mainDiv.appendChild(titleDiv);
-        mainDiv.appendChild(metaDiv);
-
-        // Status Badge
-        const badgeDiv = document.createElement('div');
-        badgeDiv.className = `status-badge ${statusClass}`;
-        badgeDiv.style.marginLeft = '10px';
-        badgeDiv.textContent = statusText;
-
-        // Assemble
-        item.appendChild(leftDiv);
-        item.appendChild(mainDiv);
-        item.appendChild(badgeDiv);
-        
-        // Add click listener
-        if (ep.series && ep.series.titleSlug) {
-            titleDiv.addEventListener("click", (e) => {
-                e.stopPropagation();
+            card.style.cursor = "pointer";
+            card.onclick = () => {
                 const url = state.configs.sonarrUrl;
                 chrome.tabs.create({ url: `${url}/series/${ep.series.titleSlug}` });
-            });
+            };
         }
 
-        dateGroup.appendChild(item);
+        grid.appendChild(card);
       });
 
+      dateGroup.appendChild(grid);
       container.appendChild(dateGroup);
     });
 }

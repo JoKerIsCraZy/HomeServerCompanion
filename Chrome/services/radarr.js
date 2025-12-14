@@ -33,7 +33,7 @@ export const getRadarrCalendar = async (url, apiKey) => {
     try {
         // Get calendar for next 30 days (Movies often have longer release windows than TV)
         const today = new Date().toISOString().split('T')[0];
-        const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const nextMonth = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
         const response = await fetch(`${url}/api/v3/calendar?start=${today}&end=${nextMonth}&apikey=${apiKey}`);
         if (!response.ok) throw new Error(`Calendar Error: ${response.status}`);

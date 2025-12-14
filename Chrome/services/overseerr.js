@@ -164,3 +164,19 @@ export async function getTv(url, apiKey, id) {
         return null;
     }
 }
+
+export async function getTrending(url, apiKey) {
+    if (!url.startsWith('http')) { url = 'http://' + url; }
+    if (url.endsWith('/')) { url = url.slice(0, -1); }
+    try {
+        const response = await fetch(`${url}/api/v1/discover/trending`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error("Failed to fetch trending");
+        const data = await response.json();
+        return data.results || [];
+    } catch (e) {
+        console.error("Failed to get trending", e);
+        return [];
+    }
+}
