@@ -42,9 +42,9 @@ A comprehensive dashboard for your self-hosted services:
 ## 📸 Screenshots
 
 <div align="center">
-  <img src="images/screenshot_1.png" alt="Dashboard View" width="500">
-  <img src="images/screenshot_2.png" alt="Requests View" width="500">
-  <img src="images/screenshot_3.png" alt="Settings View" width="500">
+  <img src="images/screenshot_1.png" alt="Dashboard View" width="750">
+  <img src="images/screenshot_2.png" alt="Requests View" width="750">
+  <img src="images/screenshot_3.png" alt="Settings View" width="750">
 </div>
 
 ## 🚀 Installation
