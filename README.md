@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="icons/logo.png" alt="Logo" width="128">
+</div>
+
 # Home Server Companion
 
 ![Version](https://img.shields.io/badge/version-1.9-blue.svg)
