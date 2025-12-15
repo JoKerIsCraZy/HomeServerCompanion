@@ -50,6 +50,48 @@
   transform: scale(1.1);
 }
 
+/* Navigation Badge */
+.nav-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Sabnzbd Badge - Yellow */
+.nav-item[data-target="sabnzbd"] .nav-badge {
+  background: #ffc107;
+  color: #000;
+}
+
+/* Sonarr Badge - Blue */
+.nav-item[data-target="sonarr"] .nav-badge {
+  background: #2196f3;
+  color: #fff;
+}
+
+/* Radarr Badge - Yellow */
+.nav-item[data-target="radarr"] .nav-badge {
+  background: #ffc107;
+  color: #000;
+}
+
+/* Tautulli Badge - Orange */
+.nav-item[data-target="tautulli"] .nav-badge {
+  background: #ff9800;
+  color: #fff;
+}
+
+.nav-item {
+  position: relative;
+}
+
 .spacer {
   flex: 1;
 }

@@ -60,7 +60,7 @@ export async function initSabnzbd(url, key, state) {
 
       // Load History
       const historyData = await Sabnzbd.getSabnzbdHistory(url, key);
-      renderSabnzbdHistory(historyData.slots || []);
+      renderSabnzbdHistory(historyData.slots || [], state);
     } catch (e) {
       console.error("Auto-refresh error", e);
     }
@@ -74,6 +74,34 @@ export async function initSabnzbd(url, key, state) {
 
   // Set new interval (1 second)
   state.refreshInterval = setInterval(update, 1000);
+}
+
+// Background Badge Update Function (exported for use by popup.js)
+export async function updateSabnzbdBadge(url, key) {
+  try {
+    const queue = await Sabnzbd.getSabnzbdQueue(url, key);
+    if (!queue) return;
+
+    const sabNavItem = document.querySelector('.nav-item[data-target="sabnzbd"]');
+    if (sabNavItem) {
+      let badge = sabNavItem.querySelector('.nav-badge');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'nav-badge hidden';
+        sabNavItem.appendChild(badge);
+      }
+      
+      const count = queue.slots ? queue.slots.length : 0;
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+  } catch (e) {
+    console.error("Sabnzbd badge update error", e);
+  }
 }
 
 function renderSabnzbdQueue(slots, state) {
@@ -118,7 +146,7 @@ function renderSabnzbdQueue(slots, state) {
   });
 }
 
-function renderSabnzbdHistory(slots) {
+function renderSabnzbdHistory(slots, state) {
   const container = document.getElementById("sab-history");
   if (!container) return;
   container.innerHTML = "";
@@ -132,6 +160,32 @@ function renderSabnzbdHistory(slots) {
     clone.querySelector(".status-badge").classList.add(slot.status);
     clone.querySelector(".size").textContent = slot.size;
     clone.querySelector(".time").textContent = slot.action_line || "";
+    
+    // Delete Action
+    const deleteBtn = clone.querySelector(".delete-btn");
+    if (deleteBtn) {
+      deleteBtn.onclick = async () => {
+        if (confirm(`Delete "${slot.name}" from history?`)) {
+          try {
+            await Sabnzbd.deleteHistoryItem(
+              state.configs.sabnzbdUrl,
+              state.configs.sabnzbdKey,
+              slot.nzo_id
+            );
+            // Reload history after deletion
+            const historyData = await Sabnzbd.getSabnzbdHistory(
+              state.configs.sabnzbdUrl,
+              state.configs.sabnzbdKey
+            );
+            renderSabnzbdHistory(historyData.slots || [], state);
+          } catch (e) {
+            console.error("Failed to delete history item:", e);
+            alert("Failed to delete item from history");
+          }
+        }
+      };
+    }
+    
     container.appendChild(clone);
   });
 }

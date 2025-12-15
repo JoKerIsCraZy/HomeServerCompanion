@@ -53,3 +53,13 @@ export const deleteQueueItem = async (url, apiKey, nzo_id) => {
         console.error("SABnzbd Delete Error:", error);
     }
 };
+
+export const deleteHistoryItem = async (url, apiKey, nzo_id) => {
+    try {
+        const response = await fetch(`${url}/api?mode=history&name=delete&value=${nzo_id}&apikey=${apiKey}&output=json`);
+        return await response.json();
+    } catch (error) {
+        console.error("SABnzbd History Delete Error:", error);
+        throw error;
+    }
+};

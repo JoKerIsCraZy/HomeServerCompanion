@@ -12,7 +12,7 @@ export async function initRadarr(url, key, state) {
         renderRadarrQueue(queue.records || [], state);
 
         // Initial Badge Update
-        updateRadarrBadge(queue.records || []);
+        await updateRadarrBadge(url, key);
 
         // Load Recent (History)
 
@@ -214,7 +214,7 @@ function renderRadarrQueue(records, state) {
         }
         try {
             const newQueue = await Radarr.getRadarrMovies(state.configs.radarrUrl, state.configs.radarrKey);
-            updateRadarrBadge(newQueue.records || []);
+            await updateRadarrBadge(state.configs.radarrUrl, state.configs.radarrKey);
             renderRadarrQueue(newQueue.records || [], state);
         } catch(e) {
             if(btn) {
@@ -431,7 +431,7 @@ function renderRadarrRecent(records, state) {
     });
 }
 
-function updateRadarrBadge(records) {
+async function updateRadarrBadge(url, key) {
     const radarrNavItem = document.querySelector('.nav-item[data-target="radarr"]');
     if (!radarrNavItem) return;
 
@@ -439,27 +439,54 @@ function updateRadarrBadge(records) {
     if (!badge) {
         badge = document.createElement('div');
         badge.className = 'nav-badge hidden';
-        badge.style.backgroundColor = "#ff9800"; // Orange
         radarrNavItem.appendChild(badge);
     }
     
-    if (!records) {
-        badge.classList.add('hidden');
-        return;
-    }
+    try {
+        const queue = await Radarr.getRadarrMovies(url, key);
+        const records = queue.records || [];
+        
+        const issues = records.filter(item => {
+            const tStatus = (item.trackedDownloadStatus || '').toLowerCase();
+            const status = (item.status || '').toLowerCase();
+            return tStatus === 'warning' || tStatus === 'error' || status === 'failed';
+        });
 
-    const issues = records.filter(item => {
-        const tStatus = (item.trackedDownloadStatus || '').toLowerCase();
-        const status = (item.status || '').toLowerCase();
-        return tStatus === 'warning' || tStatus === 'error' || status === 'failed';
-    });
-
-    const count = issues.length;
-    
-    if (count > 0) {
-        badge.textContent = count;
-        badge.classList.remove('hidden');
-    } else {
+        const count = issues.length;
+        
+        // Update navigation badge
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+        
+        // Update Queue tab badge
+        const radarrView = document.getElementById('radarr-view');
+        if (radarrView) {
+            const queueTabBtn = radarrView.querySelector('.tab-btn[data-tab="queue"]');
+            if (queueTabBtn) {
+                let tabBadge = queueTabBtn.querySelector('.tab-badge');
+                if (!tabBadge) {
+                    tabBadge = document.createElement('span');
+                    tabBadge.className = 'tab-badge hidden';
+                    queueTabBtn.appendChild(tabBadge);
+                }
+                
+                if (count > 0) {
+                    tabBadge.textContent = count;
+                    tabBadge.classList.remove('hidden');
+                } else {
+                    tabBadge.classList.add('hidden');
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Radarr badge update error", e);
         badge.classList.add('hidden');
     }
 }
+
+// Export for background updates
+export { updateRadarrBadge };

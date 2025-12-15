@@ -176,10 +176,11 @@ function renderTrendingTab(results, url, key) {
         
         if (rawMediaType === 'person') return;
 
-        const flag = clone.querySelector('.media-type-flag');
-        if (flag) {
-            flag.textContent = mediaType === 'tv' ? 'SERIES' : 'MOVIE';
-            flag.style.color = mediaType === 'tv' ? '#2196f3' : '#ff9800'; // Colored text for badge
+        const badge = clone.querySelector('.media-type-badge');
+        if (badge) {
+            badge.textContent = mediaType === 'tv' ? 'SERIES' : 'MOVIE';
+            badge.style.background = mediaType === 'tv' ? '#2196f3' : '#ff9800';
+            badge.style.color = '#fff'; // White text for both
         }
 
         // Clickable Poster/Title -> Open in Overseerr

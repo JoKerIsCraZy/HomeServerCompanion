@@ -164,3 +164,31 @@ function renderTautulliActivity(sessions, url, key, state) {
       container.appendChild(clone);
     });
 }
+
+// Background Badge Update Function (exported for use by popup.js)
+export async function updateTautulliBadge(url, key) {
+  try {
+    const activity = await Tautulli.getTautulliActivity(url, key);
+    const sessions = activity.sessions || [];
+    
+    const tautulliNavItem = document.querySelector('.nav-item[data-target="tautulli"]');
+    if (!tautulliNavItem) return;
+
+    let badge = tautulliNavItem.querySelector('.nav-badge');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.className = 'nav-badge hidden';
+      tautulliNavItem.appendChild(badge);
+    }
+    
+    const count = sessions.length;
+    if (count > 0) {
+      badge.textContent = count;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  } catch (e) {
+    console.error("Tautulli badge update error", e);
+  }
+}

@@ -12,7 +12,7 @@ export async function initSonarr(url, key, state) {
         renderSonarrQueue(queue.records || [], state);
 
         // Initial Badge Update
-        updateSonarrBadge(queue.records || []);
+        await updateSonarrBadge(url, key);
 
         // History (Recent)
         const history = await Sonarr.getSonarrHistory(url, key);
@@ -193,7 +193,7 @@ function renderSonarrQueue(records, state) {
         }
         try {
             const newQueue = await Sonarr.getSonarrQueue(state.configs.sonarrUrl, state.configs.sonarrKey);
-            updateSonarrBadge(newQueue.records || []);
+            await updateSonarrBadge(state.configs.sonarrUrl, state.configs.sonarrKey);
             renderSonarrQueue(newQueue.records || [], state);
         } catch(e) {
             if(btn) {
@@ -414,7 +414,7 @@ function renderSonarrHistory(records, state) {
     });
 }
 
-function updateSonarrBadge(records) {
+async function updateSonarrBadge(url, key) {
     const sonarrNavItem = document.querySelector('.nav-item[data-target="sonarr"]');
     if (!sonarrNavItem) return;
 
@@ -422,27 +422,54 @@ function updateSonarrBadge(records) {
     if (!badge) {
         badge = document.createElement('div');
         badge.className = 'nav-badge hidden';
-        badge.style.backgroundColor = "#ff9800"; // Orange
         sonarrNavItem.appendChild(badge);
     }
     
-    if (!records) {
-        badge.classList.add('hidden');
-        return;
-    }
+    try {
+        const queue = await Sonarr.getSonarrQueue(url, key);
+        const records = queue.records || [];
+        
+        const issues = records.filter(item => {
+            const tStatus = (item.trackedDownloadStatus || '').toLowerCase();
+            const status = (item.status || '').toLowerCase();
+            return tStatus === 'warning' || tStatus === 'error' || status === 'failed';
+        });
 
-    const issues = records.filter(item => {
-        const tStatus = (item.trackedDownloadStatus || '').toLowerCase();
-        const status = (item.status || '').toLowerCase();
-        return tStatus === 'warning' || tStatus === 'error' || status === 'failed';
-    });
-
-    const count = issues.length;
-    
-    if (count > 0) {
-        badge.textContent = count;
-        badge.classList.remove('hidden');
-    } else {
+        const count = issues.length;
+        
+        // Update navigation badge
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+        
+        // Update Queue tab badge
+        const sonarrView = document.getElementById('sonarr-view');
+        if (sonarrView) {
+            const queueTabBtn = sonarrView.querySelector('.tab-btn[data-tab="queue"]');
+            if (queueTabBtn) {
+                let tabBadge = queueTabBtn.querySelector('.tab-badge');
+                if (!tabBadge) {
+                    tabBadge = document.createElement('span');
+                    tabBadge.className = 'tab-badge hidden';
+                    queueTabBtn.appendChild(tabBadge);
+                }
+                
+                if (count > 0) {
+                    tabBadge.textContent = count;
+                    tabBadge.classList.remove('hidden');
+                } else {
+                    tabBadge.classList.add('hidden');
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Sonarr badge update error", e);
         badge.classList.add('hidden');
     }
 }
+
+// Export for background updates
+export { updateSonarrBadge };

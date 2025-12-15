@@ -34,6 +34,13 @@ const loadOptions = () => {
              }
         }
 
+        // Load Badge Check Interval (default 5000ms)
+        const badgeIntervalEl = document.getElementById('badgeCheckInterval');
+        if (badgeIntervalEl) {
+            const interval = items.badgeCheckInterval || 5000;
+            badgeIntervalEl.value = interval.toString();
+        }
+
         services.forEach(service => {
             const urlEl = document.getElementById(`${service}Url`);
             const keyEl = document.getElementById(`${service}Key`);
@@ -253,10 +260,12 @@ document.addEventListener('DOMContentLoaded', () => {
              // const currentOrder = getCurrentOrder(); // Use window.currentOrder
              const currentOrder = window.currentOrder;
              const enablePersistence = document.getElementById('enablePersistence').checked;
+             const badgeCheckInterval = parseInt(document.getElementById('badgeCheckInterval').value) || 5000;
              
              chrome.storage.sync.set({ 
                  serviceOrder: window.currentOrder || currentOrder, // window.currentOrder is set below
-                 enablePersistence: enablePersistence
+                 enablePersistence: enablePersistence,
+                 badgeCheckInterval: badgeCheckInterval
              }, () => {
                  showStatus('General', 'Settings saved!', 'success');
              });

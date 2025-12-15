@@ -39,6 +39,26 @@ body.dark-mode #theme-toggle:hover {
     border-bottom-color: var(--text-primary);
 }
 
+/* Tab Badge (for Queue tab warnings) */
+.tab-btn {
+    position: relative;
+}
+
+.tab-badge {
+    position: absolute;
+    top: 0;
+    right: -8px;
+    background: #ff9800;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 8px;
+    min-width: 16px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
 .sub-tab-btn {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);

@@ -13,7 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
     activeService: "sabnzbd",
     expandedSessions: new Set(), // Track expanded Tautulli sessions
     refreshInterval: null,
-    storageCardState: {} // Add this for Unraid storage persistence
+    storageCardState: {}, // Add this for Unraid storage persistence
+    badgeIntervals: {} // Track background badge update intervals
   };
 
   const EXCLUDED_FROM_PERSISTENCE = ['tautulli'];
@@ -87,7 +88,76 @@ document.addEventListener("DOMContentLoaded", () => {
              loadService(svc); 
         }
     });
+
+    // Start background badge updates
+    startBackgroundBadgeUpdates();
   });
+
+  // Background Badge Update System
+  function startBackgroundBadgeUpdates() {
+    // Clear any existing intervals
+    Object.values(state.badgeIntervals).forEach(interval => clearInterval(interval));
+    state.badgeIntervals = {};
+
+    // Get configured interval (default 5000ms)
+    const interval = state.configs.badgeCheckInterval || 5000;
+
+    // Sabnzbd Badge Update
+    if (state.configs.sabnzbdEnabled !== false && state.configs.sabnzbdUrl && state.configs.sabnzbdKey) {
+      const updateSabnzbd = async () => {
+        try {
+          const { updateSabnzbdBadge } = await import('./ui/sabnzbd.js');
+          await updateSabnzbdBadge(state.configs.sabnzbdUrl, state.configs.sabnzbdKey);
+        } catch (e) {
+          console.error("Background Sabnzbd badge update failed", e);
+        }
+      };
+      updateSabnzbd(); // Initial call
+      state.badgeIntervals.sabnzbd = setInterval(updateSabnzbd, interval);
+    }
+
+    // Sonarr Badge Update
+    if (state.configs.sonarrEnabled !== false && state.configs.sonarrUrl && state.configs.sonarrKey) {
+      const updateSonarr = async () => {
+        try {
+          const { updateSonarrBadge } = await import('./ui/sonarr.js');
+          await updateSonarrBadge(state.configs.sonarrUrl, state.configs.sonarrKey);
+        } catch (e) {
+          console.error("Background Sonarr badge update failed", e);
+        }
+      };
+      updateSonarr(); // Initial call
+      state.badgeIntervals.sonarr = setInterval(updateSonarr, interval);
+    }
+
+    // Radarr Badge Update
+    if (state.configs.radarrEnabled !== false && state.configs.radarrUrl && state.configs.radarrKey) {
+      const updateRadarr = async () => {
+        try {
+          const { updateRadarrBadge } = await import('./ui/radarr.js');
+          await updateRadarrBadge(state.configs.radarrUrl, state.configs.radarrKey);
+        } catch (e) {
+          console.error("Background Radarr badge update failed", e);
+        }
+      };
+      updateRadarr(); // Initial call
+      state.badgeIntervals.radarr = setInterval(updateRadarr, interval);
+    }
+
+    // Tautulli Badge Update
+    if (state.configs.tautulliEnabled !== false && state.configs.tautulliUrl && state.configs.tautulliKey) {
+      const updateTautulli = async () => {
+        try {
+          const { updateTautulliBadge } = await import('./ui/tautulli.js');
+          await updateTautulliBadge(state.configs.tautulliUrl, state.configs.tautulliKey);
+        } catch (e) {
+          console.error("Background Tautulli badge update failed", e);
+        }
+      };
+      updateTautulli(); // Initial call
+      state.badgeIntervals.tautulli = setInterval(updateTautulli, interval);
+    }
+  }
 
   // Theme Toggle Logic
   document.getElementById("theme-toggle").addEventListener("click", () => {
