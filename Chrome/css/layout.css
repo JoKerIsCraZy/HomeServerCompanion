@@ -1,0 +1,131 @@
+.app-container {
+  display: flex;
+  height: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+  flex-shrink: 0;
+}
+
+.nav-item {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.nav-item:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-item.active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.nav-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  transition: transform 0.2s;
+}
+
+.nav-item:hover .nav-icon {
+  transform: scale(1.1);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.settings-btn {
+  margin-bottom: 20px;
+}
+
+/* Content Area */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--content-bg);
+  overflow: hidden;
+}
+
+#main-header {
+  padding: 15px 20px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* Dark Mode Overrides for structural elements */
+body.dark-mode #main-header {
+  background: #1e1e1e;
+  border-bottom-color: #333;
+}
+
+body.dark-mode .nav-item {
+  color: #eee;
+}
+
+#main-header h1 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+#header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  display: none;
+}
+
+.view.active {
+  display: block;
+  animation: fadeIn 0.2s;
+}
+
+/* Sub View / Tabs Layout */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.sub-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 0 10px;
+}
+
+.sub-view.hidden {
+  display: none;
+}

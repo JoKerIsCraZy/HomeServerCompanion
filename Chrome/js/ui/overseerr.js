@@ -105,6 +105,11 @@ function renderTrendingTab(results, url, key) {
     const container = document.getElementById('overseerr-trending-results');
     if (!container) return;
     container.innerHTML = '';
+    // Use grid-container to layout cards properly similar to Requests
+    container.className = 'grid-container'; 
+    container.style = ''; // Clear inline styles
+    container.style.gridTemplateColumns = 'repeat(3, 1fr)'; // Force 3 columns as requested
+
 
     if (results.length === 0) {
         container.innerHTML = '<div class="card"><div class="card-header">No trending items found</div></div>';
@@ -113,22 +118,10 @@ function renderTrendingTab(results, url, key) {
 
     const tmpl = document.getElementById('overseerr-trending-card');
 
-    // Filter results: Only show items where mediaInfo is null or status is unknown/pending
-    // Actually, user wants ONLY items that are NOT requested/available.
-    // So if mediaInfo exists AND status is (Available(5), Partially(4), Processing(3), Pending(2)), we SKIP it.
-    
-    // Status Codes:
-    // 1 - Unknown
-    // 2 - Pending
-    // 3 - Processing
-    // 4 - Partially Available
-    // 5 - Available
-
+    // Filter results logic remains same
     const filteredResults = results.filter(item => {
-        if (!item.mediaInfo) return true; // No info means not requested yet -> Keep
+        if (!item.mediaInfo) return true; 
         const s = item.mediaInfo.status;
-        // detailed logic: if status is 2,3,4,5 => it's already in system.
-        // so we filter those OUT.
         if (s === 2 || s === 3 || s === 4 || s === 5) return false;
         return true;
     });
@@ -151,42 +144,55 @@ function renderTrendingTab(results, url, key) {
            posterImg.src = 'icons/icon48.png';
         }
 
+        // Backdrop
+        const backdropDiv = clone.querySelector('.overseerr-backdrop');
+        if (backdropDiv && item.backdropPath) {
+             const backdropUrl = `https://image.tmdb.org/t/p/w500${item.backdropPath}`;
+             backdropDiv.style.backgroundImage = `url('${backdropUrl}')`;
+        }
+
+
         // Title
         const title = item.title || item.name || 'Unknown';
-        clone.querySelector('.media-title').textContent = title;
-        clone.querySelector('.media-title').title = title; // Tooltip
+        const titleEl = clone.querySelector('.media-title');
+        titleEl.textContent = title;
+        titleEl.title = title;
 
-        // Fix: content from 'trending' might use 'media_type' or 'mediaType'
+        // Meta Info
+        const year = item.releaseDate ? item.releaseDate.split('-')[0] : (item.firstAirDate ? item.firstAirDate.split('-')[0] : 'Unknown');
+        const rating = item.voteAverage ? `★ ${item.voteAverage.toFixed(1)}` : '';
+        
+        clone.querySelector('.media-year').textContent = year;
+        clone.querySelector('.media-rating').textContent = rating;
+
+
+        // Media Type Badge
         const rawMediaType = item.mediaType || item.media_type;
-        // Normalize
         const mediaType = rawMediaType === 'tv' ? 'tv' : 'movie'; 
         
-        // Also skip if it's a person
         if (rawMediaType === 'person') return;
 
-        // Populate Flag
         const flag = clone.querySelector('.media-type-flag');
         if (flag) {
             flag.textContent = mediaType === 'tv' ? 'SERIES' : 'MOVIE';
-            flag.style.background = mediaType === 'tv' ? 'rgba(33, 150, 243, 0.8)' : 'rgba(255, 152, 0, 0.8)'; // Blue vs Orange
+            flag.style.color = mediaType === 'tv' ? '#2196f3' : '#ff9800'; // Colored text for badge
         }
 
-        // Clickable Poster -> Open in Overseerr
-        // posterImg is already defined above
-        posterImg.style.cursor = 'pointer';
-        posterImg.title = "Open in Overseerr";
-        posterImg.onclick = () => {
+        // Clickable Poster/Title -> Open in Overseerr
+        const openInOverseerr = () => {
              const targetUrl = `${url}/${mediaType}/${item.id}`;
              chrome.tabs.create({ url: targetUrl });
         };
+        posterImg.style.cursor = 'pointer';
+        posterImg.onclick = openInOverseerr;
+        titleEl.style.cursor = 'pointer';
+        titleEl.onclick = openInOverseerr;
 
-        // Button Logic - Always show request button since we filtered out the rest
+
+        // Button Logic
         const btn = clone.querySelector('.request-btn');
-        const statusOverlay = clone.querySelector('.status-overlay');
+        // trending-card no longer has .status-overlay
         
-        // Ensure button is visible
-        btn.style.display = 'block';
-
         btn.onclick = async () => {
             btn.textContent = "⏳";
             btn.disabled = true;
@@ -196,54 +202,32 @@ function renderTrendingTab(results, url, key) {
                     mediaType: mediaType
                 };
 
-                // For TV shows, we MUST provide 'seasons' specific to Overseerr logic, 
-                // otherwise it might crash (filter of undefined).
                 if (mediaType === 'tv') {
-                    // Fetch details to get available seasons
                     const details = await Overseerr.getTv(url, key, item.id);
                     if (details && details.seasons) {
-                        // Request all seasons except specials (Season 0)
                         payload.seasons = details.seasons
                             .filter(s => s.seasonNumber !== 0)
                             .map(s => s.seasonNumber);
-                            
-                        // Safety: if filtering removed everything (e.g. only specials exist?), 
-                        // fallback to whatever is there or empty to avoid undefined crash?
-                        // If empty, Overseerr might still crash if it expects non-empty? 
-                        // Let's assume there's at least one normal season. 
-                        // If payload.seasons is empty array, it's valid JSON but might not request anything.
                     } else {
-                        // Fallback if fetch fails? Send empty array or just assume season 1
                          payload.seasons = [1]; 
                     }
                 }
 
                 await Overseerr.request(url, key, payload);
                 
-                btn.textContent = "✔";
+                btn.textContent = "✔ Requested";
                 btn.style.background = "#4caf50";
                 
-                setTimeout(() => {
-                        btn.style.display = 'none';
-                        if (statusOverlay) {
-                            const badge = document.createElement('span');
-                            badge.textContent = "Requested";
-                            badge.style.background = "#ffc107";
-                            badge.style.color = "white"; 
-                            badge.style.padding = '2px 6px';
-                            badge.style.borderRadius = '4px';
-                            badge.style.fontSize = '10px';
-                            badge.style.fontWeight = 'bold';
-                            statusOverlay.appendChild(badge);
-                        }
-                }, 1000);
+                // Disable button permanently after success
+                btn.disabled = true; 
 
             } catch (e) {
                 console.error(e);
-                btn.textContent = "❌";
+                btn.textContent = "❌ Failed";
+                btn.title = e.message;
                 alert("Request failed: " + e.message);
                 btn.disabled = false;
-                btn.textContent = "Request";
+                setTimeout(() => { btn.textContent = "Request"; }, 2000);
             }
         };
 
@@ -504,7 +488,7 @@ function renderHydratedRequests(requests, url, key) {
         clone.querySelector('.media-title').textContent = title;
         
         const requester = req.requestedBy ? (req.requestedBy.displayName || req.requestedBy.email) : 'Unknown';
-        const dateStr = new Date(req.createdAt).toLocaleDateString();
+        const dateStr = new Date(req.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
         
         const titleEl = clone.querySelector('.media-title');
         titleEl.textContent = title;

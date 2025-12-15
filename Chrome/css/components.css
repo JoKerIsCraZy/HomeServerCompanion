@@ -1,0 +1,245 @@
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Theme Toggle Button */
+#theme-toggle {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+  
+#theme-toggle:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+  
+body.dark-mode #theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Buttons */
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 5px 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+  
+.tab-btn.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--text-primary);
+}
+
+.sub-tab-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 16px;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+}
+  
+body.light-theme .sub-tab-btn {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+  
+.sub-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+  
+.sub-tab-btn.active {
+    background: #ff9800; /* Unraid Orange Default */
+    color: #fff;
+    border-color: #ff9800;
+    box-shadow: 0 2px 5px rgba(255, 152, 0, 0.3);
+}
+
+.action-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+  
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.1);
+}
+  
+.action-btn.paused {
+    background: #fff;
+    color: var(--accent-sab);
+}
+
+.control-btn {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+  
+body.dark-mode .control-btn {
+    border-color: #444;
+    color: #ccc;
+}
+  
+.control-btn:hover {
+    background: #eee;
+    color: #333;
+}
+body.dark-mode .control-btn:hover {
+    background: #333;
+    color: #fff;
+}
+.start-btn:hover { color: #4caf50; }
+.delete-btn {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+}
+
+/* Cards */
+.card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f0f0f0;
+}
+body.dark-mode .card {
+    border-color: #333;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.card-footer,
+.card-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.filename {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+    margin-right: 10px;
+}
+  
+/* Progress Bars */
+.progress-bar {
+    height: 6px;
+    background: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+body.dark-mode .progress-bar {
+    background: #333;
+}
+  
+.progress-bar-fill {
+    height: 100%;
+    background: var(--accent-sab); /* Default */
+    width: 0%;
+    transition: width 0.3s;
+}
+
+/* Badges */
+.status-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #eee;
+    font-size: 11px;
+}
+body.dark-mode .status-badge {
+    background-color: #333;
+}
+
+/* Universal badge colors */
+.status-Downloaded,
+.status-badge.Completed,
+.status-badge.Imported {
+  background-color: #4caf50 !important;
+  color: white !important;
+}
+.status-Missing,
+.status-badge.Failed {
+  background-color: #f44336 !important;
+  color: white !important;
+}
+.status-Airing,
+.status-badge.Available {
+  background-color: #2196f3 !important;
+  color: white !important;
+}
+.status-Unaired,
+.status-badge.Upcoming {
+  background-color: #9e9e9e !important;
+  color: white !important;
+}
+
+/* Error Banner */
+.error-banner {
+    background: #ffebee;
+    color: #c62828;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    text-align: center;
+}
+.hidden { display: none; }
+.clickable-link {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.clickable-link:hover {
+    color: var(--primary-color); /* Note: primary-color variable might need definition or usage of system var */
+    text-decoration: underline;
+}

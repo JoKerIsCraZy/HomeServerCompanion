@@ -1,0 +1,51 @@
+:root {
+  --sidebar-bg: #1a1b1e;
+  --sidebar-width: 60px;
+  --content-bg: #f8f9fa;
+  --accent-sab: #ff9100;
+  --accent-sonarr: #2196f3;
+  --accent-radarr: #ffc107;
+  --accent-tautulli: #282a2d; /* Dark theme default */
+  --accent-unraid: #f15a2c;
+  --text-primary: #333;
+  --text-secondary: #666;
+  --card-bg: #fff;
+  --border-radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Dark Mode Variables */
+body.dark-mode {
+  --content-bg: #121212;
+  --text-primary: #e0e0e0;
+  --text-secondary: #aaaaaa;
+  --card-bg: #1e1e1e;
+}
+
+body {
+  width: 600px;
+  height: 600px;
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--content-bg);
+  color: var(--text-primary);
+  overflow: hidden; /* Hide scrollbars on body */
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #bbb;
+}
