@@ -97,11 +97,7 @@ export async function loadTrending(url, key) {
         renderTrendingTab(uniqueResults, url, key);
     } catch (e) {
         console.error(e);
-        container.innerHTML = '';
-        const err = document.createElement('div');
-        err.className = 'error-banner';
-        err.textContent = `Failed to load trending: ${e.message}`;
-        container.appendChild(err);
+        container.innerHTML = `<div class="error-banner">Failed to load trending: ${e.message}</div>`;
     }
 }
 
@@ -303,13 +299,7 @@ async function loadRequests(url, key, filter) {
 
    } catch (e) {
        console.error(e);
-        if (!cached && container) {
-            container.innerHTML = '';
-            const err = document.createElement('div');
-            err.className = 'error-banner';
-            err.textContent = `Failed to load requests: ${e.message}`;
-            container.appendChild(err);
-        }
+       if (!cached && container) container.innerHTML = `<div class="error-banner">Failed to load requests: ${e.message}</div>`;
    }
 }
 

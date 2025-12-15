@@ -4,25 +4,7 @@ export async function initTautulli(url, key, state) {
     const update = async () => {
       try {
         const activity = await Tautulli.getTautulliActivity(url, key);
-        const sessions = activity.sessions || [];
-        
-        renderTautulliActivity(sessions, url, key, state);
-        
-        // Update Badge
-        const navItem = document.querySelector('.nav-item[data-target="tautulli"]');
-        if (navItem) {
-            const badge = navItem.querySelector('.badge');
-            if (badge) {
-                const count = sessions.length;
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.classList.remove('hidden');
-                } else {
-                    badge.classList.add('hidden');
-                }
-            }
-        }
-
+        renderTautulliActivity(activity.sessions || [], url, key, state);
       } catch (e) {
         console.error("Tautulli Auto-refresh error", e);
       }
