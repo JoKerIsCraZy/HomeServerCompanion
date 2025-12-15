@@ -243,3 +243,37 @@ body.dark-mode .status-badge {
     color: var(--primary-color); /* Note: primary-color variable might need definition or usage of system var */
     text-decoration: underline;
 }
+
+/* Sidebar Navigation Badges */
+.nav-item {
+    position: relative; /* Anchor for badge */
+}
+
+.badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background-color: #F0921C; /* Tautulli Orange */
+    color: white;
+    font-family: sans-serif;
+    font-size: 11px; 
+    font-weight: 800;
+    line-height: 0; /* Remove line-height influence */
+    width: 20px; /* Fixed width for perfect circle */
+    height: 20px; /* Fixed height matching width */
+    padding: 0;   /* No padding */
+    border-radius: 50%; /* Perfect circle */
+    display: grid; /* Grid is best for centering */
+    place-items: center; /* Geometric centering */
+    box-sizing: border-box;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+    z-index: 10;
+    pointer-events: none;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
