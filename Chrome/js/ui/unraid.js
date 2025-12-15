@@ -590,7 +590,11 @@ async function renderUnraidVms(url, key) {
         });
     } catch (e) {
         console.error("Error rendering VMs:", e);
-        container.innerHTML = `<div style="color:red">Error: ${e.message}</div>`;
+        container.innerHTML = '';
+        const errDiv = document.createElement('div');
+        errDiv.style.color = 'red';
+        errDiv.textContent = `Error: ${e.message}`;
+        container.appendChild(errDiv);
     }
 }
 
