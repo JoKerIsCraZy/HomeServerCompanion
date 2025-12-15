@@ -19,6 +19,25 @@ export async function initSabnzbd(url, key, state) {
       const timeEl = document.getElementById("sab-timeleft");
       if (timeEl) timeEl.textContent = queue.timeleft || "00:00:00";
 
+      // Badge Logic
+      const sabNavItem = document.querySelector('.nav-item[data-target="sabnzbd"]');
+      if (sabNavItem) {
+         let badge = sabNavItem.querySelector('.nav-badge');
+         if (!badge) {
+             badge = document.createElement('div');
+             badge.className = 'nav-badge hidden';
+             sabNavItem.appendChild(badge);
+         }
+         
+         const count = queue.slots ? queue.slots.length : 0;
+         if (count > 0) {
+             badge.textContent = count;
+             badge.classList.remove('hidden');
+         } else {
+             badge.classList.add('hidden');
+         }
+      }
+
       // Pause Button logic
       const pauseBtn = document.getElementById("sab-pause-btn");
       if (pauseBtn) {
@@ -70,7 +89,9 @@ function renderSabnzbdQueue(slots, state) {
   const tmpl = document.getElementById("sab-queue-item");
   slots.forEach((slot) => {
     const clone = tmpl.content.cloneNode(true);
-    clone.querySelector(".filename").textContent = slot.filename;
+    const filenameEl = clone.querySelector(".filename");
+    filenameEl.textContent = slot.filename;
+    filenameEl.title = slot.filename; // Tooltip for full name
     clone.querySelector(".percentage").textContent = `${slot.percentage}%`;
     clone.querySelector(
       ".progress-bar-fill"
@@ -104,7 +125,9 @@ function renderSabnzbdHistory(slots) {
   const tmpl = document.getElementById("sab-history-item");
   slots.forEach((slot) => {
     const clone = tmpl.content.cloneNode(true);
-    clone.querySelector(".filename").textContent = slot.name;
+    const filenameEl = clone.querySelector(".filename");
+    filenameEl.textContent = slot.name;
+    filenameEl.title = slot.name; // Tooltip for full name
     clone.querySelector(".status-badge").textContent = slot.status;
     clone.querySelector(".status-badge").classList.add(slot.status);
     clone.querySelector(".size").textContent = slot.size;

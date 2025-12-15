@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     storageCardState: {} // Add this for Unraid storage persistence
   };
 
-  const EXCLUDED_FROM_PERSISTENCE = ['sonarr', 'radarr', 'tautulli'];
+  const EXCLUDED_FROM_PERSISTENCE = ['tautulli'];
 
   // Elements
   const views = document.querySelectorAll(".view");
@@ -80,6 +80,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const activeEl = sidebar.querySelector(`.nav-item[data-target="${defaultService}"]`);
     if (activeEl) activeEl.click();
     else loadService(defaultService); // Fallback
+
+    // BADGE PRE-LOAD: Load other services in background to show badges
+    ['sabnzbd', 'radarr', 'sonarr'].forEach(svc => {
+        if (svc !== defaultService && items[`${svc}Enabled`] !== false) {
+             loadService(svc); 
+        }
+    });
   });
 
   // Theme Toggle Logic

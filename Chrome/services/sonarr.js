@@ -45,3 +45,18 @@ export const getSonarrHistory = async (url, apiKey) => {
         throw error;
     }
 };
+
+export const deleteQueueItem = async (url, apiKey, id, removeFromClient = true, blocklist = false) => {
+    try {
+        const query = `?apikey=${apiKey}&removeFromClient=${removeFromClient}&blocklist=${blocklist}`;
+        const response = await fetch(`${url}/api/v3/queue/${id}${query}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) throw new Error(`Delete Error: ${response.status}`);
+        const text = await response.text();
+        return text ? JSON.parse(text) : {};
+    } catch (error) {
+         console.error("Sonarr Delete Queue Error:", error);
+         throw error;
+    }
+};

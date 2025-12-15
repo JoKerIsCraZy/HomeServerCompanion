@@ -82,19 +82,57 @@ const saveService = (service) => {
     const data = {};
     if (enabledEl) data[enabledId] = enabledEl.checked;
 
+    let originToRequest = null;
+
     if (urlEl) {
         let val = urlEl.value.trim().replace(/\/$/, ""); // Strip trailing slash
         // Clean protocol if user pasted it
         val = val.replace(/^https?:\/\//, '');
         
         const protocol = protocolEl ? protocolEl.value : 'http://';
-        data[urlId] = protocol + val;
+        const fullUrl = protocol + val;
+        data[urlId] = fullUrl;
+
+        try {
+            // Construct origin pattern for permission request (e.g. http://192.168.1.5/*)
+            const urlObj = new URL(fullUrl);
+            originToRequest = `${urlObj.origin}/*`;
+        } catch (e) {
+            console.warn("Invalid URL, cannot request permissions:", fullUrl);
+        }
     }
     if (keyEl) data[keyId] = keyEl.value;
 
-    chrome.storage.sync.set(data, () => {
-        showStatus(service, 'Settings saved!', 'success');
-    });
+    const performSave = () => {
+        chrome.storage.sync.set(data, () => {
+             // If we requested permission and it was granted (or already existed), we show success.
+             // Even if denied, we save the config, but warn the user?
+             // For UX, simple success is often best if saved, but if denied, it won't work.
+             showStatus(service, 'Settings saved!', 'success');
+        });
+    };
+
+    if (originToRequest) {
+        chrome.permissions.contains({ origins: [originToRequest] }, (result) => {
+            if (result) {
+                // Already has permission
+                performSave();
+            } else {
+                // Request permission
+                chrome.permissions.request({ origins: [originToRequest] }, (granted) => {
+                    if (granted) {
+                        performSave();
+                    } else {
+                        showStatus(service, 'Saved, but permission denied!', 'error');
+                        // Still save to storage so they don't lose the text
+                        chrome.storage.sync.set(data); 
+                    }
+                });
+            }
+        });
+    } else {
+        performSave();
+    }
 };
 
 const showStatus = (service, msg, type) => {

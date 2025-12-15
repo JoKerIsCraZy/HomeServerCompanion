@@ -9,7 +9,12 @@ export async function initRadarr(url, key, state) {
 
         // Load Queue
         const queue = await Radarr.getRadarrMovies(url, key);
-        renderRadarrQueue(queue.records || []);
+        renderRadarrQueue(queue.records || [], state);
+
+        // Initial Badge Update
+        updateRadarrBadge(queue.records || []);
+
+        // Load Recent (History)
 
         // Load Recent (History)
         const history = await Radarr.getRadarrHistory(url, key);
@@ -19,6 +24,9 @@ export async function initRadarr(url, key, state) {
         throw e;
     }
 }
+
+
+
 
 function renderRadarrCalendar(movies, state) {
     const container = document.getElementById("radarr-calendar");
@@ -192,13 +200,48 @@ function renderRadarrCalendar(movies, state) {
     });
 }
 
-function renderRadarrQueue(records) {
+function renderRadarrQueue(records, state) {
     const container = document.getElementById("radarr-queue");
     if (!container) return;
     container.innerHTML = "";
+
+    // Helper to refresh queue
+    const refreshQueue = async () => {
+        const btn = container.querySelector('.refresh-btn');
+        if(btn) {
+             btn.textContent = "Loading...";
+             btn.disabled = true;
+        }
+        try {
+            const newQueue = await Radarr.getRadarrMovies(state.configs.radarrUrl, state.configs.radarrKey);
+            updateRadarrBadge(newQueue.records || []);
+            renderRadarrQueue(newQueue.records || [], state);
+        } catch(e) {
+            if(btn) {
+                btn.textContent = "Error";
+                setTimeout(() => { 
+                    btn.textContent = "↻ Refresh"; 
+                    btn.disabled = false; 
+                }, 2000);
+            }
+        }
+    };
+
+    // Toolbar
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = "display: flex; justify-content: flex-end; margin-bottom: 10px; padding: 0 5px;";
+    const refreshBtn = document.createElement('button');
+    refreshBtn.className = "refresh-btn";
+    refreshBtn.textContent = "↻ Refresh";
+    refreshBtn.style.cssText = "background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;";
+    refreshBtn.onclick = refreshQueue;
+    toolbar.appendChild(refreshBtn);
+    container.appendChild(toolbar);
+
     if (records.length === 0) {
-      container.innerHTML =
-        '<div class="card"><div class="card-header">Queue Empty</div></div>';
+      const emptyMsg = document.createElement('div');
+      emptyMsg.innerHTML = '<div class="card"><div class="card-header">Queue Empty</div></div>';
+      container.appendChild(emptyMsg);
       return;
     }
 
@@ -207,18 +250,135 @@ function renderRadarrQueue(records) {
 
     records.forEach((item) => {
       const clone = tmpl.content.cloneNode(true);
-      clone.querySelector(".filename").textContent = item.title;
+      const itemEl = clone.firstElementChild; // Capture the actual element
+      itemEl.querySelector(".filename").textContent = item.title;
       let percent = 0;
       if (item.size > 0) {
          percent = 100 - (item.sizeleft / item.size) * 100;
       }
-      clone.querySelector(".percentage").textContent = `${Math.round(percent)}%`;
-      clone.querySelector(".progress-bar-fill").style.width = `${percent}%`;
-      clone.querySelector(".size").textContent = formatSize(item.sizeleft);
-      clone.querySelector(".status").textContent = item.status;
+      itemEl.querySelector(".percentage").textContent = `${Math.round(percent)}%`;
+      itemEl.querySelector(".progress-bar-fill").style.width = `${percent}%`;
+      itemEl.querySelector(".size").textContent = formatSize(item.sizeleft);
+      const statusEl = itemEl.querySelector(".status");
+      // Check for warning status
+      const tStatus = (item.trackedDownloadStatus || '').toLowerCase();
+      let isWarning = false;
+      if (tStatus === 'warning' || tStatus === 'error') {
+          isWarning = true;
+          statusEl.textContent = item.statusMessages && item.statusMessages.length > 0 
+              ? item.statusMessages[0].title // e.g. "Manual Import Needed"
+              : "Attention Needed";
+          statusEl.style.color = "#ff9800"; // Orange
+          statusEl.style.fontWeight = "bold";
+      } else {
+          statusEl.textContent = item.status;
+      }
       
-      const delBtn = clone.querySelector(".delete-btn");
-      if(delBtn) delBtn.style.display = "none";
+      const delBtn = itemEl.querySelector(".delete-btn");
+      if(delBtn) {
+          // Standard Delete Button Logic (Menu)
+          delBtn.style.display = "block";
+          delBtn.innerHTML = "&times;"; // Standard X
+          
+          delBtn.onclick = (e) => {
+              e.stopPropagation();
+              
+              if (delBtn.dataset.confirming === "true") return; 
+              
+              console.log("Debug: Queue Item to Delete", item); // DEBUG LOG
+
+              // Create container for options
+              const optionsDiv = document.createElement('div');
+              optionsDiv.style.cssText = "display: flex; gap: 5px; margin-left: auto; align-items: center;";
+              
+              const btnRemove = document.createElement('button');
+              btnRemove.textContent = "🗑️";
+              btnRemove.title = "Remove from Client";
+              btnRemove.style.cssText = "background: #f44336; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;";
+              
+              const btnBlock = document.createElement('button');
+              btnBlock.textContent = "🚫🔎"; // Block & Search
+              btnBlock.title = "Remove, Blocklist & Search";
+              btnBlock.style.cssText = "background: #ff9800; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;";
+              
+              const cancel = document.createElement('button');
+              cancel.innerHTML = "&times;";
+              cancel.style.cssText = "background: #9e9e9e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;";
+
+              // Actions
+              btnRemove.onclick = async (ev) => {
+                  ev.stopPropagation();
+                  if(!confirm("Remove from queue?")) return;
+                  try {
+                      await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, false);
+                      // In a real app we'd remove the element or reload. For now, hide/reload via UI refresh loop usually happens or user triggers it.
+                      // Let's hide the row
+                      itemEl.remove(); 
+                      // The refresh interval will clean it up. We can just hide the buttons.
+                      delBtn.style.display = 'block';
+                      optionsDiv.remove();
+                  } catch(e) { 
+                      if (e.message.includes('404')) {
+                          alert("Item not found (404). It may have been removed or the Radarr URL/Port is incorrect.");
+                          itemEl.remove(); // Optimistically remove using element reference
+                      } else {
+                          alert("Error removing item: " + e.message); 
+                      }
+                  }
+                  // Auto-refresh after 3 seconds
+                  setTimeout(refreshQueue, 250);
+              };
+
+              btnBlock.onclick = async (ev) => {
+                  ev.stopPropagation();
+                  if(!confirm("Remove, Blocklist release and Search for new one?")) return;
+                  try {
+                    await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, true);
+                    delBtn.style.display = 'block';
+                    optionsDiv.remove();
+                  } catch(e) { 
+                      if (e.message.includes('404')) {
+                          alert("Item not found (404). check settings or web UI.");
+                          itemEl.remove();
+                      } else {
+                          alert("Error blocking item: " + e.message); 
+                      }
+                  }
+                  // Auto-refresh after 3 seconds
+                  setTimeout(refreshQueue, 250);
+              };
+
+              cancel.onclick = (ev) => {
+                  ev.stopPropagation();
+                  delBtn.style.display = 'block';
+                  delBtn.style.visibility = 'visible'; // Ensure visible
+                  optionsDiv.remove();
+              };
+              
+              optionsDiv.appendChild(btnRemove);
+              optionsDiv.appendChild(btnBlock);
+              optionsDiv.appendChild(cancel);
+              
+              delBtn.style.display = "none";
+              delBtn.parentNode.insertBefore(optionsDiv, delBtn); 
+          };
+
+          // WARNING Extra Button
+          if (isWarning) {
+              const openBtn = document.createElement('button');
+              openBtn.innerHTML = "&#x2197;"; // NE Arrow
+              openBtn.title = "Open Activity Queue (Fix Issue)";
+              // Add margin-right to separate from delete button
+              openBtn.style.cssText = "background: none; border: none; color: #ff9800; cursor: pointer; font-size: 16px; margin-right: 8px;";
+              openBtn.onclick = (e) => {
+                  e.stopPropagation();
+                  const cleanUrl = state.configs.radarrUrl.replace(/\/$/, '');
+                  chrome.tabs.create({ url: `${cleanUrl}/activity/queue` });
+              };
+              // Insert BEFORE the delete button
+              delBtn.parentNode.insertBefore(openBtn, delBtn);
+          }
+      }
 
       container.appendChild(clone);
     });
@@ -269,4 +429,37 @@ function renderRadarrRecent(records, state) {
 
       container.appendChild(clone);
     });
+}
+
+function updateRadarrBadge(records) {
+    const radarrNavItem = document.querySelector('.nav-item[data-target="radarr"]');
+    if (!radarrNavItem) return;
+
+    let badge = radarrNavItem.querySelector('.nav-badge');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'nav-badge hidden';
+        badge.style.backgroundColor = "#ff9800"; // Orange
+        radarrNavItem.appendChild(badge);
+    }
+    
+    if (!records) {
+        badge.classList.add('hidden');
+        return;
+    }
+
+    const issues = records.filter(item => {
+        const tStatus = (item.trackedDownloadStatus || '').toLowerCase();
+        const status = (item.status || '').toLowerCase();
+        return tStatus === 'warning' || tStatus === 'error' || status === 'failed';
+    });
+
+    const count = issues.length;
+    
+    if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
 }

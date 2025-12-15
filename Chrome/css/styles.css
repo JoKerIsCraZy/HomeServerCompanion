@@ -268,7 +268,9 @@ body.light-theme .sub-tab-btn {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 200px;
+  flex: 1;
+  min-width: 0;
+  margin-right: 10px;
 }
 
 .progress-bar {
@@ -1243,4 +1245,31 @@ body.dark-mode .overseerr-tabs {
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+/* Navigation Badges */
+.nav-item {
+  position: relative; /* Ensure badge is positioned relative to the icon */
+}
+
+.nav-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background-color: #00c853; /* Bright Green */
+  color: white;
+  border-radius: 4px; 
+  padding: 2px 4px;
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 12px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  z-index: 10;
+  line-height: 1;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+.nav-badge.hidden {
+  display: none;
 }

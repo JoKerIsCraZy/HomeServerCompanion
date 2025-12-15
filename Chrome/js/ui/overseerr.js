@@ -28,9 +28,227 @@ export async function initOverseerr(url, key, state) {
         filterSelect.dataset.listenerAttached = "true";
     }
 
+    // Setup Tab Listeners for auto-reload
+    const trendingBtn = document.querySelector('.sub-tab-btn[data-target="overseerr-trending-tab"]');
+    if (trendingBtn && !trendingBtn.dataset.listenerAttached) {
+         trendingBtn.addEventListener('click', () => {
+             // Reload trending with new random pages
+             loadTrending(url, key);
+         });
+         trendingBtn.dataset.listenerAttached = "true";
+    }
+
     // Initial Load
     const currentFilter = filterSelect ? filterSelect.value : (state.configs.overseerrFilter || 'pending');
-    await loadRequests(url, key, currentFilter);
+    // 5. Check active tab and load content
+    const trendingTab = document.getElementById('overseerr-trending-tab');
+    const searchTab = document.getElementById('overseerr-search-tab');
+
+    // If Trending is visible, load trending
+    if (trendingTab && !trendingTab.classList.contains('hidden')) {
+        await loadTrending(url, key);
+    } 
+    // If Search is visible, do nothing (wait for user search?)
+    else if (searchTab && !searchTab.classList.contains('hidden')) {
+        // Maybe focus input?
+    }
+    // Otherwise (Requests tab is default), load requests
+    else {
+        // Only load if container exists
+        if (document.getElementById('overseerr-requests')) {
+            await loadRequests(url, key, currentFilter);
+        }
+    }
+}
+
+export async function loadTrending(url, key) {
+    const container = document.getElementById('overseerr-trending-results');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading">Loading Trending...</div>';
+
+    try {
+        // Fetch multiple pages to ensure we have enough items after filtering
+        // RANDOMIZE: Start page between 1 and 10 to show "new" stuff each time
+        const startPage = Math.floor(Math.random() * 10) + 1;
+        
+        console.log("Loading Trending starting at page:", startPage);
+
+        const promises = [
+            Overseerr.getTrending(url, key, startPage),
+            Overseerr.getTrending(url, key, startPage + 1),
+            Overseerr.getTrending(url, key, startPage + 2)
+        ];
+        
+        const resultsArrays = await Promise.all(promises);
+        
+        // Flatten and deduplicate by ID
+        const allResults = resultsArrays.flat();
+        const seen = new Set();
+        const uniqueResults = [];
+        
+        for (const item of allResults) {
+            if (!seen.has(item.id)) {
+                seen.add(item.id);
+                uniqueResults.push(item);
+            }
+        }
+
+        renderTrendingTab(uniqueResults, url, key);
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = `<div class="error-banner">Failed to load trending: ${e.message}</div>`;
+    }
+}
+
+function renderTrendingTab(results, url, key) {
+    const container = document.getElementById('overseerr-trending-results');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (results.length === 0) {
+        container.innerHTML = '<div class="card"><div class="card-header">No trending items found</div></div>';
+        return;
+    }
+
+    const tmpl = document.getElementById('overseerr-trending-card');
+
+    // Filter results: Only show items where mediaInfo is null or status is unknown/pending
+    // Actually, user wants ONLY items that are NOT requested/available.
+    // So if mediaInfo exists AND status is (Available(5), Partially(4), Processing(3), Pending(2)), we SKIP it.
+    
+    // Status Codes:
+    // 1 - Unknown
+    // 2 - Pending
+    // 3 - Processing
+    // 4 - Partially Available
+    // 5 - Available
+
+    const filteredResults = results.filter(item => {
+        if (!item.mediaInfo) return true; // No info means not requested yet -> Keep
+        const s = item.mediaInfo.status;
+        // detailed logic: if status is 2,3,4,5 => it's already in system.
+        // so we filter those OUT.
+        if (s === 2 || s === 3 || s === 4 || s === 5) return false;
+        return true;
+    });
+
+    if (filteredResults.length === 0) {
+        container.innerHTML = '<div class="card"><div class="card-header">All trending items already requested!</div></div>';
+        return;
+    }
+
+    filteredResults.forEach(item => {
+        const clone = tmpl.content.cloneNode(true);
+        
+        // Image
+        const posterImg = clone.querySelector('.poster-img');
+        const posterPath = item.posterPath;
+        if (posterPath) {
+           const posterUrl = `https://image.tmdb.org/t/p/w200${posterPath}`;
+           posterImg.src = posterUrl;
+        } else {
+           posterImg.src = 'icons/icon48.png';
+        }
+
+        // Title
+        const title = item.title || item.name || 'Unknown';
+        clone.querySelector('.media-title').textContent = title;
+        clone.querySelector('.media-title').title = title; // Tooltip
+
+        // Fix: content from 'trending' might use 'media_type' or 'mediaType'
+        const rawMediaType = item.mediaType || item.media_type;
+        // Normalize
+        const mediaType = rawMediaType === 'tv' ? 'tv' : 'movie'; 
+        
+        // Also skip if it's a person
+        if (rawMediaType === 'person') return;
+
+        // Populate Flag
+        const flag = clone.querySelector('.media-type-flag');
+        if (flag) {
+            flag.textContent = mediaType === 'tv' ? 'SERIES' : 'MOVIE';
+            flag.style.background = mediaType === 'tv' ? 'rgba(33, 150, 243, 0.8)' : 'rgba(255, 152, 0, 0.8)'; // Blue vs Orange
+        }
+
+        // Clickable Poster -> Open in Overseerr
+        // posterImg is already defined above
+        posterImg.style.cursor = 'pointer';
+        posterImg.title = "Open in Overseerr";
+        posterImg.onclick = () => {
+             const targetUrl = `${url}/${mediaType}/${item.id}`;
+             chrome.tabs.create({ url: targetUrl });
+        };
+
+        // Button Logic - Always show request button since we filtered out the rest
+        const btn = clone.querySelector('.request-btn');
+        const statusOverlay = clone.querySelector('.status-overlay');
+        
+        // Ensure button is visible
+        btn.style.display = 'block';
+
+        btn.onclick = async () => {
+            btn.textContent = "⏳";
+            btn.disabled = true;
+            try {
+                const payload = {
+                    mediaId: item.id,
+                    mediaType: mediaType
+                };
+
+                // For TV shows, we MUST provide 'seasons' specific to Overseerr logic, 
+                // otherwise it might crash (filter of undefined).
+                if (mediaType === 'tv') {
+                    // Fetch details to get available seasons
+                    const details = await Overseerr.getTv(url, key, item.id);
+                    if (details && details.seasons) {
+                        // Request all seasons except specials (Season 0)
+                        payload.seasons = details.seasons
+                            .filter(s => s.seasonNumber !== 0)
+                            .map(s => s.seasonNumber);
+                            
+                        // Safety: if filtering removed everything (e.g. only specials exist?), 
+                        // fallback to whatever is there or empty to avoid undefined crash?
+                        // If empty, Overseerr might still crash if it expects non-empty? 
+                        // Let's assume there's at least one normal season. 
+                        // If payload.seasons is empty array, it's valid JSON but might not request anything.
+                    } else {
+                        // Fallback if fetch fails? Send empty array or just assume season 1
+                         payload.seasons = [1]; 
+                    }
+                }
+
+                await Overseerr.request(url, key, payload);
+                
+                btn.textContent = "✔";
+                btn.style.background = "#4caf50";
+                
+                setTimeout(() => {
+                        btn.style.display = 'none';
+                        if (statusOverlay) {
+                            const badge = document.createElement('span');
+                            badge.textContent = "Requested";
+                            badge.style.background = "#ffc107";
+                            badge.style.color = "white"; 
+                            badge.style.padding = '2px 6px';
+                            badge.style.borderRadius = '4px';
+                            badge.style.fontSize = '10px';
+                            badge.style.fontWeight = 'bold';
+                            statusOverlay.appendChild(badge);
+                        }
+                }, 1000);
+
+            } catch (e) {
+                console.error(e);
+                btn.textContent = "❌";
+                alert("Request failed: " + e.message);
+                btn.disabled = false;
+                btn.textContent = "Request";
+            }
+        };
+
+        container.appendChild(clone);
+    });
 }
 
 export async function doSearch(url, key, query) {
@@ -64,19 +282,6 @@ export async function doSearch(url, key, query) {
 async function loadRequests(url, key, filter) {
     const container = document.getElementById('overseerr-requests');
     // If trending, use a different cache/logic
-    if (filter === 'trending') {
-         if (container) {
-             container.innerHTML = '<div class="loading">Loading Trending Check...</div>';
-         }
-         try {
-             const trending = await Overseerr.getTrending(url, key);
-             renderTrending(trending, url, key);
-         } catch (e) {
-             if(container) container.innerHTML = `<div class="error-banner">Failed to load trending: ${e.message}</div>`;
-         }
-         return;
-    }
-
     const cacheKey = `overseerr_hydrated_${filter}`;
     
     // 1. Try Cache (Hydrated Data)
@@ -114,56 +319,7 @@ async function loadRequests(url, key, filter) {
    }
 }
 
-function renderTrending(results, url, key) {
-    const container = document.getElementById('overseerr-requests');
-    if (!container) return;
-    container.innerHTML = '';
 
-    const scrollContainer = document.createElement('div');
-    scrollContainer.className = 'trending-scroll-container';
-    scrollContainer.style.cssText = "display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; scrollbar-width: thin;";
-
-    results.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'trending-card';
-        card.style.cssText = "flex: 0 0 100px; cursor: pointer; position: relative;";
-        
-        const posterPath = item.posterPath;
-        const posterUrl = posterPath ? `https://image.tmdb.org/t/p/w200${posterPath}` : 'icons/icon48.png';
-        
-        const img = document.createElement('img');
-        img.src = posterUrl;
-        img.style.cssText = "width: 100%; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);";
-        
-        const title = item.title || item.name || 'Unknown';
-        
-        card.appendChild(img);
-        
-        // Add click listener to request
-        card.onclick = async () => {
-             if(confirm(`Request "${title}"?`)) {
-                 try {
-                     await Overseerr.request(url, key, {
-                        mediaId: item.id,
-                        mediaType: item.mediaType
-                     });
-                     alert("Requested!");
-                 } catch(e) {
-                     alert("Request failed: " + e.message);
-                 }
-             }
-        };
-        
-        scrollContainer.appendChild(card);
-    });
-    
-    container.appendChild(scrollContainer);
-    
-    const hint = document.createElement('div');
-    hint.textContent = "Click poster to request";
-    hint.style.cssText = "text-align: center; font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;";
-    container.appendChild(hint);
-}
 
 function renderOverseerrSearch(results, url, key) {
     const container = document.getElementById('overseerr-search-results');
