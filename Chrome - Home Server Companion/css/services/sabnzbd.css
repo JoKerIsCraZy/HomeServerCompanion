@@ -1,0 +1,131 @@
+/* Service Specific Styles */
+
+/* SABnzbd Modern Design */
+#sabnzbd-view .progress-bar-fill {
+  background: linear-gradient(90deg, #ffc107, #ff9800);
+}
+
+/* SABnzbd Tabs (Glider) */
+#sabnzbd-view .tabs {
+    position: relative;
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    border-radius: 12px;
+    gap: 5px;
+    z-index: 1;
+    margin-bottom: 15px;
+    width: 100%; /* Full width to match others */
+    box-sizing: border-box;
+}
+body.light-theme #sabnzbd-view .tabs {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+#sabnzbd-view .tab-glider {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    height: calc(100% - 10px);
+    background: linear-gradient(135deg, #ffc107, #ff9800); /* SABnzbd Yellow/Orange */
+    border-radius: 8px;
+    z-index: 0;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 2px 5px rgba(255, 152, 0, 0.3);
+    width: 0; /* JS will set */
+}
+
+#sabnzbd-view .tab-btn {
+    flex: 1; /* Distribute evenly */
+    text-align: center;
+    background: transparent;
+    border: none;
+    padding: 8px 0;
+    margin: 0;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 13px;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+#sabnzbd-view .tab-btn.active {
+    color: white !important; /* Text on Yellow */
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+#sabnzbd-view .tab-btn:hover:not(.active) {
+    color: var(--text-primary);
+}
+
+/* SABnzbd Queue Items (Cards) */
+.sab-queue-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.2s, background 0.2s;
+}
+.sab-queue-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
+}
+.sab-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.sab-item-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+.sab-item-status {
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.sab-progress-track {
+    background: rgba(255, 255, 255, 0.1);
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    width: 100%;
+}
+.sab-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffc107, #ff9800);
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+.sab-item-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* History Items */
+.sab-history-item {
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.sab-history-item:last-child { border-bottom: none; }
+.sab-history-item.failed .sab-item-title { color: #fe5f55; }
+.sab-history-item.completed .sab-item-title { color: #4caf50; }

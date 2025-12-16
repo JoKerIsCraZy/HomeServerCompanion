@@ -1,9 +1,23 @@
 import * as Overseerr from "../../services/overseerr.js";
 
+/**
+ * Initializes the Overseerr service view.
+ * - Handles Trending, Requests, and Search tabs.
+ * - Sets up filtering and auto-reload logic.
+ * @param {string} url - Overseerr URL
+ * @param {string} key - API Key
+ * @param {object} state - App state
+ */
 export async function initOverseerr(url, key, state) {
     if (!url || !key) {
         const container = document.getElementById('overseerr-requests');
-        if(container) container.innerHTML = "<div class='error-banner'>Please configure Overseerr in options.</div>";
+        if(container) {
+            container.textContent = "";
+            const div = document.createElement('div');
+            div.className = 'error-banner';
+            div.textContent = "Please configure Overseerr in options.";
+            container.appendChild(div);
+        }
         return;
     }
     
@@ -65,7 +79,11 @@ export async function loadTrending(url, key) {
     const container = document.getElementById('overseerr-trending-results');
     if (!container) return;
     
-    container.innerHTML = '<div class="loading">Loading Trending...</div>';
+    container.textContent = "";
+    const loadDiv = document.createElement('div');
+    loadDiv.className = "loading";
+    loadDiv.textContent = "Loading Trending...";
+    container.appendChild(loadDiv);
 
     try {
         // Fetch multiple pages to ensure we have enough items after filtering
@@ -116,7 +134,13 @@ function renderTrendingTab(results, url, key) {
 
 
     if (results.length === 0) {
-        container.innerHTML = '<div class="card"><div class="card-header">No trending items found</div></div>';
+        const card = document.createElement('div');
+        card.className = "card";
+        const header = document.createElement('div');
+        header.className = "card-header";
+        header.textContent = "No trending items found";
+        card.appendChild(header);
+        container.appendChild(card);
         return;
     }
 
@@ -131,7 +155,13 @@ function renderTrendingTab(results, url, key) {
     });
 
     if (filteredResults.length === 0) {
-        container.innerHTML = '<div class="card"><div class="card-header">All trending items already requested!</div></div>';
+        const card = document.createElement('div');
+        card.className = "card";
+        const header = document.createElement('div');
+        header.className = "card-header";
+        header.textContent = "All trending items already requested!";
+        card.appendChild(header);
+        container.appendChild(card);
         return;
     }
 
@@ -322,7 +352,13 @@ function renderOverseerrSearch(results, url, key) {
     container.innerHTML = '';
     
     if (results.length === 0) {
-        container.innerHTML = '<div class="card"><div class="card-header">No results found</div></div>';
+        const card = document.createElement('div');
+        card.className = "card";
+        const header = document.createElement('div');
+        header.className = "card-header";
+        header.textContent = "No results found";
+        card.appendChild(header);
+        container.appendChild(card);
         return;
     }
 
@@ -464,7 +500,13 @@ function renderHydratedRequests(requests, url, key) {
     container.innerHTML = '';
 
     if (requests.length === 0) {
-        container.innerHTML = '<div class="card"><div class="card-header">No pending requests</div></div>';
+        const card = document.createElement('div');
+        card.className = "card";
+        const header = document.createElement('div');
+        header.className = "card-header";
+        header.textContent = "No pending requests";
+        card.appendChild(header);
+        container.appendChild(card);
         return;
     }
 

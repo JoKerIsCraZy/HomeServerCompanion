@@ -1,3 +1,9 @@
+/**
+ * Fetches the current activity queue.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Object>} Queue object
+ */
 export const getRadarrMovies = async (url, apiKey) => {
     try {
         // Just get recently added or just a few to show 'Recent'
@@ -22,9 +28,15 @@ export const getRadarrMovies = async (url, apiKey) => {
 };
 
 // Getting "Recent" movies via history might be better than fetching 1000 movies
+/**
+ * Fetches history (imported/completed movies).
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Object>} History object
+ */
 export const getRadarrHistory = async (url, apiKey) => {
     try {
-        const response = await fetch(`${url}/api/v3/history?page=1&pageSize=50&sortKey=date&sortDirection=descending&includeMovie=true`, {
+        const response = await fetch(`${url}/api/v3/history?page=1&pageSize=200&sortKey=date&sortDirection=descending&includeMovie=true`, {
             headers: {
                 'X-Api-Key': apiKey
             }
@@ -37,6 +49,12 @@ export const getRadarrHistory = async (url, apiKey) => {
     }
 }
 
+/**
+ * Fetches the calendar for the next 14 days.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Array>} List of movies
+ */
 export const getRadarrCalendar = async (url, apiKey) => {
     try {
         // Get calendar for next 30 days (Movies often have longer release windows than TV)

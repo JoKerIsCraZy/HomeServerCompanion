@@ -1,0 +1,62 @@
+/* Sonarr Styles */
+#sonarr-view .progress-bar-fill {
+  background: var(--accent-sonarr);
+}
+
+#sonarr-view .date-header {
+  border-left-color: var(--accent-sonarr);
+  color: var(--accent-sonarr);
+}
+
+/* Sonarr Modern Tabs (Glider) */
+#sonarr-view .tabs {
+    position: relative;
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    border-radius: 12px;
+    gap: 5px;
+    z-index: 1;
+}
+body.light-theme #sonarr-view .tabs {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+#sonarr-view .tab-glider {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    height: calc(100% - 10px);
+    background: linear-gradient(135deg, #2196F3, #1976D2); /* Sonarr Blue Gradient */
+    border-radius: 8px;
+    z-index: 0;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 2px 5px rgba(33, 150, 243, 0.3);
+    width: 0;
+    pointer-events: none;
+}
+
+#sonarr-view .tab-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 20px;
+    margin: 0;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 13px;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+#sonarr-view .tab-btn:hover {
+    color: var(--text-primary);
+}
+
+#sonarr-view .tab-btn.active {
+    background: transparent;
+    color: #fff; /* White text for blue background */
+    font-weight: 700;
+}

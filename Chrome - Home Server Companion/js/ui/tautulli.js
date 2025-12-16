@@ -1,10 +1,36 @@
 import * as Tautulli from "../../services/tautulli.js";
 
+/**
+ * Initializes the Tautulli service view.
+ * - Starts polling for active sessions (streams).
+ * - Updates badge count.
+ * @param {string} url - Tautulli URL
+ * @param {string} key - API Key
+ * @param {object} state - App state
+ */
 export async function initTautulli(url, key, state) {
     const update = async () => {
       try {
         const activity = await Tautulli.getTautulliActivity(url, key);
         renderTautulliActivity(activity.sessions || [], url, key, state);
+        
+        // Update badge directly from this data to ensure sync
+        const count = activity.sessions ? activity.sessions.length : 0;
+        const tautulliNavItem = document.querySelector('.nav-item[data-target="tautulli"]');
+        if (tautulliNavItem) {
+            let badge = tautulliNavItem.querySelector('.nav-badge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.className = 'nav-badge hidden';
+                tautulliNavItem.appendChild(badge);
+            }
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
       } catch (e) {
         console.error("Tautulli Auto-refresh error", e);
       }
@@ -23,10 +49,15 @@ export async function initTautulli(url, key, state) {
 function renderTautulliActivity(sessions, url, key, state) {
     const container = document.getElementById("tautulli-activity");
     if (!container) return;
-    container.innerHTML = "";
+    container.textContent = "";
     if (sessions.length === 0) {
-      container.innerHTML =
-        '<div class="card"><div class="card-header">No active streams</div></div>';
+      const card = document.createElement('div');
+      card.className = "card";
+      const header = document.createElement('div');
+      header.className = "card-header";
+      header.textContent = "No active streams";
+      card.appendChild(header);
+      container.appendChild(card);
       return;
     }
 
@@ -136,6 +167,11 @@ function renderTautulliActivity(sessions, url, key, state) {
               detailsDiv.classList.remove('hidden');
               card.classList.add('expanded');
               state.expandedSessions.add(session.session_id);
+              
+              // Auto-scroll if cut off
+              setTimeout(() => {
+                  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 100); 
           } else {
               detailsDiv.classList.add('hidden');
               card.classList.remove('expanded');

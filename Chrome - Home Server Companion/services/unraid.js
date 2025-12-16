@@ -31,6 +31,12 @@ const graphQL = async (url, apiKey, query) => {
     }
 };
 
+/**
+ * Checks if the Unraid API is reachable.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<boolean>} True if reachable
+ */
 export const checkUnraidStatus = async (url, apiKey) => {
     if (!apiKey) {
         // Fallback to simple ping if no key
@@ -45,6 +51,12 @@ export const checkUnraidStatus = async (url, apiKey) => {
     } catch { return false; }
 };
 
+/**
+ * Fetches comprehensive system data (System info, Array, Docker, Metrics).
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Object>} System data object
+ */
 export const getSystemData = async (url, apiKey) => {
     // Schema assumption: 
     // - array: status, storage stats
@@ -96,6 +108,11 @@ export const getSystemData = async (url, apiKey) => {
                 image
                 state
                 status
+                labels
+                ports {
+                    publicPort
+                    type
+                }
             }
         }
     }
@@ -125,6 +142,9 @@ export const getSystemData = async (url, apiKey) => {
             };
         };
 
+        const serverHostname = new URL(url).hostname;
+        const serverProtocol = new URL(url).protocol; // http: or https:
+
         // Normalize Data
         return {
             system: {
@@ -148,13 +168,39 @@ export const getSystemData = async (url, apiKey) => {
             cpu: res.metrics.cpu.percentTotal,
             ram: res.metrics.memory.percentTotal,
             // Normalize Docker List
-            dockers: (res.docker.containers || []).map(c => ({
-                id: c.id,
-                name: (c.names && c.names[0]) ? c.names[0].replace(/^\//, '') : 'Unknown', 
-                image: c.image,
-                running: c.state === 'RUNNING',
-                status: c.status
-            }))
+            dockers: (res.docker.containers || []).map(c => {
+                let webuiUrl = null;
+                const labels = c.labels || {};
+                const webuiLabel = labels['net.unraid.docker.webui'];
+                
+                if (webuiLabel) {
+                     // Label found: Replace [IP] with hostname
+                    webuiUrl = webuiLabel.replace('[IP]', serverHostname);
+                    // Replace [PORT:1234] with 1234
+                    webuiUrl = webuiUrl.replace(/\[PORT:(\d+)\]/g, '$1');
+                } else if (c.ports && c.ports.length > 0) {
+                     // Fallback: Use first mapped public port
+                     // Filter for TCP if possible, or just take the first one with a public port
+                     const port = c.ports.find(p => p.publicPort && p.type === 'TCP') || c.ports.find(p => p.publicPort);
+                     if (port && port.publicPort) {
+                         webuiUrl = `${serverProtocol}//${serverHostname}:${port.publicPort}`;
+                     }
+                }
+
+                if (!webuiUrl) {
+                    // Debugging why we missed it
+                    // console.log(`[Unraid] No WebUI for ${c.names[0]}: Label=${!!labels['net.unraid.docker.webui']}, Ports=${c.ports?.length}`);
+                }
+
+                return {
+                    id: c.id,
+                    name: (c.names && c.names[0]) ? c.names[0].replace(/^\//, '') : 'Unknown', 
+                    image: c.image,
+                    running: c.state === 'RUNNING',
+                    status: c.status,
+                    webui: webuiUrl
+                };
+            })
         };
 
     } catch (e) {
@@ -168,6 +214,14 @@ export const getSystemData = async (url, apiKey) => {
     }
 };
 
+/**
+ * Controls a Docker container (start, stop, restart).
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {string} id - Container ID
+ * @param {string} action - Action command
+ * @returns {Promise<Object>} Mutation result
+ */
 export const controlContainer = async (url, apiKey, id, action) => {
     // Schema: mutation { docker { start(id: "...") { id } } }
     // Note: 'restart' is not supported natively in the API, so we simulate it.
@@ -191,6 +245,12 @@ export const controlContainer = async (url, apiKey, id, action) => {
     return await graphQL(url, apiKey, mutation);
 };
 
+/**
+ * Fetches list of VMs.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Array>} List of VMs
+ */
 export const getVms = async (url, apiKey) => {
     // Query based on vms.resolver.ts
     const query = `{
@@ -218,6 +278,14 @@ export const getVms = async (url, apiKey) => {
     }
 };
 
+/**
+ * Controls a VM (start, stop, etc.).
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {string} id - VM ID
+ * @param {string} action - Action command
+ * @returns {Promise<Object>} Mutation result
+ */
 export const controlVm = async (url, apiKey, id, action) => {
     // Mutation: mutation { vm { start(id: "...") } }
     // Action: start, stop, pause, resume, forceStop, reboot, reset

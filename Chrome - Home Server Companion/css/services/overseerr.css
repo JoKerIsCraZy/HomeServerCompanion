@@ -1,0 +1,292 @@
+/* Overseerr Styles */
+.overseerr-header {
+  background: transparent; /* Removed bg */
+  padding: 0 10px; /* Adjust padding to match standard view padding if needed, or 0 if parent has padding */
+  margin-bottom: 15px;
+  border-bottom: none; /* Removed border */
+  text-align: left; /* Left align */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+body.dark-mode .overseerr-header {
+  border-bottom-color: transparent;
+}
+
+/* Modern Tabs for Overseerr */
+.overseerr-tab-content.active {
+  animation: tabFadeIn 0.3s ease-out forwards;
+}
+
+#overseerr-view .sub-tabs {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05); /* Dark subtle container */
+  padding: 5px;
+  border-radius: 12px;
+  gap: 5px;
+  margin: 0; /* REMOVED center alignment */
+  position: relative; /* For glider absolute pos */
+  z-index: 1;
+}
+body.light-theme #overseerr-view .sub-tabs {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+#overseerr-view .tab-glider {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  height: calc(100% - 10px);
+  background: linear-gradient(135deg, #AB47BC, #7E57C2); /* Purple Gradient */
+  border-radius: 8px;
+  z-index: 0;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 5px rgba(126, 87, 194, 0.3);
+  /* Initial width/transform set by JS, but give generic fallback or 0 */
+  width: 0; 
+}
+
+#overseerr-view .sub-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 20px;
+  margin: 0;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 13px;
+  opacity: 0.8;
+  box-shadow: none;
+  position: relative;
+  z-index: 1; /* Above glider */
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+#overseerr-view .sub-tab-btn:hover {
+  background: transparent; /* Glider will handle hover eventually, or just text color */
+  color: var(--text-primary);
+  opacity: 1;
+}
+
+#overseerr-view .sub-tab-btn.active {
+  background: transparent; /* Removed bg, handled by glider */
+  color: #fff;
+  font-weight: 700;
+  opacity: 1;
+  box-shadow: none;
+}
+body.light-theme #overseerr-view .sub-tab-btn.active {
+  color: white; /* Gold on light might need white text or dark text? Gold is usually light. Let's stick to black text for gold bg. */
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  padding: 10px;
+}
+
+.overseerr-card {
+  position: relative;
+  background: var(--card-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+body.dark-mode .overseerr-card {
+  border-color: #333;
+  background: #1e1e1e;
+}
+
+.overseerr-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.overseerr-backdrop {
+  height: 70px;
+  background-color: #333;
+  background-size: cover;
+  position: relative;
+}
+.overseerr-backdrop::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+}
+
+.overseerr-content {
+  padding: 8px 10px 10px;
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.overseerr-card .poster-img {
+  width: 60px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid var(--card-bg);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  margin-top: -45px; /* Pull up */
+  z-index: 2;
+  background: #222;
+  align-self: flex-start;
+}
+
+.overseerr-info {
+  margin-top: 5px;
+}
+
+.request-info {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.request-status {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #eee;
+  color: #555;
+  margin-top: 4px;
+}
+.request-status.pending {
+  background: #ff9800;
+  color: white;
+}
+.request-status.approved {
+  background: #4caf50;
+  color: white;
+}
+.request-status.available {
+  background: #2196f3;
+  color: white;
+}
+.request-status.processing {
+  background: #9c27b0;
+  color: white;
+}
+
+.overseerr-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: auto; /* Push to bottom */
+  padding-top: 8px;
+}
+
+.overseerr-actions .action-btn {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+.approve-btn {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+.decline-btn {
+  background: #f44336;
+  border-color: #f44336;
+}
+.request-btn {
+  background: #2196f3;
+  border-color: #2196f3;
+  width: auto;
+  padding: 0 10px;
+  border-radius: 14px;
+}
+
+/* Search Styles */
+.search-bar {
+  position: relative;
+  width: 100%;
+  padding: 10px 15px;
+  background: transparent;
+  margin-bottom: 20px;
+  border-bottom: none;
+  display: block;
+  box-sizing: border-box;
+}
+
+#overseerr-search-input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 15px;
+  padding-right: 50px; /* Clear space for button */
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  box-sizing: border-box;
+  height: 44px; /* Explicit height */
+  position: relative;
+  z-index: 1;
+}
+
+body.light-theme #overseerr-search-input {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+#overseerr-search-input:focus {
+  border-color: #AB47BC;
+  box-shadow: 0 0 0 3px rgba(171, 71, 188, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#overseerr-search-btn {
+  position: absolute;
+  right: 20px; /* 15px container padding + 5px spacing */
+  top: 50%;
+  transform: translateY(-50%);
+  background: #AB47BC;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(171, 71, 188, 0.3);
+  z-index: 2; /* Ensure on top */
+  padding: 0;
+}
+
+#overseerr-search-btn:hover {
+  background: #9C27B0;
+  transform: translateY(-50%) scale(1.05);
+}
+
+#overseerr-search-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+#overseerr-search-btn svg {
+  fill: white;
+}

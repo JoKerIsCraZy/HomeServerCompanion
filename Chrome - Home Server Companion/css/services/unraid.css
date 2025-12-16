@@ -1,0 +1,783 @@
+/* Unraid */
+.status-card {
+  text-align: center;
+  padding: 30px;
+}
+.status-indicator {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #ffd600;
+}
+.status-indicator.online {
+  color: #4caf50;
+}
+.status-indicator.offline {
+  color: #f44336;
+}
+
+/* Disk / Storage Styles */
+.disk-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+  font-size: 0.85em;
+}
+.disk-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+}
+.disk-name {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.disk-temp {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+.disk-temp.hot {
+  color: #f44336;
+}
+.disk-mini-track {
+  background-color: rgba(255, 255, 255, 0.05);
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+body.light-theme .disk-mini-track {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+.disk-mini-fill {
+  height: 100%;
+  background: #4caf50;
+  width: 0%;
+}
+.disk-mini-fill.parity {
+  background: #2196f3;
+}
+
+.storage-card {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 15px;
+  margin: 10px 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.storage-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  font-size: 0.9em;
+  letter-spacing: 0.5px;
+}
+.storage-icon {
+  width: 24px;
+  height: 24px;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 5v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2zm2 0h16v14H4V5zm2 2h12v2H6V7zm0 4h12v2H6v-2zm0 4h12v2H6v-2z"/></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.8;
+}
+body.light-theme .storage-icon {
+  filter: invert(1);
+}
+.storage-usage-text {
+  color: var(--text-secondary);
+  font-size: 0.85em;
+  margin-bottom: 8px;
+}
+
+.progress-track {
+  background-color: rgba(255, 255, 255, 0.1);
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+body.light-theme .progress-track {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.5s ease-out;
+}
+.progress-fill.warning {
+  background: linear-gradient(90deg, #ff9800, #ffc107);
+}
+.progress-fill.critical {
+  background: linear-gradient(90deg, #f44336, #ff5722);
+}
+
+/* Docker Controls */
+.status-dot.running {
+  background: #4caf50 !important;
+  box-shadow: 0 0 5px #4caf50;
+}
+/* Unraid System Cards */
+.system-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05); /* Subtle border */
+}
+body.dark-mode .system-card {
+  border-color: #333;
+  background: #1e1e1e;
+}
+
+.uk-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+body.dark-mode .uk-header {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.uk-icon {
+  width: 32px;
+  height: 32px;
+  margin-right: 12px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.9;
+}
+
+/* Icon Placeholders (SVG Data URIs) */
+.uk-icon.info {
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%232196f3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>');
+}
+.uk-icon.array {
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%23ff9800" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg>');
+}
+.uk-icon.system {
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%234caf50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 9v2h19V9H2zm0 6h5v-2H2v2zm7 0h5v-2H9v2zm7 0h5v-2h-5v2zM2 5v2h19V5H2z"/></svg>');
+}
+
+.uk-title-section {
+  flex: 1;
+}
+
+.uk-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.uk-subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.uk-info-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.uk-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.uk-info-icon {
+  font-size: 14px;
+  margin-right: 8px;
+  width: 20px;
+  text-align: center;
+}
+
+.uk-progress-lg-track {
+  background: rgba(0, 0, 0, 0.05);
+  height: 18px;
+  border-radius: 9px;
+  position: relative;
+  overflow: hidden;
+  margin-top: 5px;
+}
+body.dark-mode .uk-progress-lg-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.uk-progress-lg-fill {
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  height: 100%;
+  width: 0%;
+}
+
+.uk-progress-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.cpu-row {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cpu-track {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.05);
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+body.dark-mode .cpu-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cpu-fill {
+  height: 100%;
+  background: #2196f3;
+}
+.cpu-fill.warning {
+  background: #ff9800;
+}
+.cpu-fill.critical {
+  background: #f44336;
+}
+
+/* Docker & VM Styles */
+.docker-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: background 0.2s;
+}
+body.dark-mode .docker-item {
+  border-color: #333;
+  background: #1e1e1e;
+}
+
+.docker-left {
+  flex: 1;
+  min-width: 0;
+  margin-right: 8px; /* Spacing from controls */
+}
+
+.docker-info {
+  flex: 1;
+  min-width: 0;
+  margin-left: 10px;
+  margin-right: 5px;
+}
+
+.docker-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docker-image {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docker-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Ensure controls in the header (if any) or lists align well */
+#unraid-docker-list,
+#unraid-vm-list {
+  padding-bottom: 15px;
+}
+
+/* Unraid Tabs (Glider Style) */
+.unraid-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 0 5px;
+}
+
+#unraid-view .sub-tabs {
+    position: relative;
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    border-radius: 12px;
+    gap: 5px;
+    z-index: 1;
+    margin-bottom: 0; /* Remove bottom margin as it's in a flex row */
+}
+
+#unraid-view .tab-glider {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    height: calc(100% - 10px);
+    background: #F15A2C; /* Official Unraid Orange */
+    border-radius: 8px;
+    z-index: 0;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    width: 0; 
+}
+
+/* Compact Status Card for Header */
+.unraid-header-row #unraid-status-card {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    box-shadow: none;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.unraid-header-row .status-indicator {
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.unraid-header-row .server-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.unraid-header-row .server-url {
+    display: none; /* Hide URL in compact mode to save space */
+}
+
+#unraid-view .sub-tab-btn {
+    background: transparent !important;
+    color: var(--text-secondary);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600; /* Match Radarr/Sonarr */
+    font-size: 13px; /* Match Radarr/Sonarr */
+    position: relative;
+    z-index: 1;
+    transition: color 0.2s;
+}
+
+#unraid-view .sub-tab-btn:hover {
+    color: var(--text-primary);
+}
+
+#unraid-view .sub-tab-btn.active {
+    color: white !important;
+    background: transparent !important;
+    font-weight: 700;
+    box-shadow: none !important; /* Remove glow */
+}
+
+/* --- UNRAID DASHBOARD REDESIGN --- */
+
+/* Grid Layouts */
+.unraid-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.unraid-grid-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    padding-bottom: 15px;
+}
+
+.unraid-section-wrapper h3 {
+    margin: 0 0 10px 5px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Base Card Style */
+.unraid-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s, background 0.2s;
+}
+body.dark-mode .unraid-card {
+    background: #252525;
+    border-color: rgba(255,255,255,0.08);
+}
+.unraid-card:hover {
+    transform: translateY(-2px);
+    background: var(--card-hover-bg);
+}
+
+/* System Cards */
+.system-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+.full-width-card {
+    grid-column: span 2;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+.stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.stat-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* CPU Ring */
+.cpu-ring-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin: 5px 0;
+}
+.cpu-ring-svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+}
+.cpu-ring-bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.1);
+    stroke-width: 4;
+}
+.cpu-ring-value {
+    fill: none;
+    stroke: #2196f3;
+    stroke-width: 4;
+    stroke-dasharray: 100 100; /* Calculated in JS */
+    stroke-dashoffset: 25; /* Calculated in JS */
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease-in-out;
+}
+.cpu-text-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+/* RAM Bar */
+.ram-bar-container {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+.ram-bar-fill {
+    height: 100%;
+    background: #4caf50;
+    border-radius: 4px;
+    width: 0%;
+    transition: width 1s ease-in-out;
+}
+
+/* Storage Bars */
+.storage-disk-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+.storage-disk-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 5px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.storage-track {
+    height: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 5px;
+    overflow: hidden;
+}
+.storage-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.5s;
+}
+.storage-fill.ok { background: #4caf50; }
+.storage-fill.warn { background: #ff9800; }
+.storage-fill.crit { background: #f44336; }
+
+/* Docker/VM Cards */
+.docker-card, .vm-card {
+    padding: 12px;
+    gap: 8px;
+    min-height: 110px;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-icon {
+    width: 24px;
+    height: 24px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 4px;
+}
+
+.card-title {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    position: relative; /* Context for tooltip */
+    cursor: default;
+}
+
+/* Premium Tooltip on Hover */
+.card-title:hover::after {
+    content: attr(data-title);
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    z-index: 100;
+    pointer-events: none;
+    transform: translateY(-5px);
+    opacity: 0;
+    animation: tooltipFade 0.2s forwards;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+@keyframes tooltipFade {
+    to { opacity: 1; transform: translateY(-2px); }
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #555;
+    flex-shrink: 0;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+.status-dot.started { background: #4caf50; box-shadow: 0 0 5px #4caf50; }
+.status-dot.stopped { background: #9e9e9e; }
+.status-dot.paused { background: #ff9800; }
+
+.card-body {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+}
+.card-meta {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.3;
+}
+
+.card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 5px;
+    margin-top: auto;
+    opacity: 0; /* Hidden by default */
+    transform: translateY(5px);
+    transition: all 0.2s;
+}
+
+.unraid-card:hover .card-actions,
+.mobile-view .card-actions { /* Always show on touch if needed, or stick to hover */
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.action-btn {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 6px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: 10px;
+}
+.action-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+.start-btn:hover { background: #4caf50; }
+.stop-btn:hover { background: #f44336; }
+.restart-btn:hover { background: #ff9800; }
+.webui-btn:hover { background: #2196f3; }
+
+/* Vertical List Layout - Added for User Request */
+.unraid-vertical-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.unraid-card.row-layout {
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 15px; /* Compact padding */
+    min-height: auto !important; /* Override .docker-card min-height */
+    gap: 15px;
+}
+
+.unraid-card.row-layout .card-header {
+    flex: 1; 
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+.unraid-card.row-layout .card-body {
+    display: none; /* Hide metadata for cleaner look */
+}
+
+.unraid-card.row-layout .card-actions {
+    margin-top: 0;
+    display: flex;
+    gap: 10px;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.2s ease;
+}
+
+.unraid-card.row-layout:hover .card-actions,
+.unraid-card.row-layout:focus-within .card-actions {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Sort Select */
+.sort-select {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+}
+.sort-select:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+.sort-select option {
+    background: #2b2b2b;
+    color: var(--text-primary);
+}
+
+/* List Header & Search */
+.unraid-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.unraid-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.search-input-full {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px; /* Rounded corners */
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+    width: 100%;
+    box-sizing: border-box; 
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.search-input-full:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--primary-color);
+}

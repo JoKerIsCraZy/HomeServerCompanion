@@ -1,3 +1,9 @@
+/**
+ * Fetches the Sonarr calendar for the next 14 days.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Array>} List of episodes
+ */
 export const getSonarrCalendar = async (url, apiKey) => {
     try {
         // Get calendar for next 7 days
@@ -17,6 +23,12 @@ export const getSonarrCalendar = async (url, apiKey) => {
     }
 };
 
+/**
+ * Fetches the current activity queue.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Object>} Queue object containing 'records'
+ */
 export const getSonarrQueue = async (url, apiKey) => {
     try {
         const response = await fetch(`${url}/api/v3/queue`, {
@@ -47,9 +59,15 @@ export const getSonarrStatus = async (url, apiKey) => {
     }
 };
 
+/**
+ * Fetches recent history (downloads).
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Object>} History object containing 'records'
+ */
 export const getSonarrHistory = async (url, apiKey) => {
     try {
-        const response = await fetch(`${url}/api/v3/history?page=1&pageSize=50&sortKey=date&sortDirection=descending&includeSeries=true&includeEpisode=true`, {
+        const response = await fetch(`${url}/api/v3/history?page=1&pageSize=200&sortKey=date&sortDirection=descending&includeSeries=true&includeEpisode=true`, {
             headers: {
                 'X-Api-Key': apiKey
             }

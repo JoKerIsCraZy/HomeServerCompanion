@@ -1,3 +1,10 @@
+/**
+ * Fetches requests (pending, approved, etc).
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {string} status - Filter status (pending, all, processing, available, unavailable)
+ * @returns {Promise<Object>} Object containing 'results' array
+ */
 export const getRequests = async (url, apiKey, status = 'pending') => {
   if (!url || !apiKey) return { results: [] };
   if (!url.startsWith('http')) { url = 'http://' + url; }
@@ -27,6 +34,13 @@ export const getRequests = async (url, apiKey, status = 'pending') => {
 // Alias for backward compatibility if needed, though I will update caller
 export const getPendingRequests = (url, apiKey) => getRequests(url, apiKey, 'pending');
 
+/**
+ * Approves a request.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {number} requestId 
+ * @returns {Promise<boolean>} Success status
+ */
 export const approveRequest = async (url, apiKey, requestId) => {
     if (!url.startsWith('http')) { url = 'http://' + url; }
     if (url.endsWith('/')) { url = url.slice(0, -1); }
@@ -45,6 +59,13 @@ export const approveRequest = async (url, apiKey, requestId) => {
     }
 };
 
+/**
+ * Declines a request.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {number} requestId 
+ * @returns {Promise<boolean>} Success status
+ */
 export const declineRequest = async (url, apiKey, requestId) => {
     if (!url.startsWith('http')) { url = 'http://' + url; }
     if (url.endsWith('/')) { url = url.slice(0, -1); }
@@ -63,6 +84,13 @@ export const declineRequest = async (url, apiKey, requestId) => {
     }
 };
 
+/**
+ * Searches Overseerr (TMDB wrapper).
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {string} query 
+ * @returns {Promise<Array>} List of results
+ */
 export async function search(url, apiKey, query) {
     if (!url.startsWith('http')) {
         url = 'http://' + url;
@@ -160,6 +188,14 @@ async function getDefaults(url, apiKey, mediaType) {
     }
 }
 
+/**
+ * Submits a new media request.
+ * - Fetches defaults (Root Folder, Quality Profile) if needed to prevent errors.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {Object} payload - { mediaId, mediaType, seasons? }
+ * @returns {Promise<Object>} Response data
+ */
 export async function request(url, apiKey, payload) {
     if (!url.startsWith('http')) {
         url = 'http://' + url;

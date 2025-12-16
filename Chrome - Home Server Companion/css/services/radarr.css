@@ -1,0 +1,69 @@
+/* Radarr Styles */
+#radarr-view .progress-bar-fill {
+  background: var(--accent-radarr);
+}
+
+#radarr-view .date-header {
+  border-left-color: var(--accent-radarr);
+  color: var(--accent-radarr);
+}
+
+/* Radarr Modern Tabs (Glider) */
+#radarr-view .tabs {
+    position: relative;
+    display: inline-flex; /* Use inline-flex to wrap buttons tightly around content? Or stick to flex? */
+    /* Original was flex with gap 10px. To make pill look good, we need a container background? */
+    /* User said "keep positioning". Original was just top left tabs. */
+    /* Let's try to make it look like Overseerr but left aligned. */
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    border-radius: 12px;
+    gap: 5px; /* Tighter gap for pills */
+    z-index: 1;
+}
+body.light-theme #radarr-view .tabs {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+#radarr-view .tab-glider {
+    position: absolute;
+    top: 5px;
+    left: 5px; /* Will be adjusted by JS */
+    height: calc(100% - 10px);
+    background: linear-gradient(135deg, #FFC107, #FFB300); /* Radarr Yellow Gradient */
+    border-radius: 8px;
+    z-index: 0;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 2px 5px rgba(255, 193, 7, 0.3);
+    width: 0;
+    pointer-events: none;
+}
+
+#radarr-view .tab-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 20px;
+    margin: 0;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 13px;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    transition: color 0.2s;
+    /* Override global .tab-btn styles if necessary? layout.css has simple styles. */
+}
+
+#radarr-view .tab-btn:hover {
+    color: var(--text-primary);
+}
+
+#radarr-view .tab-btn.active {
+    background: transparent;
+    color: #000; /* Yellow bg needs dark text usually? Or white? Radarr yellow #FFC107 is bright. Black is better. */
+    font-weight: 700;
+}
+body.dark-mode #radarr-view .tab-btn.active {
+     color: #000; /* Force black on yellow even in dark mode */
+}

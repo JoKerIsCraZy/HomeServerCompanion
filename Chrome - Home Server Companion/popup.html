@@ -6,7 +6,12 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/services.css">
+  <link rel="stylesheet" href="css/services/sabnzbd.css">
+  <link rel="stylesheet" href="css/services/sonarr.css">
+  <link rel="stylesheet" href="css/services/radarr.css">
+  <link rel="stylesheet" href="css/services/tautulli.css">
+  <link rel="stylesheet" href="css/services/overseerr.css">
+  <link rel="stylesheet" href="css/services/unraid.css">
 </head>
 <body>
   <div class="app-container">
@@ -58,33 +63,53 @@
 
       <!-- Views -->
       <div id="sabnzbd-view" class="view active">
-        <!-- SABnzbd Status Dashboard -->
-        <div class="card" id="sab-status-card">
-            <div class="card-row">
-                <div class="stat-box">
-                    <div class="stat-label">Speed</div>
-                    <div class="stat-value" id="sab-speed">0 KB/s</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label">Remaining</div>
-                    <div class="stat-value" id="sab-timeleft">00:00:00</div>
-                </div>
-                <div class="stat-box">
-                     <button id="sab-pause-btn" class="action-btn">⏸️</button>
-                </div>
-            </div>
+        <!-- New Modern Header (Status) -->
+        <div class="unraid-list-header">
+             <div class="unraid-list-header-stack">
+                 <div class="unraid-list-title-row">
+                     <div class="unraid-list-title">SABnzbd</div>
+                     <div class="sab-controls" style="position: relative; display: flex; align-items: center; gap: 10px;">
+                        <div id="sab-status-bubble" class="status-bubble">Idle</div>
+                        <div class="split-btn-group">
+                            <button id="sab-pause-arrow" class="split-btn-arrow">▼</button>
+                            <button id="sab-pause-main" class="split-btn-main" title="Pause/Resume">⏸️</button>
+                        </div>
+                        <div id="sab-pause-menu" class="dropdown-menu hidden">
+                            <div class="menu-item" data-time="15">Pause 15 min</div>
+                            <div class="menu-item" data-time="30">Pause 30 min</div>
+                            <div class="menu-item" data-time="60">Pause 1 hour</div>
+                            <div class="menu-item" data-time="120">Pause 2 hours</div>
+                            <div class="menu-item" data-time="360">Pause 6 hours</div>
+                            <div class="menu-divider"></div>
+                            <div class="menu-item" data-time="0">Pause indefinitely</div>
+                        </div>
+                     </div>
+                 </div>
+                 <div class="sab-status-row" style="display: flex; gap: 15px; margin-top: 5px; font-size: 13px; color: var(--text-secondary);">
+                     <div class="status-pill status-running">
+                         <span id="sab-speed" style="font-weight: 700;">0 KB/s</span>
+                     </div>
+                     <div class="status-pill" style="background: rgba(255,255,255,0.05);">
+                         <span id="sab-timeleft">00:00:00</span>
+                     </div>
+                 </div>
+             </div>
         </div>
 
+        <!-- Modern Tabs with Glider -->
         <div class="tabs">
+            <div class="tab-glider"></div>
             <button class="tab-btn active" data-tab="queue">Queue</button>
             <button class="tab-btn" data-tab="history">History</button>
         </div>
+
         <div class="sub-view active" id="sab-queue"></div>
         <div class="sub-view hidden" id="sab-history"></div>
       </div>
 
       <div id="sonarr-view" class="view hidden">
         <div class="tabs">
+            <div class="tab-glider"></div>
             <button class="tab-btn active" data-tab="calendar">Calendar</button>
             <button class="tab-btn" data-tab="history">Recent</button>
             <button class="tab-btn" data-tab="queue">Queue</button>
@@ -96,6 +121,7 @@
 
       <div id="radarr-view" class="view hidden">
         <div class="tabs">
+            <div class="tab-glider"></div>
             <button class="tab-btn active" data-tab="calendar">Calendar</button>
             <button class="tab-btn" data-tab="movies">Recent</button>
             <button class="tab-btn" data-tab="queue">Queue</button>
@@ -112,17 +138,14 @@
 
       <!-- Overseerr View -->
       <div id="overseerr-view" class="view hidden">
-        <div class="overseerr-header">
+        <div class="overseerr-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div class="sub-tabs">
+                <div class="tab-glider"></div>
                 <button class="sub-tab-btn active" data-target="overseerr-requests-tab">Requests</button>
                 <button class="sub-tab-btn" data-target="overseerr-search-tab">Search</button>
                 <button class="sub-tab-btn" data-target="overseerr-trending-tab">Trending</button>
             </div>
-        </div>
-
-        <!-- Requests Tab -->
-        <div id="overseerr-requests-tab" class="overseerr-tab-content active">
-             <div class="filter-bar" style="margin-bottom: 15px; display: flex; justify-content: flex-end; align-items: center;">
+             <div id="overseerr-filter-container" class="filter-bar">
                  <select id="overseerr-filter" style="padding: 6px; border-radius: 6px; border: 1px solid var(--text-secondary); background: var(--card-bg); color: var(--text-primary); font-size: 13px; cursor: pointer;">
                      <option value="pending" selected>Pending Approval</option>
                      <option value="approved">Approved</option>
@@ -131,6 +154,10 @@
                      <option value="all">All Requests</option>
                  </select>
              </div>
+        </div>
+
+        <!-- Requests Tab -->
+        <div id="overseerr-requests-tab" class="overseerr-tab-content active">
              <div id="overseerr-requests" class="grid-container">
                 <!-- Populated by JS -->
              </div>
@@ -140,7 +167,9 @@
         <div id="overseerr-search-tab" class="overseerr-tab-content hidden">
             <div class="search-bar">
                 <input type="text" id="overseerr-search-input" placeholder="Search Movies & TV...">
-                <button id="overseerr-search-btn">🔍</button>
+                <button id="overseerr-search-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#ffffff"><path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/></svg>
+                </button>
             </div>
             <div id="overseerr-search-results" class="grid-container">
                 <!-- Results -->
@@ -156,20 +185,22 @@
       </div>
 
       <div id="unraid-view" class="view hidden">
-        <div class="status-card" id="unraid-status-card">
-            <div class="status-indicator">Checking...</div>
-            <div class="server-name">Unraid Server</div>
-            <div class="server-url" id="unraid-url-display"></div>
-        </div>
-        
-        <!-- Sub Tabs -->
-        <div class="sub-tabs">
-            <button class="sub-tab-btn active" data-target="unraid-tab-system">System</button>
-            <button class="sub-tab-btn" data-target="unraid-tab-storage">Storage</button>
-            <button class="sub-tab-btn" data-target="unraid-tab-docker">Docker</button>
-            <button class="sub-tab-btn" data-target="unraid-tab-vms">VMs</button>
-        </div>
+        <div class="unraid-header-row">
+            <!-- Sub Tabs -->
+            <div class="sub-tabs">
+                <div class="tab-glider"></div>
+                <button class="sub-tab-btn active" data-target="unraid-tab-system">System</button>
+                <button class="sub-tab-btn" data-target="unraid-tab-storage">Storage</button>
+                <button class="sub-tab-btn" data-target="unraid-tab-docker">Docker</button>
+                <button class="sub-tab-btn" data-target="unraid-tab-vms">VMs</button>
+            </div>
 
+            <div class="status-card" id="unraid-status-card">
+                <div class="status-indicator">Checking...</div>
+                <div class="server-name">Unraid Server</div>
+                <div class="server-url" id="unraid-url-display"></div>
+            </div>
+        </div>
         <!-- 1. System Tab -->
         <div id="unraid-tab-system" class="sub-view">
              <!-- Populated dynamically by JS to match "Genau so" screenshot -->
@@ -200,7 +231,16 @@
         <!-- 3. Docker Tab -->
         <div id="unraid-tab-docker" class="sub-view hidden">
             <div class="unraid-section-wrapper">
-                <h3>Containers</h3>
+                <div class="unraid-list-header-stack" style="margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 id="unraid-containers-header" style="margin-bottom: 0;">Containers</h3>
+                        <select id="unraid-docker-sort" class="sort-select">
+                            <option value="status-asc">Status (Running)</option>
+                            <option value="status-desc">Status (Stopped)</option>
+                        </select>
+                    </div>
+                    <input type="text" id="unraid-docker-search" placeholder="Search..." class="search-input-full">
+                </div>
                 <div id="unraid-docker-list"></div>
         </div>
         </div>
@@ -208,7 +248,7 @@
         <!-- 4. VM Tab -->
         <div id="unraid-tab-vms" class="sub-view hidden">
             <div class="unraid-section-wrapper">
-                <h3>Virtual Machines</h3>
+                <h3 id="unraid-vms-header">Virtual Machines</h3>
                 <div id="unraid-vm-list"></div>
             </div>
         </div>
@@ -441,6 +481,45 @@
                         Request
                     </button>
                 </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Unraid Docker Card Template -->
+    <template id="docker-card-template">
+        <div class="unraid-card docker-card">
+            <div class="card-header">
+                <div class="status-dot"></div>
+                <div class="card-icon"></div>
+                <div class="card-title">Container Name</div>
+            </div>
+            <div class="card-body">
+                <div class="card-meta">Image Name</div>
+            </div>
+            <div class="card-actions">
+                <button class="action-btn start-btn" title="Start">▶</button>
+                <button class="action-btn restart-btn" title="Restart">↻</button>
+                <button class="action-btn stop-btn" title="Stop">⏹</button>
+                <button class="action-btn webui-btn" title="WebUI">🌐</button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Unraid VM Card Template -->
+    <template id="vm-card-template">
+        <div class="unraid-card vm-card">
+             <div class="card-header">
+                <div class="status-dot"></div>
+                <div class="card-icon"></div> <!-- OS Icon -->
+                <div class="card-title">VM Name</div>
+            </div>
+             <div class="card-body">
+                <div class="card-meta">Cores / RAM</div>
+            </div>
+            <div class="card-actions">
+                <button class="action-btn start-btn" title="Start">▶</button>
+                <button class="action-btn stop-btn" title="Stop">⏹</button>
+                <button class="action-btn webui-btn" title="WebVNC">💻</button>
             </div>
         </div>
     </template>

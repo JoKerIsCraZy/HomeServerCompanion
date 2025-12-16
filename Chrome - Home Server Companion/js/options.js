@@ -112,9 +112,7 @@ const saveService = (service) => {
 
     const performSave = () => {
         chrome.storage.sync.set(data, () => {
-             // If we requested permission and it was granted (or already existed), we show success.
-             // Even if denied, we save the config, but warn the user?
-             // For UX, simple success is often best if saved, but if denied, it won't work.
+             // Check results and notify user
              showStatus(service, 'Settings saved!', 'success');
         });
     };
@@ -306,6 +304,9 @@ const renderOrderList = () => {
 
             const name = service.charAt(0).toUpperCase() + service.slice(1);
             
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = name;
+            
             const controls = document.createElement('div');
             controls.style.display = 'flex';
             controls.style.gap = '5px';
@@ -327,7 +328,7 @@ const renderOrderList = () => {
             controls.appendChild(upBtn);
             controls.appendChild(downBtn);
 
-            row.innerHTML = `<span>${name}</span>`;
+            row.appendChild(nameSpan);
             row.appendChild(controls);
             container.appendChild(row);
         });
@@ -342,13 +343,7 @@ const moveItem = (index, direction) => {
     [window.currentOrder[index], window.currentOrder[newIndex]] = [window.currentOrder[newIndex], window.currentOrder[index]];
     
     // Re-render (optimistic)
-    // We don't save yet, user must click Save
-    // But we need to update UI.
-    // To do this simply, we'll manually call the render part or just update the UI array
-    // Let's just re-save strictly to UI state? No, better to update the local variable and re-render.
-    // The render function fetches from storage, which is bad for immediate UI updates.
-    // Let's refactor render slightly to use local var if changed? 
-    // Actually, let's just update the UI directly since we have currentOrder.
+    // Keep UI in sync with reordering without waiting for storage callback
     const container = document.getElementById('service-order-list');
     container.innerHTML = '';
     window.currentOrder.forEach((service, i) => {
@@ -357,6 +352,9 @@ const moveItem = (index, direction) => {
         if (i === window.currentOrder.length - 1) row.style.borderBottom = 'none';
 
         const name = service.charAt(0).toUpperCase() + service.slice(1);
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = name;
         
         const controls = document.createElement('div');
         controls.style.display = 'flex';
@@ -379,15 +377,11 @@ const moveItem = (index, direction) => {
         controls.appendChild(upBtn);
         controls.appendChild(downBtn);
 
-        row.innerHTML = `<span>${name}</span>`;
+        row.appendChild(nameSpan);
         row.appendChild(controls);
         container.appendChild(row);
     });
 };
 
-/* 
-   We replaced the dedicated saveOrder listener logic in DOMContentLoaded 
-   to handle both order and persistence.
-*/
-// document.getElementById('saveOrder').addEventListener('click', () => { ... });
+
 

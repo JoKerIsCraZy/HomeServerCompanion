@@ -1,0 +1,103 @@
+/* Tautulli */
+.tautulli-item {
+  transition: transform 0.2s;
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+  /* Force white text for this card always */
+  --text-primary: #fff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  background: #1e1e1e; /* Fallback */
+}
+
+.tautulli-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+  transition: opacity 0.5s;
+  /* Always dark immersive background */
+  opacity: 1;
+  filter: blur(3px) brightness(0.25);
+}
+
+.tautulli-main {
+  position: relative;
+  z-index: 2;
+  padding: 12px;
+  display: flex;
+  gap: 15px;
+}
+
+.tautulli-details {
+  position: relative;
+  z-index: 2;
+  padding: 15px;
+  font-size: 12px;
+  backdrop-filter: blur(5px);
+  /* Always dark transparent background */
+  background: rgba(0, 0, 0, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+/* Ensure local variables override global theme */
+.tautulli-item .media-title,
+.tautulli-item .val-container,
+.tautulli-item .val-video,
+.tautulli-item .val-audio,
+.tautulli-item .val-platform,
+.tautulli-item .val-product,
+.tautulli-item .val-player,
+.tautulli-item .val-username,
+.tautulli-item .val-network,
+.tautulli-item .val-ip,
+.tautulli-item .user-info {
+  color: #fff !important;
+}
+
+.tautulli-item .media-subtitle,
+.tautulli-item .meta-row,
+.tautulli-item .detail-header,
+.tautulli-item span[style*="opacity: 0.7"] {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.tautulli-item.expanded .details-toggle {
+  transform: rotate(180deg);
+}
+
+.kill-icon-btn:hover {
+  background: #f44336 !important;
+  color: white !important;
+  transform: scale(1.1);
+  box-shadow: 0 2px 5px rgba(244, 67, 54, 0.4);
+}
+.terminate-btn:hover {
+  background: rgba(244, 67, 54, 0.2) !important;
+}
+
+/* In this specific card, progress bar needs to be visible against dark bg */
+.tautulli-item .progress-bar {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.fancy-header {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accent-tautulli);
+  margin: 10px 0 15px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--accent-tautulli);
+  padding-bottom: 5px;
+  display: inline-block;
+}
+body.dark-mode .fancy-header {
+  color: #ffc107;
+  border-color: #ffc107;
+}

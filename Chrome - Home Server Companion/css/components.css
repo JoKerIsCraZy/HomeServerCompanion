@@ -263,3 +263,225 @@ body.dark-mode .status-badge {
     color: var(--primary-color); /* Note: primary-color variable might need definition or usage of system var */
     text-decoration: underline;
 }
+
+/* --- Shared Calendar Styles (Sonarr & Radarr) --- */
+.date-group {
+    margin-bottom: 20px;
+}
+.date-header {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-left: 4px;
+    border-left: 3px solid var(--accent-sab); /* Default */
+}
+.calendar-item {
+    display: flex;
+    align-items: center;
+    background: var(--card-bg);
+    padding: 12px;
+    margin-bottom: 1px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s;
+}
+body.dark-mode .calendar-item {
+    border-bottom-color: #333;
+}
+.calendar-item:last-child {
+    border-bottom: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+.calendar-item:first-of-type {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+.calendar-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    flex-shrink: 0;
+    margin-right: 15px;
+    text-align: right;
+    border-right: 1px solid #eee;
+    padding-right: 10px;
+}
+body.dark-mode .calendar-left {
+    border-right-color: #333;
+}
+.cal-time {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.cal-ampm {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+.calendar-main {
+    flex: 1;
+    overflow: hidden;
+}
+.cal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cal-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.cal-status-line {
+    width: 4px;
+    height: 30px;
+    border-radius: 2px;
+    margin-left: 10px;
+    background: #ccc;
+    flex-shrink: 0;
+}
+
+/* --- Shared Header Stack (Unraid & SABnzbd) --- */
+.unraid-list-header-stack {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+.unraid-list-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+.unraid-list-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.status-pill {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+.status-pill.status-running {
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+/* --- Shared Split Button & Dropdown --- */
+.split-btn-group {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    overflow: hidden;
+}
+.split-btn-main, .split-btn-arrow {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+.split-btn-main {
+    padding-left: 8px;
+}
+.split-btn-arrow {
+    padding: 6px 6px;
+    font-size: 10px;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+.split-btn-main:hover, .split-btn-arrow:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.split-btn-main.paused {
+    color: #ff9800;
+}
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: auto;
+    margin-top: 5px;
+    background: #2b2b2b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 9999;
+    min-width: 140px;
+    padding: 5px 0;
+    overflow: hidden;
+}
+.dropdown-menu.hidden {
+    display: none;
+}
+.menu-item {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.menu-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 4px 0;
+}
+
+/* --- Shared Status Bubble --- */
+.status-bubble {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.status-bubble.bubble-idle {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+}
+.status-bubble.bubble-active {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+}
+.status-bubble.bubble-paused {
+    background: rgba(255, 152, 0, 0.2);
+    color: #ff9800;
+}
+
+/* --- Dark Mode Glider Fix --- */
+/* Ensure glider is always visible and not covered by button backgrounds */
+.tab-glider {
+    z-index: 1 !important;
+}
+.tab-btn, .sub-tab-btn {
+    z-index: 2 !important;
+    position: relative;
+}
+/* Force transparency on active buttons so glider shows through */
+.tab-btn.active, .sub-tab-btn.active {
+    background-color: transparent !important;
+}

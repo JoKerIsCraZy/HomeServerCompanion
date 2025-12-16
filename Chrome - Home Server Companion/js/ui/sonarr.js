@@ -1,6 +1,14 @@
 import * as Sonarr from "../../services/sonarr.js";
 import { formatSize } from "../../services/utils.js";
 
+/**
+ * Initializes the Sonarr service view.
+ * - Fetches and renders Calendar, Queue, and History.
+ * - Updates the service badge.
+ * @param {string} url - Sonarr URL
+ * @param {string} key - API Key
+ * @param {object} state - App state
+ */
 export async function initSonarr(url, key, state) {
     try {
         // Calendar
@@ -26,10 +34,15 @@ export async function initSonarr(url, key, state) {
 function renderSonarrCalendar(episodes, state) {
     const container = document.getElementById("sonarr-calendar");
     if (!container) return;
-    container.innerHTML = "";
+    container.textContent = "";
     if (episodes.length === 0) {
-      container.innerHTML =
-        '<div class="card"><div class="card-header">No upcoming episodes</div></div>';
+      const card = document.createElement('div');
+      card.className = "card";
+      const header = document.createElement('div');
+      header.className = "card-header";
+      header.textContent = "No upcoming episodes";
+      card.appendChild(header);
+      container.appendChild(card);
       return;
     }
 
@@ -41,7 +54,7 @@ function renderSonarrCalendar(episodes, state) {
       grouped[dateStr].push(ep);
     });
 
-    Object.keys(grouped).forEach((dateStr) => {
+    Object.keys(grouped).forEach((dateStr, index) => {
       // Header
       const dateGroup = document.createElement("div");
       dateGroup.className = "date-group";
@@ -65,7 +78,31 @@ function renderSonarrCalendar(episodes, state) {
 
       const header = document.createElement("div");
       header.className = "date-header";
-      header.textContent = headerText;
+      header.style.display = "flex";
+      header.style.alignItems = "center";
+      header.style.justifyContent = "space-between"; // Push link to right
+      
+      const spanText = document.createElement("span");
+      spanText.textContent = headerText;
+      header.appendChild(spanText);
+
+      // Add Link to FIRST element ("Top element")
+      if (index === 0) {
+          const linkBtn = document.createElement('span');
+          linkBtn.textContent = "\u2197"; // NE Arrow
+          linkBtn.title = "Open Calendar";
+          linkBtn.style.cssText = "cursor: pointer; font-size: 1.3em; margin-left: 10px; color: var(--text-secondary); opacity: 0.8; transition: opacity 0.2s;";
+          linkBtn.onmouseover = () => linkBtn.style.opacity = "1";
+          linkBtn.onmouseout = () => linkBtn.style.opacity = "0.8";
+          linkBtn.onclick = (e) => {
+              e.stopPropagation();
+              let cleanUrl = state.configs.sonarrUrl;
+              if(cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
+              chrome.tabs.create({ url: `${cleanUrl}/calendar` });
+          };
+          header.appendChild(linkBtn);
+      }
+      
       dateGroup.appendChild(header);
 
       // Grid Container
@@ -182,7 +219,7 @@ function renderSonarrCalendar(episodes, state) {
 function renderSonarrQueue(records, state) {
     const container = document.getElementById("sonarr-queue");
     if (!container) return;
-    container.innerHTML = "";
+    container.textContent = "";
 
     // Helper to refresh queue
     const refreshQueue = async () => {
@@ -214,12 +251,32 @@ function renderSonarrQueue(records, state) {
     refreshBtn.textContent = "↻ Refresh";
     refreshBtn.style.cssText = "background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;";
     refreshBtn.onclick = refreshQueue;
+    const linkBtn = document.createElement('button');
+    linkBtn.textContent = "\u2197"; // NE Arrow
+    linkBtn.title = "Open Activity Queue in Sonarr";
+    linkBtn.style.cssText = "background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.2em; margin-right: 15px; transition: color 0.2s;";
+    linkBtn.onmouseover = () => linkBtn.style.color = "var(--primary-color)";
+    linkBtn.onmouseout = () => linkBtn.style.color = "var(--text-secondary)";
+    linkBtn.onclick = (e) => {
+        e.stopPropagation();
+        let cleanUrl = state.configs.sonarrUrl;
+        if(cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
+        chrome.tabs.create({ url: `${cleanUrl}/activity/queue` });
+    };
+    toolbar.appendChild(linkBtn);
+
     toolbar.appendChild(refreshBtn);
     container.appendChild(toolbar);
 
     if (records.length === 0) {
       const emptyMsg = document.createElement('div');
-      emptyMsg.innerHTML = '<div class="card"><div class="card-header">Queue Empty</div></div>';
+      const card = document.createElement('div');
+      card.className = "card";
+      const header = document.createElement('div');
+      header.className = "card-header";
+      header.textContent = "Queue Empty";
+      card.appendChild(header);
+      emptyMsg.appendChild(card);
       container.appendChild(emptyMsg);
       return;
     }
@@ -260,7 +317,7 @@ function renderSonarrQueue(records, state) {
       if(delBtn) {
           // Standard Delete Button Logic (Menu)
           delBtn.style.display = "block";
-          delBtn.innerHTML = "&times;"; // Standard X
+          delBtn.textContent = "\u00D7"; // Standard X
           
           delBtn.onclick = (e) => {
               e.stopPropagation();
@@ -282,7 +339,7 @@ function renderSonarrQueue(records, state) {
               btnBlock.style.cssText = "background: #ff9800; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;";
               
               const cancel = document.createElement('button');
-              cancel.innerHTML = "&times;";
+              cancel.textContent = "\u00D7";
               cancel.style.cssText = "background: #9e9e9e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;";
 
               // Actions
@@ -343,7 +400,7 @@ function renderSonarrQueue(records, state) {
           // WARNING Extra Button
           if (isWarning) {
               const openBtn = document.createElement('button');
-              openBtn.innerHTML = "&#x2197;"; // NE Arrow
+              openBtn.textContent = "\u2197"; // NE Arrow
               openBtn.title = "Open Activity Queue (Fix Issue)";
               openBtn.style.cssText = "background: none; border: none; color: #ff9800; cursor: pointer; font-size: 16px; margin-right: 8px;";
               openBtn.onclick = (e) => {
@@ -362,56 +419,226 @@ function renderSonarrQueue(records, state) {
 function renderSonarrHistory(records, state) {
     const container = document.getElementById("sonarr-history");
     if (!container) return;
-    container.innerHTML = "";
+    container.textContent = "";
 
-    // Filter for only 'downloadFolderImported' (Completed Downloads)
-    const filtered = records
+    // Filter for only 'downloadFolderImported'
+    // We fetch more initially to allow for grouping compression
+    const rawFiltered = records
       .filter((r) => r.eventType === "downloadFolderImported")
-      .slice(0, 15);
+      .slice(0, 100);
 
-    if (filtered.length === 0) {
-      container.innerHTML =
-        '<div class="card"><div class="card-header">No recent downloads</div></div>';
+    if (rawFiltered.length === 0) {
+      const card = document.createElement('div');
+      card.className = "card";
+      const header = document.createElement('div');
+      header.className = "card-header";
+      header.textContent = "No recent downloads";
+      card.appendChild(header);
+      container.appendChild(card);
       return;
     }
 
-    const tmpl = document.getElementById("sab-history-item");
-    if (!tmpl) return;
+    // Grouping Logic
+    const groupedItems = [];
+    if (rawFiltered.length > 0) {
+        let currentGroup = [rawFiltered[0]];
+        
+        for (let i = 1; i < rawFiltered.length; i++) {
+            const prev = currentGroup[0];
+            const curr = rawFiltered[i];
+            
+            // Check if same series (by titleSlug or id)
+            // And also check if same season? Usually safer to group by season too, 
+            // otherwise S01E24 and S02E01 might look weird as S01E24-01 without season handling.
+            // Let's assume strict grouping: Same Series AND Same Season.
+            const sameSeries = (prev.series && curr.series && prev.series.id === curr.series.id);
+            const prevSeason = prev.episode ? prev.episode.seasonNumber : -1;
+            const currSeason = curr.episode ? curr.episode.seasonNumber : -2;
+            
+            if (sameSeries && prevSeason === currSeason) {
+                currentGroup.push(curr);
+            } else {
+                groupedItems.push(currentGroup);
+                currentGroup = [curr];
+            }
+        }
+        groupedItems.push(currentGroup);
+    }
+    
+    // Limit to 10 visible Cards (groups)
+    const displayGroups = groupedItems.slice(0, 10);
 
-    filtered.forEach((item) => {
-      const clone = tmpl.content.cloneNode(true);
-      const seriesTitle = item.series ? item.series.title : "Unknown";
+    // Grid Container for History
+    const grid = document.createElement("div");
+    grid.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;";
 
-      let epString = "";
-      if (item.episode) {
-        epString = ` - S${item.episode.seasonNumber}E${item.episode.episodeNumber}`;
-      }
-
-      const filenameEl = clone.querySelector(".filename");
-      filenameEl.textContent = `${seriesTitle}${epString}`;
+    displayGroups.forEach((group) => {
+      // Use the first item for Series Info / Images
+      const mainItem = group[0];
+      const series = mainItem.series || {};
+      const date = new Date(mainItem.date).toLocaleDateString();
       
-      if (item.series && item.series.titleSlug) {
-          filenameEl.classList.add('clickable-link');
-          filenameEl.addEventListener('click', (e) => {
-              e.stopPropagation();
-              const url = state.configs.sonarrUrl;
-              chrome.tabs.create({ url: `${url}/series/${item.series.titleSlug}` });
-          });
+      // Determine Episode Label
+      let epString = "";
+      let epTitleString = "";
+      
+      if (group.length === 1) {
+          // Single Episode
+          const ep = mainItem.episode || {};
+          const sNum = String(ep.seasonNumber || 0).padStart(2, '0');
+          const eNum = String(ep.episodeNumber || 0).padStart(2, '0');
+          epString = `S${sNum}E${eNum}`;
+          epTitleString = ep.title || "";
+      } else {
+          // Multi Episode Group
+          // Find Min/Max Episode Numbers
+          const epNumbers = group.map(i => i.episode ? i.episode.episodeNumber : 0).sort((a,b) => a-b);
+          const minEp = epNumbers[0];
+          const maxEp = epNumbers[epNumbers.length - 1];
+          const count = group.length;
+          
+          const sNum = String(mainItem.episode.seasonNumber || 0).padStart(2, '0');
+          // e.g. S12E10-14
+          // Note: Logic assumes continuous range, but even if S12E10 and S12E12 (gap), showing E10-12 might be acceptable or specific list "E10, E12".
+          // User requested "S12E10-14". Let's stick to Range if > 2, or Comma if 2? 
+          // Re-reading: "S12E10-14 z.B." (Range).
+          
+          // Check if contiguous? 
+          // Ideally yes, but "imported" events usually happen in batches.
+          
+          epString = `S${sNum}E${minEp}-${maxEp}`;
+          
+          // For title, "3 Episodes" or join titles?
+          if (count <= 2) {
+              epTitleString = group.map(i => i.episode.title).join(" / ");
+          } else {
+              epTitleString = `${count} Episodes Imported`;
+          }
       }
 
-      const badge = clone.querySelector(".status-badge");
-      // Friendly name
-      badge.textContent = "Imported";
-      badge.classList.add("Completed");
+      // 2. Images (Poster & Banner)
+      let posterUrl = 'icons/icon48.png';
+      let bannerUrl = '';
+      
+      if (series.images) {
+          // Find Poster
+          const posterObj = series.images.find(img => img.coverType.toLowerCase() === 'poster');
+          if(posterObj) {
+               if(posterObj.url) {
+                    let baseUrl = state.configs.sonarrUrl || "";
+                    if(baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+                    if(!posterObj.url.startsWith('http')) { 
+                        posterUrl = `${baseUrl}${posterObj.url.startsWith('/') ? '' : '/'}${posterObj.url}?apikey=${state.configs.sonarrKey}`; 
+                    } else { posterUrl = posterObj.url; }
+               } else if (posterObj.remoteUrl) { posterUrl = posterObj.remoteUrl; }
+          }
+          
+          // Find Banner (or Fanart as fallback)
+          const bannerObj = series.images.find(img => img.coverType.toLowerCase() === 'banner') 
+                         || series.images.find(img => img.coverType.toLowerCase() === 'fanart');
+          if(bannerObj) {
+              if(bannerObj.url) {
+                    let baseUrl = state.configs.sonarrUrl || "";
+                    if(baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+                    if(!bannerObj.url.startsWith('http')) { 
+                        bannerUrl = `${baseUrl}${bannerObj.url.startsWith('/') ? '' : '/'}${bannerObj.url}?apikey=${state.configs.sonarrKey}`; 
+                    } else { bannerUrl = bannerObj.url; }
+               } else if (bannerObj.remoteUrl) { bannerUrl = bannerObj.remoteUrl; }
+          }
+      }
 
-      if (item.quality)
-        clone.querySelector(".size").textContent = item.quality.quality.name;
-      clone.querySelector(".time").textContent = new Date(
-        item.date
-      ).toLocaleDateString();
+      // 3. Card DOM
+      const card = document.createElement("div");
+      card.className = "history-card";
+      card.style.cssText = `
+        position: relative; 
+        border-radius: 12px; 
+        overflow: hidden; 
+        height: 140px; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        background: var(--card-bg);
+        transition: transform 0.2s;
+        cursor: pointer;
+      `;
+      // Click to Series
+      if (series.titleSlug) {
+          card.onclick = () => {
+              const url = state.configs.sonarrUrl;
+              chrome.tabs.create({ url: `${url}/series/${series.titleSlug}` });
+          };
+          card.onmouseenter = () => card.style.transform = "translateY(-3px)";
+          card.onmouseleave = () => card.style.transform = "translateY(0)";
+      }
 
-      container.appendChild(clone);
+      // 3a. Background (Banner)
+      const bg = document.createElement("div");
+      bg.style.cssText = `
+          position: absolute; top:0; left:0; width:100%; height:100%;
+          background-image: url('${bannerUrl || posterUrl}'); 
+          background-size: cover; 
+          background-position: center;
+          opacity: 0.2; 
+          filter: blur(2px) grayscale(40%);
+          z-index: 0;
+          transition: opacity 0.3s;
+      `;
+      card.appendChild(bg);
+
+      // Hover effect
+      card.addEventListener('mouseenter', () => { bg.style.opacity = '0.3'; bg.style.filter = 'blur(1px) grayscale(0%)'; });
+      card.addEventListener('mouseleave', () => { bg.style.opacity = '0.2'; bg.style.filter = 'blur(2px) grayscale(40%)'; });
+
+      // 3b. Content Layout
+      const content = document.createElement("div");
+      content.style.cssText = `
+          position: relative; z-index: 1;
+          display: flex; height: 100%;
+          padding: 10px;
+          gap: 15px;
+          align-items: center;
+      `;
+      
+      // Poster
+      const posterImg = document.createElement("img");
+      posterImg.src = posterUrl;
+      posterImg.style.cssText = "height: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);";
+      posterImg.onerror = () => { posterImg.src = 'icons/icon48.png'; };
+      
+      // Info
+      const info = document.createElement("div");
+      info.style.cssText = "flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;";
+      
+      const titleEl = document.createElement("div");
+      titleEl.textContent = series.title || "Unknown Series";
+      titleEl.title = series.title;
+      titleEl.style.cssText = "font-weight: 800; font-size: 1.1em; margin-bottom: 4px; color: var(--text-primary); text-shadow: 0 2px 4px rgba(0,0,0,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
+      
+      const epEl = document.createElement("div");
+      epEl.textContent = epString;
+      epEl.style.cssText = "font-weight: 700; color: var(--accent-sonarr); font-size: 1em; margin-bottom: 2px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);";
+      
+      const epTitleEl = document.createElement("div");
+      epTitleEl.textContent = epTitleString;
+      epTitleEl.style.cssText = "font-size: 0.85em; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; opacity: 0.9;";
+      
+      const metaEl = document.createElement("div");
+      const quality = mainItem.quality && mainItem.quality.quality ? mainItem.quality.quality.name : "";
+      metaEl.textContent = `${quality} • ${date}`;
+      metaEl.style.cssText = "font-size: 0.75em; color: #e0e0e0; margin-top: 5px; opacity: 0.9;";
+
+      info.appendChild(titleEl);
+      info.appendChild(epEl);
+      info.appendChild(epTitleEl);
+      info.appendChild(metaEl);
+
+      content.appendChild(posterImg);
+      content.appendChild(info);
+      card.appendChild(content);
+      
+      grid.appendChild(card);
     });
+
+    container.appendChild(grid);
 }
 
 async function updateSonarrBadge(url, key) {
