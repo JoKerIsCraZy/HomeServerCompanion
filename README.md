@@ -4,9 +4,24 @@
 
 # Home Server Companion
 
-![Version](https://img.shields.io/badge/version-2.2-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-[![Available on Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Now-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
+[![Version](https://img.shields.io/badge/version-2.2-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
+[![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/blob/master/LICENSE)
+[![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
+[![GitHub Sponsor](https://img.shields.io/github/sponsors/JoKerIsCraZy?label=Sponsor%20Project&color=fc0345&logo=github&style=for-the-badge)](https://github.com/sponsors/JoKerIsCraZy)
+
+[![Available on Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Now-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
+[![Browser Support](https://img.shields.io/badge/Supports-Chrome-critical?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange?style=for-the-badge)](https://developer.chrome.com/docs/extensions/mv3/)
+[![Built With](https://img.shields.io/badge/Built%20With-JavaScript-F7DF1E?logo=javascript&logoColor=black&style=for-the-badge)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+
+---
+
+[![GitHub Stars](https://img.shields.io/github/stars/JoKerIsCraZy/HomeServerCompanion?style=flat&logo=github)](https://github.com/JoKerIsCraZy/HomeServerCompanion/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/JoKerIsCraZy/HomeServerCompanion?style=flat&logo=github)](https://github.com/JoKerIsCraZy/HomeServerCompanion/network/members)
+[![Open Issues](https://img.shields.io/github/issues/JoKerIsCraZy/HomeServerCompanion)](https://github.com/JoKerIsCraZy/HomeServerCompanion/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
+
+---
 
 **Home Server Companion** is a powerful, modern Chrome Extension designed to bring your home server directly to your browser's toolbar. Manage downloads, monitor streams, check requests, and control your server status with a sleek, unified interface.
 
@@ -14,27 +29,27 @@
 
 A comprehensive dashboard for your self-hosted services:
 
-- **SABnzbd**:
+- **📦 SABnzbd**:
     - Monitor real-time download queue and speed.
     - Pause/Resume the entire queue or delete individual items.
     - View download history.
-- **Sonarr & Radarr**:
+- **📺 Sonarr & Radarr**:
     - **Calendar**: View upcoming episodes and movie releases.
     - **Queue**: Track active downloads.
     - **History**: See recently imported media.
     - **Quick Links**: Jump directly to series/movie pages.
-- **Tautulli**:
+- **🎬 Tautulli**:
     - View active Plex streams with user and playback details.
     - **Kill Stream**: Terminate active streams directly from the popup.
-- **Overseerr**:
+- **✍️ Overseerr**:
     - **Browse Requests**: View pending and approved media requests.
     - **Search**: Search for new content to request directly.
     - **Details**: View detailed metadata for requested media.
-- **Unraid**:
+- **⚙️ Unraid**:
     - **System Stats**: Real-time CPU and RAM usage monitoring.
     - **Array Status**: Check array capacity and health.
     - **Docker Management**: Start, Stop, or Restart containers instantaneously.
-- **General**:
+- **🌈 General**:
     - **Dark/Light Mode**: Matches your system preference or custom toggle.
     - **Customizable Order**: Reorder services in the sidebar to fit your workflow.
     - **Direct Links**: One-click access to all your service Web UIs.
