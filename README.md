@@ -115,7 +115,7 @@ Once installed, you need to connect your services.
 We value your privacy and only request permissions necessary for core functionality:
 
 - **Storage (`storage`)**: Used exclusively to save your configuration (Server URLs, API Keys, View Preferences) locally within your browser profile via the Chrome Sync API. No data is ever sent to external servers or analytics.
-- **Access to your websites (Host Permissions)**: This permission is required to communicate with the URLs of your self-hosted services (such as SABnzbd, Sonarr, Tautulli). Since your servers can be on any local IP address or custom domain, we ask for permission to dynamically fetch data from the specific URLs you configure in the settings. **We do not access any other websites.**
+- **Optional Host Permissions (`optional_host_permissions`)**: This extension uses *optional host permissions* to communicate with your self-hosted instances (SABnzbd, Sonarr, etc.). **Permission is only requested when you attempt to connect a specific server URL in the extension options.** Since your servers can be on any local IP address or custom domain, we require this dynamic permission to fetch data from the specific URLs you configure. **We do not access any other websites.**
 
 ## 💻 Tech Stack
 
