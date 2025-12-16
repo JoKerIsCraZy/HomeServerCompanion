@@ -7,7 +7,6 @@
 [![Version](https://img.shields.io/badge/version-2.2-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/blob/master/LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
-[![GitHub Sponsor](https://img.shields.io/github/sponsors/JoKerIsCraZy?label=Sponsor%20Project&color=fc0345&logo=github&style=for-the-badge)](https://github.com/sponsors/JoKerIsCraZy)
 
 [![Available on Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Now-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
 [![Browser Support](https://img.shields.io/badge/Supports-Chrome-critical?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
