@@ -8,7 +8,11 @@ export const getRadarrMovies = async (url, apiKey) => {
         // Actually, let's just show the Queue and maybe "Movies Missing" count.
         
         // For now, let's fetch Queue as it's most useful.
-        const response = await fetch(`${url}/api/v3/queue?apikey=${apiKey}`);
+        const response = await fetch(`${url}/api/v3/queue`, {
+            headers: {
+                'X-Api-Key': apiKey
+            }
+        });
         if (!response.ok) throw new Error(`Error: ${response.status}`);
         return await response.json();
     } catch (error) {
@@ -20,7 +24,11 @@ export const getRadarrMovies = async (url, apiKey) => {
 // Getting "Recent" movies via history might be better than fetching 1000 movies
 export const getRadarrHistory = async (url, apiKey) => {
     try {
-        const response = await fetch(`${url}/api/v3/history?page=1&pageSize=50&sortKey=date&sortDirection=descending&includeMovie=true&apikey=${apiKey}`);
+        const response = await fetch(`${url}/api/v3/history?page=1&pageSize=50&sortKey=date&sortDirection=descending&includeMovie=true`, {
+            headers: {
+                'X-Api-Key': apiKey
+            }
+        });
         if (!response.ok) throw new Error(`Error: ${response.status}`);
         return await response.json();
     } catch (error) {
@@ -35,7 +43,11 @@ export const getRadarrCalendar = async (url, apiKey) => {
         const today = new Date().toISOString().split('T')[0];
         const nextMonth = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-        const response = await fetch(`${url}/api/v3/calendar?start=${today}&end=${nextMonth}&apikey=${apiKey}`);
+        const response = await fetch(`${url}/api/v3/calendar?start=${today}&end=${nextMonth}`, {
+            headers: {
+                'X-Api-Key': apiKey
+            }
+        });
         if (!response.ok) throw new Error(`Calendar Error: ${response.status}`);
         return await response.json();
     } catch (error) {
@@ -46,7 +58,11 @@ export const getRadarrCalendar = async (url, apiKey) => {
 
 export const getRadarrStatus = async (url, apiKey) => {
     try {
-         const response = await fetch(`${url}/api/v3/system/status?apikey=${apiKey}`);
+         const response = await fetch(`${url}/api/v3/system/status`, {
+            headers: {
+                'X-Api-Key': apiKey
+            }
+         });
          if (!response.ok) throw new Error(`Error: ${response.status}`);
          return await response.json();
     } catch (error) {
@@ -57,9 +73,12 @@ export const getRadarrStatus = async (url, apiKey) => {
 
 export const deleteQueueItem = async (url, apiKey, id, removeFromClient = true, blocklist = false) => {
     try {
-        const query = `?apikey=${apiKey}&removeFromClient=${removeFromClient}&blocklist=${blocklist}`;
+        const query = `?removeFromClient=${removeFromClient}&blocklist=${blocklist}`;
         const response = await fetch(`${url}/api/v3/queue/${id}${query}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'X-Api-Key': apiKey
+            }
         });
         if (!response.ok) throw new Error(`Delete Error: ${response.status}`);
         const text = await response.text();
