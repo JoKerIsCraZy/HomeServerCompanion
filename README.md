@@ -4,7 +4,7 @@
 
 # Home Server Companion
 
-[![Version](https://img.shields.io/badge/version-2.2-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
+[![Version](https://img.shields.io/badge/version-2.3-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/blob/master/LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
 
@@ -29,29 +29,47 @@
 A comprehensive dashboard for your self-hosted services:
 
 - **📦 SABnzbd**:
-    - Monitor real-time download queue and speed.
-    - Pause/Resume the entire queue or delete individual items.
-    - View download history.
-- **📺 Sonarr & Radarr**:
-    - **Calendar**: View upcoming episodes and movie releases.
-    - **Queue**: Track active downloads.
-    - **History**: See recently imported media.
-    - **Quick Links**: Jump directly to series/movie pages.
-- **🎬 Tautulli**:
-    - View active Plex streams with user and playback details.
-    - **Kill Stream**: Terminate active streams directly from the popup.
+  - Monitor real-time download queue with speed and time remaining.
+  - **Timed Pause**: Pause downloads for 15min, 30min, 1h, 2h, 6h, or indefinitely.
+  - Pause/Resume the entire queue or delete individual items.
+  - View detailed download history with status indicators.
+- **📺 Sonarr**:
+  - **Calendar**: View upcoming episodes with air times and release info.
+  - **Queue**: Track active downloads with warnings for stuck items.
+  - **History**: See recently imported episodes grouped by series and season.
+  - **Queue Management**: Delete items with options to remove from client or blocklist & search for alternatives.
+  - **Badge Notifications**: Visual alerts for queue issues requiring attention.
+- **🎬 Radarr**:
+  - **Calendar**: View upcoming movie releases (Digital, Physical, Cinema).
+  - **Queue**: Monitor active downloads with issue detection.
+  - **History**: Browse recently imported movies with poster art.
+  - **Queue Management**: Remove downloads or blocklist releases and trigger automatic re-search.
+  - **Badge Notifications**: Alerts for download warnings and errors.
+- **📊 Tautulli**:
+  - View active Plex streams with rich metadata and poster art.
+  - **Kill Stream**: Terminate active streams directly from the popup.
+  - **Detailed Stats**: User info, playback quality, bandwidth, stream decision (Direct Play/Transcode).
+  - **Expandable Details**: View full stream, player, and user information.
 - **✍️ Overseerr**:
-    - **Browse Requests**: View pending and approved media requests.
-    - **Search**: Search for new content to request directly.
-    - **Details**: View detailed metadata for requested media.
+  - **Browse Requests**: View and filter requests by status (Pending, Approved, Processing, Available).
+  - **Search**: Search TMDB for movies and TV shows to request.
+  - **Trending**: Discover trending content with random rotation on each view.
+  - **Request Media**: One-click requests for movies and full TV seasons.
+  - **Approve/Decline**: Manage pending requests directly from the extension.
+  - **Smart Caching**: Instant load times with hydrated request data.
 - **⚙️ Unraid**:
-    - **System Stats**: Real-time CPU and RAM usage monitoring.
-    - **Array Status**: Check array capacity and health.
-    - **Docker Management**: Start, Stop, or Restart containers instantaneously.
+  - **System Dashboard**: Real-time CPU ring chart, RAM usage bar, and uptime tracking.
+  - **Quick Stats**: Array status and storage space overview.
+  - **Storage Breakdown**: Detailed disk usage for Array, Cache/Pools, and Boot drives.
+  - **Docker Management**: Start, Stop, Restart containers with status indicators and search/sort.
+  - **VM Management**: Control virtual machines with start/stop and VNC access.
+  - **WebUI Access**: Quick links to container and VM interfaces.
 - **🌈 General**:
-    - **Dark/Light Mode**: Matches your system preference or custom toggle.
-    - **Customizable Order**: Reorder services in the sidebar to fit your workflow.
-    - **Direct Links**: One-click access to all your service Web UIs.
+  - **Dark/Light Mode**: Toggle theme with persistent state.
+  - **Customizable Order**: Reorder services in the sidebar to fit your workflow.
+  - **Direct Links**: One-click access to all your service Web UIs and specific pages.
+  - **Badge Notifications**: Visual alerts on navigation for services requiring attention.
+  - **Persistent State**: Remembers your last viewed service and tabs across sessions.
 
 ## 📸 Screenshots
 
@@ -68,7 +86,7 @@ A comprehensive dashboard for your self-hosted services:
 ### Option 1: Install via the Chrome Web Store (Recommended)
 
 1.  Visit the extension page on the **Chrome Web Store**:
-    * [https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
+    - [https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
 2.  Click **Add to Chrome** and confirm the installation.
 3.  The **Home Server Companion** icon will appear in your toolbar. Pin it for easy access!
 
@@ -89,16 +107,16 @@ Once installed, you need to connect your services.
 1.  Right-click the extension icon and select **Options**.
 2.  Navigate through the tabs to configure each service you use.
 
-| Service       | Setting       | Description                                                                            |
-| :------------ | :------------ | :------------------------------------------------------------------------------------- |
-| **General**   | Service Order | Drag and drop (or use arrows) to reorder the sidebar. The top item opens by default.   |
-| **SABnzbd**   | URL & API Key | Found in Config -> General / API.                                                      |
-| **Sonarr**    | URL & API Key | Found in Settings -> General.                                                          |
-| **Radarr**    | URL & API Key | Found in Settings -> General.                                                          |
-| **Tautulli**  | URL & API Key | Found in Settings -> Web Interface.                                                    |
-| **Overseerr** | URL & API Key | Found in Settings -> General.                                                          |
-| **Unraid**    | URL           | IP Address or Hostname (e.g., `http://192.168.1.10`).                                  |
-|               | API Key       | Required for advanced control. Generate via "Management Access" settings if available. |
+| Service         | Setting        | Description                                                                             |
+| :-------------- | :------------- | :-------------------------------------------------------------------------------------- |
+| **General**     | Service Order  | Drag and drop (or use arrows) to reorder the sidebar. The top item opens by default.    |
+| **SABnzbd**     | URL & API Key  | Found in Config -> General / API.                                                       |
+| **Sonarr**      | URL & API Key  | Found in Settings -> General.                                                           |
+| **Radarr**      | URL & API Key  | Found in Settings -> General.                                                           |
+| **Tautulli**    | URL & API Key  | Found in Settings -> Web Interface.                                                     |
+| **Overseerr**   | URL & API Key  | Found in Settings -> General.                                                           |
+| **Unraid**      | URL            | IP Address or Hostname (e.g., `http://192.168.1.10`).                                   |
+|                 | API Key        | Required for advanced control. Generate via "Management Access" settings if available.  |
 
 > **Note**: Ensure your URLs include the protocol (`http://` or `https://`) and port if non-standard (e.g., `:8080`).
 
@@ -115,7 +133,7 @@ Once installed, you need to connect your services.
 We value your privacy and only request permissions necessary for core functionality:
 
 - **Storage (`storage`)**: Used exclusively to save your configuration (Server URLs, API Keys, View Preferences) locally within your browser profile via the Chrome Sync API. No data is ever sent to external servers or analytics.
-- **Optional Host Permissions (`optional_host_permissions`)**: This extension uses *optional host permissions* to communicate with your self-hosted instances (SABnzbd, Sonarr, etc.). **Permission is only requested when you attempt to connect a specific server URL in the extension options.** Since your servers can be on any local IP address or custom domain, we require this dynamic permission to fetch data from the specific URLs you configure. **We do not access any other websites.**
+- **Optional Host Permissions (`optional_host_permissions`)**: This extension uses _optional host permissions_ to communicate with your self-hosted instances (SABnzbd, Sonarr, etc.). **Permission is only requested when you attempt to connect a specific server URL in the extension options.** Since your servers can be on any local IP address or custom domain, we require this dynamic permission to fetch data from the specific URLs you configure. **We do not access any other websites.**
 
 ## 💻 Tech Stack
 
