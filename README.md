@@ -15,29 +15,29 @@
 A comprehensive dashboard for your self-hosted services:
 
 - **SABnzbd**:
-  - Monitor real-time download queue and speed.
-  - Pause/Resume the entire queue or delete individual items.
-  - View download history.
+    - Monitor real-time download queue and speed.
+    - Pause/Resume the entire queue or delete individual items.
+    - View download history.
 - **Sonarr & Radarr**:
-  - **Calendar**: View upcoming episodes and movie releases.
-  - **Queue**: Track active downloads.
-  - **History**: See recently imported media.
-  - **Quick Links**: Jump directly to series/movie pages.
+    - **Calendar**: View upcoming episodes and movie releases.
+    - **Queue**: Track active downloads.
+    - **History**: See recently imported media.
+    - **Quick Links**: Jump directly to series/movie pages.
 - **Tautulli**:
-  - View active Plex streams with user and playback details.
-  - **Kill Stream**: Terminate active streams directly from the popup.
+    - View active Plex streams with user and playback details.
+    - **Kill Stream**: Terminate active streams directly from the popup.
 - **Overseerr**:
-  - **Browse Requests**: View pending and approved media requests.
-  - **Search**: Search for new content to request directly.
-  - **Details**: View detailed metadata for requested media.
+    - **Browse Requests**: View pending and approved media requests.
+    - **Search**: Search for new content to request directly.
+    - **Details**: View detailed metadata for requested media.
 - **Unraid**:
-  - **System Stats**: Real-time CPU and RAM usage monitoring.
-  - **Array Status**: Check array capacity and health.
-  - **Docker Management**: Start, Stop, or Restart containers instantaneously.
+    - **System Stats**: Real-time CPU and RAM usage monitoring.
+    - **Array Status**: Check array capacity and health.
+    - **Docker Management**: Start, Stop, or Restart containers instantaneously.
 - **General**:
-  - **Dark/Light Mode**: Matches your system preference or custom toggle.
-  - **Customizable Order**: Reorder services in the sidebar to fit your workflow.
-  - **Direct Links**: One-click access to all your service Web UIs.
+    - **Dark/Light Mode**: Matches your system preference or custom toggle.
+    - **Customizable Order**: Reorder services in the sidebar to fit your workflow.
+    - **Direct Links**: One-click access to all your service Web UIs.
 
 ## 📸 Screenshots
 
