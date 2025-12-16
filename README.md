@@ -6,9 +6,7 @@
 
 ![Version](https://img.shields.io/badge/version-2.2-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-<a href="https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld">
-  <img src="https://storage.googleapis.com/web-dev-assets/installation-badges/chrome/download-on-chrome.png" alt="Download on Chrome Web Store" width="180">
-</a>
+[![Available on Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Now-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
 
 **Home Server Companion** is a powerful, modern Chrome Extension designed to bring your home server directly to your browser's toolbar. Manage downloads, monitor streams, check requests, and control your server status with a sleek, unified interface.
 
