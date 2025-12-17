@@ -330,454 +330,726 @@ body.dark-mode .docker-item {
 
 /* Unraid Tabs (Glider Style) */
 .unraid-header-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 0 5px;
 }
 
 #unraid-view .sub-tabs {
-    position: relative;
-    display: inline-flex;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 5px;
-    border-radius: 12px;
-    gap: 5px;
-    z-index: 1;
-    margin-bottom: 0; /* Remove bottom margin as it's in a flex row */
+  position: relative;
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 5px;
+  border-radius: 12px;
+  gap: 5px;
+  z-index: 1;
+  margin-bottom: 0; /* Remove bottom margin as it's in a flex row */
 }
 
 #unraid-view .tab-glider {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    height: calc(100% - 10px);
-    background: #F15A2C; /* Official Unraid Orange */
-    border-radius: 8px;
-    z-index: 0;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    width: 0; 
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  height: calc(100% - 10px);
+  background: #f15a2c; /* Official Unraid Orange */
+  border-radius: 8px;
+  z-index: 0;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  width: 0;
 }
 
 /* Compact Status Card for Header */
 .unraid-header-row #unraid-status-card {
-    padding: 0;
-    margin: 0;
-    background: transparent;
-    box-shadow: none;
-    text-align: right;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .unraid-header-row .status-indicator {
-    font-size: 14px;
-    margin-bottom: 2px;
+  font-size: 14px;
+  margin-bottom: 2px;
 }
 
 .unraid-header-row .server-name {
-    font-size: 12px;
-    color: var(--text-secondary);
-    font-weight: 500;
-    opacity: 0.8;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  opacity: 0.8;
 }
 
 .unraid-header-row .server-url {
-    display: none; /* Hide URL in compact mode to save space */
+  display: none; /* Hide URL in compact mode to save space */
 }
 
 #unraid-view .sub-tab-btn {
-    background: transparent !important;
-    color: var(--text-secondary);
-    border: none;
-    padding: 8px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600; /* Match Radarr/Sonarr */
-    font-size: 13px; /* Match Radarr/Sonarr */
-    position: relative;
-    z-index: 1;
-    transition: color 0.2s;
+  background: transparent !important;
+  color: var(--text-secondary);
+  border: none;
+  padding: 8px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600; /* Match Radarr/Sonarr */
+  font-size: 13px; /* Match Radarr/Sonarr */
+  position: relative;
+  z-index: 1;
+  transition: color 0.2s;
 }
 
 #unraid-view .sub-tab-btn:hover {
-    color: var(--text-primary);
+  color: var(--text-primary);
 }
 
 #unraid-view .sub-tab-btn.active {
-    color: white !important;
-    background: transparent !important;
-    font-weight: 700;
-    box-shadow: none !important; /* Remove glow */
+  color: white !important;
+  background: transparent !important;
+  font-weight: 700;
+  box-shadow: none !important; /* Remove glow */
 }
 
 /* --- UNRAID DASHBOARD REDESIGN --- */
 
 /* Grid Layouts */
 .unraid-dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
 }
 
 .unraid-grid-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
-    padding-bottom: 15px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  padding-bottom: 15px;
 }
 
 .unraid-section-wrapper h3 {
-    margin: 0 0 10px 5px;
-    font-size: 14px;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    font-weight: 600;
+  margin: 0 0 10px 5px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-weight: 600;
 }
 
 /* Base Card Style */
 .unraid-card {
-    background: var(--card-bg);
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    border: 1px solid rgba(255,255,255,0.05);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    transition: transform 0.2s, background 0.2s;
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, background 0.2s;
 }
 body.dark-mode .unraid-card {
-    background: #252525;
-    border-color: rgba(255,255,255,0.08);
+  background: #252525;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 .unraid-card:hover {
-    transform: translateY(-2px);
-    background: var(--card-hover-bg);
+  transform: translateY(-2px);
+  background: var(--card-hover-bg);
 }
 
 /* System Cards */
 .system-stat-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 .full-width-card {
-    grid-column: span 2;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 20px;
+  grid-column: span 2;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
 }
 
 .stat-label {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-bottom: 5px;
-    font-weight: 600;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+  font-weight: 600;
 }
 .stat-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 .stat-sub {
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
 }
 
 /* CPU Ring */
 .cpu-ring-container {
-    position: relative;
-    width: 60px;
-    height: 60px;
-    margin: 5px 0;
+  position: relative;
+  width: 60px;
+  height: 60px;
+  margin: 5px 0;
 }
 .cpu-ring-svg {
-    transform: rotate(-90deg);
-    width: 100%;
-    height: 100%;
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
 }
 .cpu-ring-bg {
-    fill: none;
-    stroke: rgba(255,255,255,0.1);
-    stroke-width: 4;
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 4;
 }
 .cpu-ring-value {
-    fill: none;
-    stroke: #2196f3;
-    stroke-width: 4;
-    stroke-dasharray: 100 100; /* Calculated in JS */
-    stroke-dashoffset: 25; /* Calculated in JS */
-    stroke-linecap: round;
-    transition: stroke-dashoffset 1s ease-in-out;
+  fill: none;
+  stroke: #2196f3;
+  stroke-width: 4;
+  stroke-dasharray: 100 100; /* Calculated in JS */
+  stroke-dashoffset: 25; /* Calculated in JS */
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease-in-out;
 }
 .cpu-text-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 12px;
-    font-weight: bold;
-    color: var(--text-primary);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-primary);
 }
 
 /* RAM Bar */
 .ram-bar-container {
-    width: 100%;
-    height: 8px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 4px;
-    margin-top: 8px;
-    overflow: hidden;
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-top: 8px;
+  overflow: hidden;
 }
 .ram-bar-fill {
-    height: 100%;
-    background: #4caf50;
-    border-radius: 4px;
-    width: 0%;
-    transition: width 1s ease-in-out;
+  height: 100%;
+  background: #4caf50;
+  border-radius: 4px;
+  width: 0%;
+  transition: width 1s ease-in-out;
 }
 
 /* Storage Bars */
 .storage-disk-row {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
 }
 .storage-disk-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    margin-bottom: 5px;
-    color: var(--text-primary);
-    font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: var(--text-primary);
+  font-weight: 500;
 }
 .storage-track {
-    height: 10px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 5px;
-    overflow: hidden;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  overflow: hidden;
 }
 .storage-fill {
-    height: 100%;
-    border-radius: 5px;
-    transition: width 0.5s;
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s;
 }
-.storage-fill.ok { background: #4caf50; }
-.storage-fill.warn { background: #ff9800; }
-.storage-fill.crit { background: #f44336; }
+.storage-fill.ok {
+  background: #4caf50;
+}
+.storage-fill.warn {
+  background: #ff9800;
+}
+.storage-fill.crit {
+  background: #f44336;
+}
 
 /* Docker/VM Cards */
-.docker-card, .vm-card {
-    padding: 12px;
-    gap: 8px;
-    min-height: 110px;
-    position: relative;
-    overflow: hidden;
+.docker-card,
+.vm-card {
+  padding: 12px;
+  gap: 8px;
+  min-height: 110px;
+  position: relative;
+  overflow: hidden;
 }
 
 .card-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .card-icon {
-    width: 24px;
-    height: 24px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 4px;
 }
 
 .card-title {
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-    position: relative; /* Context for tooltip */
-    cursor: default;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  position: relative; /* Context for tooltip */
+  cursor: default;
 }
 
 /* Premium Tooltip on Hover */
 .card-title:hover::after {
-    content: attr(data-title);
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    background: #333;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: nowrap;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    z-index: 100;
-    pointer-events: none;
-    transform: translateY(-5px);
-    opacity: 0;
-    animation: tooltipFade 0.2s forwards;
-    border: 1px solid rgba(255,255,255,0.1);
+  content: attr(data-title);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  pointer-events: none;
+  transform: translateY(-5px);
+  opacity: 0;
+  animation: tooltipFade 0.2s forwards;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 @keyframes tooltipFade {
-    to { opacity: 1; transform: translateY(-2px); }
+  to {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
 }
 
 .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #555;
-    flex-shrink: 0;
-    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #555;
+  flex-shrink: 0;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }
-.status-dot.started { background: #4caf50; box-shadow: 0 0 5px #4caf50; }
-.status-dot.stopped { background: #9e9e9e; }
-.status-dot.paused { background: #ff9800; }
+.status-dot.started {
+  background: #4caf50;
+  box-shadow: 0 0 5px #4caf50;
+}
+.status-dot.stopped {
+  background: #9e9e9e;
+}
+.status-dot.paused {
+  background: #ff9800;
+}
 
 .card-body {
-    flex: 1;
-    display: flex;
-    align-items: flex-start;
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
 }
 .card-meta {
-    font-size: 11px;
-    color: var(--text-secondary);
-    line-height: 1.3;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.3;
 }
 
 .card-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 5px;
-    margin-top: auto;
-    opacity: 0; /* Hidden by default */
-    transform: translateY(5px);
-    transition: all 0.2s;
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: auto;
+  opacity: 0; /* Hidden by default */
+  transform: translateY(5px);
+  transition: all 0.2s;
 }
 
 .unraid-card:hover .card-actions,
-.mobile-view .card-actions { /* Always show on touch if needed, or stick to hover */
-    opacity: 1;
-    transform: translateY(0);
+.mobile-view .card-actions {
+  /* Always show on touch if needed, or stick to hover */
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .action-btn {
-    background: rgba(255,255,255,0.1);
-    border: none;
-    border-radius: 6px;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--text-primary);
-    font-size: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 10px;
 }
 .action-btn:hover {
-    background: var(--primary-color);
-    color: white;
+  background: var(--primary-color);
+  color: white;
 }
-.start-btn:hover { background: #4caf50; }
-.stop-btn:hover { background: #f44336; }
-.restart-btn:hover { background: #ff9800; }
-.webui-btn:hover { background: #2196f3; }
+.start-btn:hover {
+  background: #4caf50;
+}
+.stop-btn:hover {
+  background: #f44336;
+}
+.restart-btn:hover {
+  background: #ff9800;
+}
+.webui-btn:hover {
+  background: #2196f3;
+}
 
 /* Vertical List Layout - Added for User Request */
 .unraid-vertical-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .unraid-card.row-layout {
-    flex-direction: row;
-    align-items: center;
-    padding: 10px 15px; /* Compact padding */
-    min-height: auto !important; /* Override .docker-card min-height */
-    gap: 15px;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 15px; /* Compact padding */
+  min-height: auto !important; /* Override .docker-card min-height */
+  gap: 15px;
 }
 
 .unraid-card.row-layout .card-header {
-    flex: 1; 
-    margin-bottom: 0;
-    min-width: 0;
+  flex: 1;
+  margin-bottom: 0;
+  min-width: 0;
 }
 
 .unraid-card.row-layout .card-body {
-    display: none; /* Hide metadata for cleaner look */
+  display: none; /* Hide metadata for cleaner look */
 }
 
 .unraid-card.row-layout .card-actions {
-    margin-top: 0;
-    display: flex;
-    gap: 10px;
-    opacity: 0;
-    transform: translateX(10px);
-    transition: all 0.2s ease;
+  margin-top: 0;
+  display: flex;
+  gap: 10px;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all 0.2s ease;
 }
 
 .unraid-card.row-layout:hover .card-actions,
 .unraid-card.row-layout:focus-within .card-actions {
-    opacity: 1;
-    transform: translateX(0);
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* Sort Select */
 .sort-select {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 12px;
-    outline: none;
-    cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
 }
 .sort-select:hover {
-    background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.15);
 }
 .sort-select option {
-    background: #2b2b2b;
-    color: var(--text-primary);
+  background: #2b2b2b;
+  color: var(--text-primary);
 }
 
 /* List Header & Search */
 .unraid-list-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
 }
 .unraid-controls {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 .search-input-full {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px; /* Rounded corners */
-    padding: 8px 12px;
-    font-size: 13px;
-    color: var(--text-primary);
-    outline: none;
-    width: 100%;
-    box-sizing: border-box; 
-    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px; /* Rounded corners */
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 .search-input-full:focus {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--primary-color);
+}
+
+/* === MODERN DASHBOARD ENHANCEMENTS === */
+
+/* Compact 3-Column Grid Layout */
+.unraid-dashboard-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 15px !important;
+}
+
+/* Modern Card Shadows & Hover Effects */
+.unraid-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.04)
+  ) !important;
+  padding: 10px !important; /* Compact padding */
+  border-radius: 8px !important; /* Smaller radius */
+}
+body.dark-mode .unraid-card {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.04)
+  ) !important;
+}
+.unraid-card:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.06)
+  ) !important;
+}
+
+/* Icons for Stat Labels - Compact */
+.stat-label::before {
+  display: inline-block;
+  margin-right: 4px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+.stat-label:contains("ARRAY")::before {
+  content: "📊";
+}
+.stat-label:contains("SPACE")::before {
+  content: "💾";
+}
+.stat-label:contains("DOCKER")::before {
+  content: "🐳";
+}
+.stat-label:contains("VIRTUAL")::before {
+  content: "🖥️";
+}
+.stat-label:contains("PARITY")::before {
+  content: "🔍";
+}
+.stat-label:contains("DISK HEALTH")::before {
+  content: "⚕️";
+}
+.stat-label:contains("CPU")::before {
+  content: "⚡";
+}
+.stat-label:contains("RAM")::before {
+  content: "🧠";
+}
+.stat-label:contains("UPTIME")::before {
+  content: "⏱️";
+}
+
+/* Compact Stat Values - White Text */
+.stat-value {
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  font-size: 16px !important; /* Compact size */
+  color: #ffffff !important; /* White text per user request */
+}
+
+/* Compact Labels */
+.stat-label {
+    font-size: 10px !important;
+    margin-bottom: 3px !important;
+}
+
+.stat-sub {
+    font-size: 9px !important;
+    margin-top: 1px !important;
+}
+
+/* Enhanced Full-Width Cards - Compact with Lighter Background */
+.full-width-card {
+  background: linear-gradient(
+    90deg,
+    rgba(241, 90, 44, 0.12),
+    rgba(255, 152, 0, 0.08)
+  ) !important;
+  border-left: 3px solid #F15A2C;
+  padding: 10px 15px !important; /* Compact padding */
+  grid-column: span 3 !important; /* Span all 3 columns */
+}
+.full-width-card .stat-label {
+  font-size: 9px !important; /* Extra compact for full-width */
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.full-width-card .stat-value {
+  font-size: 15px !important; /* Compact */
+}
+
+/* Animated CPU Ring */
+.cpu-ring-value {
+  animation: pulseRing 2s ease-in-out infinite;
+}
+@keyframes pulseRing {
+  0%,
+  100% {
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.7;
+  }
+}
+
+/* RAM Bar Gradient */
+.ram-bar-fill {
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  height: 6px !important; /* Compact height */
+}
+
+/* Compact RAM Bar Container */
+.ram-bar-container {
+    height: 6px !important;
+    margin-top: 5px !important;
+    border-radius: 3px !important;
+}
+
+/* Compact CPU Ring */
+.cpu-ring-container {
+    width: 50px !important;
+    height: 50px !important;
+    margin: 3px 0 !important;
+}
+
+.cpu-text-center {
+    font-size: 11px !important;
+}
+
+/* Compact Section Headers */
+.unraid-section-wrapper h3 {
+  position: relative;
+  padding-left: 12px !important;
+  font-size: 11px !important;
+  letter-spacing: 1px !important;
+  margin: 0 0 8px 3px !important;
+}
+.unraid-section-wrapper h3::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  background: linear-gradient(180deg, #f15a2c, #ff9800);
+  border-radius: 2px;
+}
+
+/* Status Colors with Glow */
+.stat-value[style*="color: #4caf50"] {
+  text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+}
+.stat-value[style*="color: #f44336"] {
+  text-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+}
+.stat-value[style*="color: #2196f3"] {
+  text-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+}
+.stat-value[style*="color: #ff9800"] {
+  text-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
+}
+
+/* Stats Grid Improvement */
+.unraid-dashboard-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+/* Mobile Responsive - Compact */
+@media (max-width: 600px) {
+  .unraid-dashboard-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+  .full-width-card {
+    grid-column: span 2 !important;
+  }
+}
+
+/* Extra compact for very small screens */
+@media (max-width: 400px) {
+  .unraid-dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .full-width-card {
+    grid-column: span 1 !important;
+  }
+}
+
+/* Compact spacing */
+.unraid-section-wrapper {
+    margin-bottom: 15px !important;
+}
+
+/* Card Stat Improvements - Removed dark overlay */
+.system-stat-card {
+  position: relative;
+  overflow: hidden;
+}
+/* Removed the dark radial gradient overlay for cleaner look */
+
+/* Better Spacing */
+.unraid-section-wrapper {
+  margin-bottom: 25px;
+}
+
+/* Smooth Transitions */
+.stat-value,
+.ram-bar-fill,
+.storage-fill {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Compact Health Cards */
+#dash-parity-card, #dash-smart-card {
+    border-left-width: 3px;
+    border-left-style: solid;
+}
+#dash-parity-card {
+    border-left-color: #2196f3; /* Default blue for parity */
+}
+#dash-smart-card {
+    border-left-color: #4caf50; /* Default green for healthy */
 }

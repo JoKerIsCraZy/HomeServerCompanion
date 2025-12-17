@@ -429,26 +429,258 @@ function renderRadarrQueue(records, state) {
               delBtn.parentNode.insertBefore(optionsDiv, delBtn); 
           };
 
-          // WARNING Extra Button
+          // MANUAL IMPORT Button for warnings
           if (isWarning) {
-              const openBtn = document.createElement('button');
-              openBtn.textContent = "\u2197"; // NE Arrow
-              openBtn.title = "Open Activity Queue (Fix Issue)";
-              // Add margin-right to separate from delete button
-              openBtn.style.cssText = "background: none; border: none; color: #ff9800; cursor: pointer; font-size: 16px; margin-right: 8px;";
-              openBtn.onclick = (e) => {
+              const importBtn = document.createElement('button');
+              importBtn.textContent = "🔧"; // Wrench icon
+              importBtn.title = "Manual Import";
+              importBtn.style.cssText = "background: none; border: none; color: #ff9800; cursor: pointer; font-size: 16px; margin-right: 8px;";
+              importBtn.onclick = (e) => {
                   e.stopPropagation();
-                  const cleanUrl = state.configs.radarrUrl.replace(/\/$/, '');
-                  chrome.tabs.create({ url: `${cleanUrl}/activity/queue` });
+                  showManualImportDialog(item, state, itemEl, refreshQueue);
               };
               // Insert BEFORE the delete button
-              delBtn.parentNode.insertBefore(openBtn, delBtn);
+              delBtn.parentNode.insertBefore(importBtn, delBtn);
           }
       }
+
 
       container.appendChild(clone);
     });
 }
+
+/**
+ * Shows a dialog for manual import of a queue item
+ * @param {Object} item - Queue item with warning/error status
+ * @param {Object} state - App state with configs
+ * @param {HTMLElement} itemEl - The queue item element
+ * @param {Function} refreshQueue - Function to refresh the queue after import
+ */
+async function showManualImportDialog(item, state, itemEl, refreshQueue) {
+    // Remove any existing dialog
+    const existingDialog = document.querySelector('.manual-import-dialog');
+    if (existingDialog) existingDialog.remove();
+    
+    // Create dialog container
+    const dialog = document.createElement('div');
+    dialog.className = 'manual-import-dialog';
+    dialog.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        z-index: 10000;
+        min-width: 400px;
+        max-width: 90%;
+    `;
+    
+    // Create backdrop
+    const backdrop = document.createElement('div');
+    backdrop.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        z-index: 9999;
+    `;
+    backdrop.onclick = () => {
+        dialog.remove();
+        backdrop.remove();
+    };
+    
+    // Header
+    const header = document.createElement('div');
+    header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;';
+    const title = document.createElement('h3');
+    title.textContent = 'Manual Import';
+    title.style.cssText = 'margin: 0; color: var(--text-primary);';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.style.cssText = 'background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; padding: 0; line-height: 1;';
+    closeBtn.onclick = () => {
+        dialog.remove();
+        backdrop.remove();
+    };
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    dialog.appendChild(header);
+    
+    // Loading state
+    const loadingDiv = document.createElement('div');
+    loadingDiv.textContent = 'Loading import options...';
+    loadingDiv.style.cssText = 'padding: 20px; text-align: center; color: var(--text-secondary);';
+    dialog.appendChild(loadingDiv);
+    
+    document.body.appendChild(backdrop);
+    document.body.appendChild(dialog);
+    
+    try {
+        // Fetch import options
+        const downloadId = item.downloadId;
+        const outputPath = item.outputPath || '';
+        
+        const importOptions = await Radarr.getManualImportOptions(
+            state.configs.radarrUrl,
+            state.configs.radarrKey,
+            downloadId,
+            outputPath
+        );
+        
+        loadingDiv.remove();
+        
+        if (!importOptions || importOptions.length === 0) {
+            const errorDiv = document.createElement('div');
+            errorDiv.textContent = 'No files found for import. The download may have already been imported or removed.';
+            errorDiv.style.cssText = 'padding: 20px; color: #ff9800; text-align: center;';
+            dialog.appendChild(errorDiv);
+            return;
+        }
+        
+        // Use the first file (usually there's only one for movies)
+        const fileOption = importOptions[0];
+        
+        // Movie name
+        const movieNameDiv = document.createElement('div');
+        movieNameDiv.style.cssText = 'margin-bottom: 15px;';
+        const movieLabel = document.createElement('div');
+        movieLabel.textContent = 'Movie:';
+        movieLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); margin-bottom: 5px;';
+        const movieValue = document.createElement('div');
+        movieValue.textContent = item.title || fileOption.movie?.title || 'Unknown';
+        movieValue.style.cssText = 'color: var(--text-secondary); padding: 8px; background: var(--bg-secondary); border-radius: 4px;';
+        movieNameDiv.appendChild(movieLabel);
+        movieNameDiv.appendChild(movieValue);
+        dialog.appendChild(movieNameDiv);
+        
+        // Quality dropdown
+        const qualityDiv = document.createElement('div');
+        qualityDiv.style.cssText = 'margin-bottom: 15px;';
+        const qualityLabel = document.createElement('label');
+        qualityLabel.textContent = 'Quality:';
+        qualityLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px;';
+        const qualitySelect = document.createElement('select');
+        qualitySelect.style.cssText = 'width: 100%; padding: 8px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
+        
+        // Add quality options
+        if (fileOption.quality?.quality) {
+            const currentQuality = document.createElement('option');
+            currentQuality.value = JSON.stringify(fileOption.quality);
+            currentQuality.textContent = fileOption.quality.quality.name;
+            currentQuality.selected = true;
+            qualitySelect.appendChild(currentQuality);
+        }
+        
+        // Add rejections as info
+        if (fileOption.rejections && fileOption.rejections.length > 0) {
+            const rejectionsDiv = document.createElement('div');
+            rejectionsDiv.style.cssText = 'font-size: 0.85em; color: #ff9800; margin-top: 5px;';
+            rejectionsDiv.textContent = 'Issues: ' + fileOption.rejections.map(r => r.reason).join(', ');
+            qualityDiv.appendChild(rejectionsDiv);
+        }
+        
+        qualityDiv.appendChild(qualityLabel);
+        qualityDiv.appendChild(qualitySelect);
+        dialog.appendChild(qualityDiv);
+        
+        // Language dropdown
+        const languageDiv = document.createElement('div');
+        languageDiv.style.cssText = 'margin-bottom: 20px;';
+        const languageLabel = document.createElement('label');
+        languageLabel.textContent = 'Language:';
+        languageLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px;';
+        const languageSelect = document.createElement('select');
+        languageSelect.style.cssText = 'width: 100%; padding: 8px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
+        
+        // Add language options
+        if (fileOption.languages && fileOption.languages.length > 0) {
+            fileOption.languages.forEach((lang, index) => {
+                const option = document.createElement('option');
+                option.value = JSON.stringify(lang);
+                option.textContent = lang.name || 'Unknown';
+                if (index === 0) option.selected = true;
+                languageSelect.appendChild(option);
+            });
+        } else {
+            const option = document.createElement('option');
+            option.value = JSON.stringify({id: 1, name: 'English'});
+            option.textContent = 'English';
+            languageSelect.appendChild(option);
+        }
+        
+        languageDiv.appendChild(languageLabel);
+        languageDiv.appendChild(languageSelect);
+        dialog.appendChild(languageDiv);
+        
+        // Buttons
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.cssText = 'padding: 8px 16px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
+        cancelBtn.onclick = () => {
+            dialog.remove();
+            backdrop.remove();
+        };
+        
+        const importBtn = document.createElement('button');
+        importBtn.textContent = 'Import';
+        importBtn.style.cssText = 'padding: 8px 16px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
+        importBtn.onclick = async () => {
+            importBtn.disabled = true;
+            importBtn.textContent = 'Importing...';
+            
+            try {
+                const selectedQuality = JSON.parse(qualitySelect.value);
+                const selectedLanguage = JSON.parse(languageSelect.value);
+                
+                // Prepare import file
+                const importFile = {
+                    path: fileOption.path,
+                    movieId: fileOption.movie?.id || item.movieId,
+                    quality: selectedQuality,
+                    languages: [selectedLanguage],
+                    releaseGroup: fileOption.releaseGroup || ''
+                };
+                
+                // Execute import
+                await Radarr.executeManualImport(
+                    state.configs.radarrUrl,
+                    state.configs.radarrKey,
+                    [importFile]
+                );
+                
+                // Close dialog
+                dialog.remove();
+                backdrop.remove();
+                
+                // Refresh queue after a short delay
+                setTimeout(refreshQueue, 1000);
+                
+            } catch (error) {
+                importBtn.disabled = false;
+                importBtn.textContent = 'Import';
+                alert('Import failed: ' + error.message);
+            }
+        };
+        
+        buttonsDiv.appendChild(cancelBtn);
+        buttonsDiv.appendChild(importBtn);
+        dialog.appendChild(buttonsDiv);
+        
+    } catch (error) {
+        loadingDiv.textContent = 'Error loading import options: ' + error.message;
+        loadingDiv.style.color = '#f44336';
+    }
+}
+
 
 function renderRadarrRecent(records, state) {
     const container = document.getElementById("radarr-movies");

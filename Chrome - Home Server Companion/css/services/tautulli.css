@@ -67,6 +67,25 @@
   color: rgba(255, 255, 255, 0.7) !important;
 }
 
+/* Clickable Title & Poster */
+.tautulli-item .media-title {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.tautulli-item .media-title:hover {
+  text-decoration: underline;
+  color: #ffc107 !important; /* Tautulli Yellow/Orange */
+}
+
+.tautulli-item .poster-img {
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.tautulli-item .poster-img:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
 .tautulli-item.expanded .details-toggle {
   transform: rotate(180deg);
 }

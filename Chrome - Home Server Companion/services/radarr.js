@@ -106,3 +106,60 @@ export const deleteQueueItem = async (url, apiKey, id, removeFromClient = true, 
         throw error;
     }
 };
+
+/**
+ * Fetches manual import options for a specific download
+ * @param {string} url - Radarr URL
+ * @param {string} apiKey - API Key
+ * @param {string} downloadId - Download ID from queue item
+ * @param {string} folder - Download folder path
+ * @returns {Promise<Array>} List of files with import options
+ */
+export const getManualImportOptions = async (url, apiKey, downloadId, folder) => {
+    try {
+        let endpoint = `${url}/api/v3/manualimport?downloadId=${encodeURIComponent(downloadId)}`;
+        if (folder) {
+            endpoint += `&folder=${encodeURIComponent(folder)}`;
+        }
+        
+        const response = await fetch(endpoint, {
+            headers: {
+                'X-Api-Key': apiKey
+            }
+        });
+        if (!response.ok) throw new Error(`Manual Import Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Radarr Manual Import Options Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Executes manual import with selected options
+ * @param {string} url - Radarr URL
+ * @param {string} apiKey - API Key
+ * @param {Array} files - Array of file objects with import decisions
+ * @returns {Promise<Object>} Import result
+ */
+export const executeManualImport = async (url, apiKey, files) => {
+    try {
+        const response = await fetch(`${url}/api/v3/command`, {
+            method: 'POST',
+            headers: {
+                'X-Api-Key': apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: 'ManualImport',
+                files: files,
+                importMode: 'auto'
+            })
+        });
+        if (!response.ok) throw new Error(`Manual Import Execute Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Radarr Manual Import Execute Error:", error);
+        throw error;
+    }
+};

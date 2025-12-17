@@ -248,10 +248,67 @@ function renderUnraidSystem(data, url, key, state) {
         spaceVal.id = 'dash-space-text';
         spaceCard.appendChild(spaceVal);
         statsGrid.appendChild(spaceCard);
+
+        // Docker Count
+        const dockerCard = mkDiv('unraid-card system-stat-card');
+        dockerCard.appendChild(mkDiv('stat-label', 'DOCKER'));
+        const dockerVal = mkDiv('stat-value', '0 / 0');
+        dockerVal.id = 'dash-docker-count';
+        dockerCard.appendChild(dockerVal);
+        const dockerSub = mkDiv('stat-sub', 'Running / Total');
+        dockerCard.appendChild(dockerSub);
+        statsGrid.appendChild(dockerCard);
+
+        // VM Count
+        const vmCard = mkDiv('unraid-card system-stat-card');
+        vmCard.appendChild(mkDiv('stat-label', 'VIRTUAL MACHINES'));
+        const vmVal = mkDiv('stat-value', '0 / 0');
+        vmVal.id = 'dash-vm-count';
+        vmCard.appendChild(vmVal);
+        const vmSub = mkDiv('stat-sub', 'Running / Total');
+        vmCard.appendChild(vmSub);
+        statsGrid.appendChild(vmCard);
         
         sectionWrap.appendChild(statsGrid);
         
         systemTab.appendChild(sectionWrap);
+
+        // --- Array Health Section ---
+        const healthSection = mkDiv('unraid-section-wrapper');
+        const h3Health = document.createElement('h3');
+        h3Health.textContent = 'Array Health';
+        healthSection.appendChild(h3Health);
+
+        const healthGrid = mkDiv('unraid-dashboard-grid');
+
+        // Parity Check Status
+        const parityCard = mkDiv('unraid-card full-width-card');
+        parityCard.id = 'dash-parity-card';
+        const parityLabel = mkDiv('stat-label', 'PARITY CHECK');
+        parityCard.appendChild(parityLabel);
+        const parityStatus = mkDiv('stat-value', 'No check running');
+        parityStatus.id = 'dash-parity-status';
+        parityCard.appendChild(parityStatus);
+        const parityDetail = mkDiv('stat-sub', '');
+        parityDetail.id = 'dash-parity-detail';
+        parityCard.appendChild(parityDetail);
+        healthGrid.appendChild(parityCard);
+
+        // SMART Status
+        const smartCard = mkDiv('unraid-card full-width-card');
+        smartCard.id = 'dash-smart-card'; // Added ID for border styling
+        smartCard.appendChild(mkDiv('stat-label', 'DISK HEALTH (SMART)'));
+        const smartStatus = mkDiv('stat-value', 'All Healthy');
+        smartStatus.id = 'dash-smart-status';
+        smartStatus.style.color = '#4caf50'; // Keep text color for status
+        smartCard.appendChild(smartStatus);
+        const smartDetail = mkDiv('stat-sub', '');
+        smartDetail.id = 'dash-smart-detail';
+        smartCard.appendChild(smartDetail);
+        healthGrid.appendChild(smartCard);
+
+        healthSection.appendChild(healthGrid);
+        systemTab.appendChild(healthSection);
     }
 
     // Update Values
@@ -301,6 +358,87 @@ function renderUnraidSystem(data, url, key, state) {
     if(spaceText) {
         spaceText.textContent = `${Math.round(spacePct)}%`;
         spaceText.title = `${formatBytes(usedBytes)} / ${formatBytes(totalBytes)}`;
+    }
+
+    // Docker Count
+    const dockerCountEl = document.getElementById('dash-docker-count');
+    if (dockerCountEl && data.dockers) {
+        const running = data.dockers.filter(d => d.running).length;
+        const total = data.dockers.length;
+        dockerCountEl.textContent = `${running} / ${total}`;
+        dockerCountEl.style.color = running > 0 ? '#4caf50' : '#ff9800';
+    }
+
+    // VM Count (fetch separately as it's async)
+    const vmCountEl = document.getElementById('dash-vm-count');
+    if (vmCountEl) {
+        getVms(url, key).then(vms => {
+            const running = vms.filter(v => v.running).length;
+            const total = vms.length;
+            vmCountEl.textContent = `${running} / ${total}`;
+            vmCountEl.style.color = running > 0 ? '#4caf50' : '#ff9800';
+        }).catch(() => {
+            vmCountEl.textContent = '-- / --';
+        });
+    }
+
+    // Parity Check Status
+    const parityStatusEl = document.getElementById('dash-parity-status');
+    const parityDetailEl = document.getElementById('dash-parity-detail');
+    const parityCard = document.getElementById('dash-parity-card'); // Get card for border color
+    
+    if (parityStatusEl && data.array.parity) {
+        const parity = data.array.parity;
+        if (parity.status === 'running' || parity.status === 'RUNNING') {
+            parityStatusEl.textContent = `Checking... ${Math.round(parity.percent || 0)}%`;
+            parityStatusEl.style.color = '#2196f3';
+            if(parityCard) parityCard.style.borderLeftColor = '#2196f3'; // Blue border
+            parityDetailEl.textContent = `Errors: ${parity.errors || 0} | Speed: ${parity.speed || 'N/A'}`;
+        } else {
+            parityStatusEl.textContent = 'No check running';
+            parityStatusEl.style.color = '#4caf50'; // Green text
+            if(parityCard) parityCard.style.borderLeftColor = '#4caf50'; // Green border
+            
+            if (parity.errors && parity.errors > 0) {
+                parityDetailEl.textContent = `Last check had ${parity.errors} errors`;
+                parityDetailEl.style.color = '#f44336';
+                if(parityCard) parityCard.style.borderLeftColor = '#f44336'; // Red border if errors
+            } else {
+                parityDetailEl.textContent = 'Last check: OK';
+            }
+        }
+    }
+
+    // SMART Status
+    const smartStatusEl = document.getElementById('dash-smart-status');
+    const smartDetailEl = document.getElementById('dash-smart-detail');
+    const smartCard = document.getElementById('dash-smart-card'); // Get card for border color
+
+    if (smartStatusEl) {
+        const allDisks = [
+            ...(data.array.parities || []),
+            ...(data.array.disks || []),
+            ...(data.array.caches || [])
+        ];
+        
+        const unhealthy = allDisks.filter(d => 
+            d.smartStatus && (d.smartStatus === 'FAILED' || d.smartStatus === 'WARNING')
+        );
+        
+        if (unhealthy.length > 0) {
+            smartStatusEl.textContent = `${unhealthy.length} Disk(s) Need Attention`;
+            smartStatusEl.style.color = '#f44336'; // Red text
+            if(smartCard) smartCard.style.borderLeftColor = '#f44336'; // Red border
+            
+            smartDetailEl.textContent = unhealthy.map(d => `${d.name}: ${d.smartStatusText || d.smartStatus}`).join(', ');
+            smartDetailEl.style.color = '#f44336';
+        } else {
+            smartStatusEl.textContent = 'All Healthy';
+            smartStatusEl.style.color = '#4caf50'; // Green text
+            if(smartCard) smartCard.style.borderLeftColor = '#4caf50'; // Green border
+            
+            smartDetailEl.textContent = `${allDisks.length} disks monitored`;
+        }
     }
 
     // Sub-renders

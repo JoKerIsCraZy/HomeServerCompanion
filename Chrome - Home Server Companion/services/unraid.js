@@ -118,6 +118,8 @@ export const getSystemData = async (url, apiKey) => {
     }
     `;
 
+
+
     try {
         const res = await graphQL(url, apiKey, systemQuery);
         
@@ -151,13 +153,24 @@ export const getSystemData = async (url, apiKey) => {
                 version: res.info?.versions?.core?.unraid || 'Unknown',
                 registration: res.registration?.type || 'Basic',
                 uptimeBoot: res.info?.os?.uptime, // ISO String
-                memoryTotal: parse(res.metrics?.memory?.total) // Bytes
+                memoryTotal: parse(res.metrics?.memory?.total), // Bytes
+                cpuTemp: res.metrics?.cpu?.temperature,
+                motherboardTemp: res.metrics?.motherboard?.temperature
             },
             array: {
                 status: res.array.state,
                 used: parse(res.array.capacity.kilobytes.used) * 1024, // KB -> Bytes
                 total: parse(res.array.capacity.kilobytes.total) * 1024,
                 free: parse(res.array.capacity.kilobytes.free) * 1024,
+                
+                // Parity Check Status
+                parity: res.array.parity ? {
+                    status: res.array.parity.status,
+                    percent: res.array.parity.percent,
+                    errors: res.array.parity.errors,
+                    duration: res.array.parity.duration,
+                    speed: res.array.parity.speed
+                } : null,
                 
                 // Detailed Disks Lists
                 parities: (res.array.parities || []).map(d => normalizeDisk(d, 'Parity')),

@@ -112,14 +112,31 @@ function renderTautulliActivity(sessions, url, key, state) {
         clone.querySelector(".tautulli-backdrop").style.backgroundImage = `url('${backdropUrl}')`;
       }
       
-      // --- Poster ---
       const posterImg = session.grandparent_thumb || session.thumb;
+      const posterEl = clone.querySelector(".poster-img");
       if (posterImg) {
         const posterUrl = `${url}/pms_image_proxy?img=${posterImg}&width=300&apikey=${key}`;
-        clone.querySelector(".poster-img").src = posterUrl;
+        posterEl.src = posterUrl;
       } else {
         clone.querySelector(".tautulli-poster").style.display = "none";
       }
+
+      // --- Click Link Logic ---
+      // Prefer Grandparent (Show) if available, else Item (Movie)
+      const linkKey = session.grandparent_rating_key || session.rating_key;
+      // Tautulli Info URL: /info?rating_key=12345
+      const itemLink = `${url}/info?rating_key=${linkKey}`;
+      
+      const openMedia = (e) => {
+          e.stopPropagation(); // Don't toggle details
+          chrome.tabs.create({ url: itemLink });
+      };
+
+      // Add listeners to Title and Poster
+      const titleEl = clone.querySelector(".media-title");
+      if(titleEl) titleEl.addEventListener('click', openMedia);
+      
+      if(posterEl) posterEl.addEventListener('click', openMedia);
 
       // --- Hidden Details ---
       // Stream
@@ -143,9 +160,15 @@ function renderTautulliActivity(sessions, url, key, state) {
       const netText = session.location ? session.location.toUpperCase() : 'WAN';
       clone.querySelector('.val-network').textContent = netText;
       
-      if (session.secure !== '1' && session.secure !== true) {
-          clone.querySelector('.secure-icon').textContent = '🔓';
-          clone.querySelector('.secure-icon').title = 'Insecure';
+      const secureIcon = clone.querySelector('.secure-icon');
+      if (session.secure === '1' || session.secure === 1 || session.secure === true) {
+          secureIcon.textContent = '🔒';
+          secureIcon.title = 'Secure Connection';
+          secureIcon.style.color = '#4caf50';
+      } else {
+          secureIcon.textContent = '🔓';
+          secureIcon.title = 'Insecure Connection';
+          secureIcon.style.color = '#f44336';
       }
       
       clone.querySelector('.val-ip').textContent = session.ip_address;
