@@ -84,7 +84,7 @@ function renderSabnzbdQueue(queue, state, url, key) {
         div = document.createElement("div");
         div.className = "sab-queue-item";
         div.dataset.id = id;
-        div.innerHTML = ''; // Clear just in case
+        div.replaceChildren(); // Clear just in case
         
         const header = document.createElement('div');
         header.className = 'sab-item-header';

@@ -18,9 +18,6 @@
     width: 100%; /* Full width to match others */
     box-sizing: border-box;
 }
-body.light-theme #sabnzbd-view .tabs {
-    background: rgba(0, 0, 0, 0.05);
-}
 
 #sabnzbd-view .tab-glider {
     position: absolute;

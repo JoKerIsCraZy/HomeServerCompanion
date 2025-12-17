@@ -21,9 +21,6 @@
     gap: 5px; /* Tighter gap for pills */
     z-index: 1;
 }
-body.light-theme #radarr-view .tabs {
-    background: rgba(0, 0, 0, 0.05);
-}
 
 #radarr-view .tab-glider {
     position: absolute;

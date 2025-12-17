@@ -180,3 +180,13 @@ body.dark-mode .nav-item {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Omnibox Animation */
+/* Text implodes into center on focus/input */
+#omnibox-input:focus + #omnibox-placeholder-text,
+#omnibox-input:not(:placeholder-shown) + #omnibox-placeholder-text {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.1);
+  letter-spacing: -5px;
+  filter: blur(2px);
+}

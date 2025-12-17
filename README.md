@@ -4,7 +4,7 @@
 
 # Home Server Companion
 
-[![Version](https://img.shields.io/badge/version-2.4-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
+[![Version](https://img.shields.io/badge/version-2.5-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/blob/master/LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
 
@@ -48,6 +48,7 @@ A comprehensive dashboard for your self-hosted services:
 - **📊 Tautulli**:
   - View active Plex streams with rich metadata and poster art.
   - **Kill Stream**: Terminate active streams directly from the popup.
+  - **Activity Links**: Click titles or posters to open the media directly in your PMS or Tautulli.
   - **Detailed Stats**: User info, playback quality, bandwidth, stream decision (Direct Play/Transcode).
   - **Expandable Details**: View full stream, player, and user information.
 - **✍️ Overseerr**:
@@ -65,10 +66,12 @@ A comprehensive dashboard for your self-hosted services:
   - **VM Management**: Control virtual machines with start/stop and VNC access.
   - **WebUI Access**: Quick links to container and VM interfaces.
 - **🌈 General**:
-  - **Dark/Light Mode**: Toggle theme with persistent state.
+  - **Global Search**: Press `Enter` to search movies/TV shows across your services (via Overseerr) from anywhere in the app.
+  - **Context Menu Search**: Highlight text on any webpage, right-click, and select "Search in Home Server Companion" to instantly search for media.
+  - **Dark Mode**: A sleek, high-contrast dark theme designed for night-time visibility.
   - **Customizable Order**: Reorder services in the sidebar to fit your workflow.
   - **Direct Links**: One-click access to all your service Web UIs and specific pages.
-  - **Badge Notifications**: Visual alerts on navigation for services requiring attention.
+  - **Badge Notifications**: Visual alerts on sidebar icons for queues or issues requiring attention.
   - **Persistent State**: Remembers your last viewed service and tabs across sessions.
 
 ## 📸 Screenshots
@@ -127,7 +130,6 @@ Once installed, you need to connect your services.
 - **Click** the extension icon to open the dashboard.
 - **Sidebar**: Switch between services.
 - **Sub-tabs**: Within services like Sonarr/Radarr (Calendar/Queue) or Unraid (Stats/Docker), use the top tabs to switch views.
-- **Theme**: Toggle between Light and Dark mode using the sun/moon icon.
 - **Settings**: Click the gear icon to return to the configuration page.
 
 ## Permissions & Privacy

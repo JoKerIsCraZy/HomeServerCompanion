@@ -211,7 +211,8 @@ export const getSystemData = async (url, apiKey) => {
                     image: c.image,
                     running: c.state === 'RUNNING',
                     status: c.status,
-                    webui: webuiUrl
+                    webui: webuiUrl,
+                    updateAvailable: c.isUpdateAvailable
                 };
             })
         };

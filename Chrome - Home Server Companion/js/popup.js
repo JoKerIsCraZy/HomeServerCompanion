@@ -28,11 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
   chrome.storage.sync.get(null, (items) => {
     state.configs = items;
 
-    // Load Theme
-    if (items.darkMode) {
-      document.body.classList.add("dark-mode");
-      document.getElementById("theme-toggle").textContent = "☀️";
-    }
 
     // Determine Service Order
     let order = [
@@ -103,6 +98,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Start background badge updates
     startBackgroundBadgeUpdates();
+
+    // --- CHECK FOR PENDING SEARCH (Context Menu) ---
+    chrome.storage.local.get(['pendingSearch'], (result) => {
+        const searchQuery = result.pendingSearch;
+        
+        if (searchQuery) {
+            // Clear immediately so it doesn't persist on next open
+            chrome.storage.local.remove('pendingSearch');
+
+            // 1. Switch to Overseerr
+            setTimeout(() => {
+                 const overseerrNavItem = document.querySelector(`.nav-item[data-target="overseerr"]`);
+                 if (overseerrNavItem) overseerrNavItem.click();
+                 
+                 setTimeout(() => {
+                     const searchTabBtn = document.querySelector(`.sub-tab-btn[data-target="overseerr-search-tab"]`);
+                     if (searchTabBtn) searchTabBtn.click();
+                     
+                     setTimeout(() => {
+                         const overseerrInput = document.getElementById("overseerr-search-input");
+                         if (overseerrInput) {
+                             overseerrInput.value = searchQuery;
+                             import("./ui/overseerr.js").then((module) => {
+                                 module.doSearch(state.configs.overseerrUrl, state.configs.overseerrKey, searchQuery);
+                             });
+                         }
+                     }, 200);
+                 }, 100);
+            }, 200);
+        }
+    });
+
   });
 
   // Background Badge Update System
@@ -201,14 +228,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Theme Toggle Logic
-  document.getElementById("theme-toggle").addEventListener("click", () => {
-    const isDark = document.body.classList.toggle("dark-mode");
-    document.getElementById("theme-toggle").textContent = isDark ? "☀️" : "🌙";
-
-    // Save preference
-    chrome.storage.sync.set({ darkMode: isDark });
-  });
 
   // Open Web Interface Logic
   document.getElementById("open-link-btn").addEventListener("click", () => {
@@ -269,6 +288,93 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Unraid Storage Toggle ---
     // Note: Toggle logic is now handled within initUnraid / renderUnraidSystem in unraid.js.
+
+    // --- Omnibox Logic (Global Search) ---
+    const omniboxContainer = document.getElementById("omnibox-container");
+    const omniboxInput = document.getElementById("omnibox-input");
+    const omniboxClose = document.getElementById("omnibox-close");
+    const searchToggleBtn = document.getElementById("search-toggle-btn");
+    const pageTitle = document.getElementById("page-title");
+    const headerActions = document.getElementById("header-actions");
+
+    if (searchToggleBtn) {
+        searchToggleBtn.addEventListener("click", () => {
+             // Show Omnibox, hide Title
+             if (omniboxContainer.classList.contains("hidden")) {
+                 omniboxContainer.classList.remove("hidden");
+                 pageTitle.style.display = "none";
+                 omniboxInput.focus();
+                 // Hide other actions buttons if needed for space, but flex helps
+             } else {
+                 closeOmnibox();
+             }
+        });
+    }
+
+    if (omniboxClose) {
+        omniboxClose.addEventListener("click", closeOmnibox);
+    }
+
+    function closeOmnibox() {
+        omniboxContainer.classList.add("hidden");
+        pageTitle.style.display = "block";
+        omniboxInput.value = "";
+    }
+
+    if (omniboxInput) {
+        omniboxInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                const query = omniboxInput.value;
+                if (!query) return;
+
+                // 0. CAPTURE CURRENT PERSISTENT STATE
+                // We want to return to the CURRENT service on next boot, not Overseerr
+                const previousService = localStorage.getItem("lastActiveService");
+
+                // 1. Switch to Overseerr (Triggers click listener which updates localStorage to 'overseerr')
+                const overseerrNavItem = document.querySelector(`.nav-item[data-target="overseerr"]`);
+                if (overseerrNavItem) overseerrNavItem.click();
+
+                // 2. RESTORE PERSISTENT STATE
+                // Overwrite 'overseerr' back to the service we were just on
+                if (previousService) {
+                    localStorage.setItem("lastActiveService", previousService);
+                }
+
+                // 3. Switch to Search Tab
+                setTimeout(() => {
+                    // 3a. CAPTURE CURRENT OVERSEERR TAB STATE
+                    const previousOverseerrTab = localStorage.getItem("overseerr_last_sub_tab");
+
+                    const searchTabBtn = document.querySelector(`.sub-tab-btn[data-target="overseerr-search-tab"]`);
+                    if (searchTabBtn) searchTabBtn.click();
+                    
+                    // 3b. RESTORE OVERSEERR TAB STATE
+                    // The click above overwrote it to 'overseerr-search-tab'. We undo that.
+                    if (previousOverseerrTab) {
+                        localStorage.setItem("overseerr_last_sub_tab", previousOverseerrTab);
+                    }
+
+                    // 4. Populate and trigger search
+                    // We need to wait for view transition
+                    setTimeout(() => {
+                        const overseerrInput = document.getElementById("overseerr-search-input");
+                        if (overseerrInput) {
+                            overseerrInput.value = query;
+                            // Trigger search logic
+                             import("./ui/overseerr.js").then((module) => {
+                                module.doSearch(state.configs.overseerrUrl, state.configs.overseerrKey, query);
+                             });
+                        }
+                    }, 100);
+                }, 50);
+                
+                closeOmnibox();
+            }
+        });
+    }
+
+
 
     // --- Overseerr Search Listener (Global) ---
     // Search input elements are static in popup.html.

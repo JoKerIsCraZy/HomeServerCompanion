@@ -685,7 +685,7 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
 function renderRadarrRecent(records, state) {
     const container = document.getElementById("radarr-movies");
     if (!container) return;
-    container.innerHTML = "";
+    container.replaceChildren();
 
     // Filter for only 'downloadFolderImported'
     const filtered = records

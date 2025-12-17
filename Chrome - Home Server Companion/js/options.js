@@ -93,22 +93,81 @@ const saveService = (service) => {
 
     if (urlEl) {
         let val = urlEl.value.trim().replace(/\/$/, ""); // Strip trailing slash
+        
+        // Basic sanitization - remove dangerous characters
+        if (val.includes('<') || val.includes('>') || val.includes('"') || val.includes("'")) {
+            showStatus(service, 'Invalid characters in URL!', 'error');
+            return;
+        }
+        
         // Clean protocol if user pasted it
         val = val.replace(/^https?:\/\//, '');
         
+        // Check if empty after cleaning
+        if (!val || val.length === 0) {
+            showStatus(service, 'Please enter a valid URL!', 'error');
+            return;
+        }
+        
         const protocol = protocolEl ? protocolEl.value : 'http://';
         const fullUrl = protocol + val;
-        data[urlId] = fullUrl;
-
+        
         try {
-            // Construct origin pattern for permission request (e.g. http://192.168.1.5/*)
+            // Validate URL format
             const urlObj = new URL(fullUrl);
+            
+            // Ensure protocol is http or https
+            if (!['http:', 'https:'].includes(urlObj.protocol)) {
+                showStatus(service, 'Only HTTP/HTTPS protocols allowed!', 'error');
+                return;
+            }
+            
+            // Validate hostname exists
+            if (!urlObj.hostname || urlObj.hostname.length === 0) {
+                showStatus(service, 'Invalid hostname!', 'error');
+                return;
+            }
+            
+            // Check for valid hostname format (basic check)
+            const hostnameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$|^localhost$/;
+            if (!hostnameRegex.test(urlObj.hostname)) {
+                showStatus(service, 'Invalid hostname format!', 'error');
+                return;
+            }
+            
+            data[urlId] = fullUrl;
             originToRequest = `${urlObj.origin}/*`;
         } catch (e) {
-            console.warn("Invalid URL, cannot request permissions:", fullUrl);
+            showStatus(service, 'Invalid URL format!', 'error');
+            console.warn("Invalid URL:", fullUrl, e);
+            return;
         }
     }
-    if (keyEl) data[keyId] = keyEl.value;
+    
+    // Validate API Key if present
+    if (keyEl && keyEl.value) {
+        const apiKey = keyEl.value.trim();
+        
+        // Check for suspicious characters
+        if (apiKey.includes('<') || apiKey.includes('>') || apiKey.includes('"') || apiKey.includes("'")) {
+            showStatus(service, 'Invalid characters in API key!', 'error');
+            return;
+        }
+        
+        // Check minimum length (most API keys are at least 20 chars)
+        if (apiKey.length < 10) {
+            showStatus(service, 'API key seems too short!', 'error');
+            return;
+        }
+        
+        // Check maximum length (prevent abuse)
+        if (apiKey.length > 500) {
+            showStatus(service, 'API key seems too long!', 'error');
+            return;
+        }
+        
+        data[keyId] = apiKey;
+    }
 
     const performSave = () => {
         chrome.storage.sync.set(data, () => {
@@ -295,7 +354,7 @@ const renderOrderList = () => {
         }
         
         const container = document.getElementById('service-order-list');
-        container.innerHTML = '';
+        container.replaceChildren();
         
         window.currentOrder.forEach((service, index) => {
             const row = document.createElement('div');

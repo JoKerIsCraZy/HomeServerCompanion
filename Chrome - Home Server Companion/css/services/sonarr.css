@@ -18,9 +18,6 @@
     gap: 5px;
     z-index: 1;
 }
-body.light-theme #sonarr-view .tabs {
-    background: rgba(0, 0, 0, 0.05);
-}
 
 #sonarr-view .tab-glider {
     position: absolute;

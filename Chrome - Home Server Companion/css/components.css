@@ -5,23 +5,6 @@
 }
 
 /* Theme Toggle Button */
-#theme-toggle {
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 50%;
-    transition: background 0.2s;
-}
-  
-#theme-toggle:hover {
-    background: rgba(0, 0, 0, 0.1);
-}
-  
-body.dark-mode #theme-toggle:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
 
 /* Buttons */
 .tab-btn {
@@ -71,10 +54,6 @@ body.dark-mode #theme-toggle:hover {
     transition: all 0.2s ease;
 }
   
-body.light-theme .sub-tab-btn {
-    background: rgba(0, 0, 0, 0.05);
-    border-color: rgba(0, 0, 0, 0.1);
-}
   
 .sub-tab-btn:hover {
     background: rgba(255, 255, 255, 0.1);

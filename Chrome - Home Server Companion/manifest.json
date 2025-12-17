@@ -1,15 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Home Server Companion",
-  "version": "2.4",
+  "version": "2.5",
   "description": "Manage SABnzbd, Sonarr, Radarr, Tautulli, and Unraid",
-  "permissions": [
-    "storage"
-  ],
-  "optional_host_permissions": [
-    "http://*/*",
-    "https://*/*"
-  ],
+  "permissions": ["storage", "contextMenus"],
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

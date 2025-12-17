@@ -237,7 +237,8 @@ function renderUnraidSystem(data, url, key, state) {
         arrayCard.appendChild(mkDiv('stat-label', 'ARRAY STATUS'));
         const arrayVal = mkDiv('stat-value', 'Started');
         arrayVal.id = 'dash-array-status';
-        arrayVal.style.color = '#4caf50';
+        arrayVal.id = 'dash-array-status';
+        arrayVal.classList.add('text-green');
         arrayCard.appendChild(arrayVal);
         statsGrid.appendChild(arrayCard);
         
@@ -300,7 +301,7 @@ function renderUnraidSystem(data, url, key, state) {
         smartCard.appendChild(mkDiv('stat-label', 'DISK HEALTH (SMART)'));
         const smartStatus = mkDiv('stat-value', 'All Healthy');
         smartStatus.id = 'dash-smart-status';
-        smartStatus.style.color = '#4caf50'; // Keep text color for status
+        smartStatus.classList.add('text-green');
         smartCard.appendChild(smartStatus);
         const smartDetail = mkDiv('stat-sub', '');
         smartDetail.id = 'dash-smart-detail';
@@ -318,6 +319,7 @@ function renderUnraidSystem(data, url, key, state) {
     if (cpuRing) {
         const offset = 100 - cpuVal;
         cpuRing.style.strokeDashoffset = offset;
+        // Keep stroke color on ring for now, or move to class if needed, but ring is SVG
         cpuRing.style.stroke = cpuVal > 80 ? '#f44336' : (cpuVal > 50 ? '#ff9800' : '#2196f3');
     }
     document.getElementById('dash-cpu-text').textContent = `${Math.round(cpuVal)}%`;
@@ -327,6 +329,7 @@ function renderUnraidSystem(data, url, key, state) {
     const ramBar = document.getElementById('dash-ram-bar');
     if (ramBar) {
         ramBar.style.width = `${ramUse}%`;
+        // Keep background on bar
         ramBar.style.background = ramUse > 85 ? '#f44336' : '#4caf50';
     }
     document.getElementById('dash-ram-text').textContent = `${Math.round(ramUse)}%`;
@@ -346,7 +349,8 @@ function renderUnraidSystem(data, url, key, state) {
     const arrayStatus = document.getElementById('dash-array-status');
     if(arrayStatus) {
         arrayStatus.textContent = data.array.status || 'Unknown';
-        arrayStatus.style.color = (data.array.status === 'STARTED') ? '#4caf50' : '#f44336';
+        arrayStatus.className = 'stat-value'; // Reset classes
+        arrayStatus.classList.add((data.array.status === 'STARTED') ? 'text-green' : 'text-red');
     }
     
     // Space
@@ -366,7 +370,8 @@ function renderUnraidSystem(data, url, key, state) {
         const running = data.dockers.filter(d => d.running).length;
         const total = data.dockers.length;
         dockerCountEl.textContent = `${running} / ${total}`;
-        dockerCountEl.style.color = running > 0 ? '#4caf50' : '#ff9800';
+        dockerCountEl.className = 'stat-value';
+        dockerCountEl.classList.add(running > 0 ? 'text-green' : 'text-orange');
     }
 
     // VM Count (fetch separately as it's async)
@@ -376,7 +381,8 @@ function renderUnraidSystem(data, url, key, state) {
             const running = vms.filter(v => v.running).length;
             const total = vms.length;
             vmCountEl.textContent = `${running} / ${total}`;
-            vmCountEl.style.color = running > 0 ? '#4caf50' : '#ff9800';
+            vmCountEl.className = 'stat-value';
+            vmCountEl.classList.add(running > 0 ? 'text-green' : 'text-orange');
         }).catch(() => {
             vmCountEl.textContent = '-- / --';
         });
@@ -391,20 +397,21 @@ function renderUnraidSystem(data, url, key, state) {
         const parity = data.array.parity;
         if (parity.status === 'running' || parity.status === 'RUNNING') {
             parityStatusEl.textContent = `Checking... ${Math.round(parity.percent || 0)}%`;
-            parityStatusEl.style.color = '#2196f3';
+            parityStatusEl.className = 'stat-value text-blue';
             if(parityCard) parityCard.style.borderLeftColor = '#2196f3'; // Blue border
             parityDetailEl.textContent = `Errors: ${parity.errors || 0} | Speed: ${parity.speed || 'N/A'}`;
         } else {
             parityStatusEl.textContent = 'No check running';
-            parityStatusEl.style.color = '#4caf50'; // Green text
+            parityStatusEl.className = 'stat-value text-green';
             if(parityCard) parityCard.style.borderLeftColor = '#4caf50'; // Green border
             
             if (parity.errors && parity.errors > 0) {
                 parityDetailEl.textContent = `Last check had ${parity.errors} errors`;
-                parityDetailEl.style.color = '#f44336';
+                parityDetailEl.classList.add('text-red');
                 if(parityCard) parityCard.style.borderLeftColor = '#f44336'; // Red border if errors
             } else {
                 parityDetailEl.textContent = 'Last check: OK';
+                parityDetailEl.classList.remove('text-red');
             }
         }
     }
@@ -427,17 +434,18 @@ function renderUnraidSystem(data, url, key, state) {
         
         if (unhealthy.length > 0) {
             smartStatusEl.textContent = `${unhealthy.length} Disk(s) Need Attention`;
-            smartStatusEl.style.color = '#f44336'; // Red text
+            smartStatusEl.className = 'stat-value text-red';
             if(smartCard) smartCard.style.borderLeftColor = '#f44336'; // Red border
             
             smartDetailEl.textContent = unhealthy.map(d => `${d.name}: ${d.smartStatusText || d.smartStatus}`).join(', ');
-            smartDetailEl.style.color = '#f44336';
+            smartDetailEl.classList.add('text-red');
         } else {
             smartStatusEl.textContent = 'All Healthy';
-            smartStatusEl.style.color = '#4caf50'; // Green text
+            smartStatusEl.className = 'stat-value text-green';
             if(smartCard) smartCard.style.borderLeftColor = '#4caf50'; // Green border
             
             smartDetailEl.textContent = `${allDisks.length} disks monitored`;
+            smartDetailEl.classList.remove('text-red');
         }
     }
 
@@ -462,7 +470,7 @@ function renderUnraidStorage(data) {
          container = wrap;
     }
     
-    container.innerHTML = '';
+    container.replaceChildren();
     
     const diskGroups = [
         { title: 'Array', disks: [...(data.array.parities || []), ...(data.array.disks || [])] },
@@ -536,7 +544,7 @@ function renderUnraidDocker(containers, url, key) {
     
     // Changed to vertical list as requested
     list.className = 'unraid-vertical-list';
-    list.innerHTML = "";
+    list.replaceChildren();
 
     if (!containers || containers.length === 0) {
         list.textContent = "";
@@ -604,6 +612,14 @@ function renderUnraidDocker(containers, url, key) {
 
         card.querySelector('.card-meta').textContent = container.image || "Unknown Image";
 
+        // Update Badge Logic
+        const badge = card.querySelector('.update-badge');
+        if (container.updateAvailable) {
+             badge.classList.remove('hidden');
+        } else {
+             badge.classList.add('hidden');
+        }
+
         const startBtn = card.querySelector('.start-btn');
         const stopBtn = card.querySelector('.stop-btn');
         const restartBtn = card.querySelector('.restart-btn');
@@ -660,10 +676,10 @@ async function renderUnraidVms(url, key) {
         const vms = await getVms(url, key);
         // Changed directly to vertical list
         list.className = 'unraid-vertical-list';
-        list.innerHTML = "";
+        list.replaceChildren();
 
         if (!vms || vms.length === 0) {
-             list.innerHTML = "";
+             list.replaceChildren();
              const div = document.createElement('div');
              div.style.cssText = "text-align:center; padding:20px; color:#aaa;";
              div.textContent = "No VMs found";

@@ -68,11 +68,12 @@
 }
 
 /* Clickable Title & Poster */
-.tautulli-item .media-title {
+/* Clickable Title & Poster */
+.tautulli-item .media-title span {
   cursor: pointer;
   transition: color 0.2s;
 }
-.tautulli-item .media-title:hover {
+.tautulli-item .media-title span:hover {
   text-decoration: underline;
   color: #ffc107 !important; /* Tautulli Yellow/Orange */
 }

@@ -16,322 +16,25 @@
   color: #f44336;
 }
 
-/* Disk / Storage Styles */
-.disk-row {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 12px;
-  font-size: 0.85em;
-}
-.disk-meta {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
-  color: var(--text-secondary);
-}
-.disk-name {
-  color: var(--text-primary);
-  font-weight: 500;
-}
-.disk-temp {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.8em;
-}
-.disk-temp.hot {
-  color: #f44336;
-}
-.disk-mini-track {
-  background-color: rgba(255, 255, 255, 0.05);
-  height: 4px;
-  border-radius: 2px;
-  overflow: hidden;
-}
-body.light-theme .disk-mini-track {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-.disk-mini-fill {
-  height: 100%;
-  background: #4caf50;
-  width: 0%;
-}
-.disk-mini-fill.parity {
-  background: #2196f3;
-}
-
-.storage-card {
-  background-color: var(--card-bg);
-  border-radius: 12px;
-  padding: 15px;
-  margin: 10px 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-.storage-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 5px;
-  font-weight: 600;
-  color: var(--text-primary);
-  text-transform: uppercase;
-  font-size: 0.9em;
-  letter-spacing: 0.5px;
-}
-.storage-icon {
-  width: 24px;
-  height: 24px;
-  background-image: url('data:image/svg+xml;utf8,<svg fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 5v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2zm2 0h16v14H4V5zm2 2h12v2H6V7zm0 4h12v2H6v-2zm0 4h12v2H6v-2z"/></svg>');
-  background-size: contain;
-  background-repeat: no-repeat;
-  opacity: 0.8;
-}
-body.light-theme .storage-icon {
-  filter: invert(1);
-}
-.storage-usage-text {
-  color: var(--text-secondary);
-  font-size: 0.85em;
-  margin-bottom: 8px;
-}
-
-.progress-track {
-  background-color: rgba(255, 255, 255, 0.1);
-  height: 8px;
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-body.light-theme .progress-track {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #4caf50, #8bc34a);
-  border-radius: 4px;
-  width: 0%;
-  transition: width 0.5s ease-out;
-}
-.progress-fill.warning {
-  background: linear-gradient(90deg, #ff9800, #ffc107);
-}
-.progress-fill.critical {
-  background: linear-gradient(90deg, #f44336, #ff5722);
-}
-
-/* Docker Controls */
 .status-dot.running {
   background: #4caf50 !important;
   box-shadow: 0 0 5px #4caf50;
 }
-/* Unraid System Cards */
-.system-card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.05); /* Subtle border */
-}
-body.dark-mode .system-card {
-  border-color: #333;
-  background: #1e1e1e;
-}
-
-.uk-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-body.dark-mode .uk-header {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
-}
-
-.uk-icon {
-  width: 32px;
-  height: 32px;
-  margin-right: 12px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  opacity: 0.9;
-}
-
-/* Icon Placeholders (SVG Data URIs) */
-.uk-icon.info {
-  background-image: url('data:image/svg+xml;utf8,<svg fill="%232196f3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>');
-}
-.uk-icon.array {
-  background-image: url('data:image/svg+xml;utf8,<svg fill="%23ff9800" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg>');
-}
-.uk-icon.system {
-  background-image: url('data:image/svg+xml;utf8,<svg fill="%234caf50" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 9v2h19V9H2zm0 6h5v-2H2v2zm7 0h5v-2H9v2zm7 0h5v-2h-5v2zM2 5v2h19V5H2z"/></svg>');
-}
-
-.uk-title-section {
-  flex: 1;
-}
-
-.uk-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.uk-subtitle {
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
-.uk-info-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-.uk-info-row:last-child {
-  margin-bottom: 0;
-}
-
-.uk-info-icon {
-  font-size: 14px;
-  margin-right: 8px;
-  width: 20px;
-  text-align: center;
-}
-
-.uk-progress-lg-track {
-  background: rgba(0, 0, 0, 0.05);
-  height: 18px;
-  border-radius: 9px;
-  position: relative;
-  overflow: hidden;
-  margin-top: 5px;
-}
-body.dark-mode .uk-progress-lg-track {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.uk-progress-lg-fill {
-  background: linear-gradient(90deg, #4caf50, #8bc34a);
-  height: 100%;
-  width: 0%;
-}
-
-.uk-progress-text {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.cpu-row {
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.cpu-track {
-  flex: 1;
-  background: rgba(0, 0, 0, 0.05);
-  height: 6px;
-  border-radius: 3px;
-  overflow: hidden;
-}
-body.dark-mode .cpu-track {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.cpu-fill {
-  height: 100%;
-  background: #2196f3;
-}
-.cpu-fill.warning {
-  background: #ff9800;
-}
-.cpu-fill.critical {
-  background: #f44336;
-}
 
 /* Docker & VM Styles */
-.docker-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--card-bg);
-  border-radius: 12px;
+.docker-card,
+.vm-card {
   padding: 12px;
-  margin-bottom: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: background 0.2s;
-}
-body.dark-mode .docker-item {
-  border-color: #333;
-  background: #1e1e1e;
-}
-
-.docker-left {
-  flex: 1;
-  min-width: 0;
-  margin-right: 8px; /* Spacing from controls */
-}
-
-.docker-info {
-  flex: 1;
-  min-width: 0;
-  margin-left: 10px;
-  margin-right: 5px;
-}
-
-.docker-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.docker-image {
-  font-size: 11px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.docker-controls {
-  display: flex;
   gap: 8px;
-  align-items: center;
+  min-height: 110px;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Ensure controls in the header (if any) or lists align well */
-#unraid-docker-list,
-#unraid-vm-list {
-  padding-bottom: 15px;
-}
-
-/* Unraid Tabs (Glider Style) */
 .unraid-header-row {
   display: flex;
   align-items: center;
+
   justify-content: space-between;
   margin-bottom: 20px;
   padding: 0 5px;
@@ -1053,3 +756,13 @@ body.dark-mode .unraid-card {
 #dash-smart-card {
     border-left-color: #4caf50; /* Default green for healthy */
 }
+
+/* Utility Classes for Status Colors */
+.text-green { color: #4caf50 !important; }
+.text-red { color: #f44336 !important; }
+.text-blue { color: #2196f3 !important; }
+.text-orange { color: #ff9800 !important; }
+.text-warning { color: #ffc107 !important; }
+
+
+

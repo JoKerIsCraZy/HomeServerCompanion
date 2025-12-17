@@ -115,7 +115,7 @@ export async function loadTrending(url, key) {
         renderTrendingTab(uniqueResults, url, key);
     } catch (e) {
         console.error(e);
-        container.innerHTML = '';
+        container.replaceChildren();
         const err = document.createElement('div');
         err.className = 'error-banner';
         err.textContent = `Failed to load trending: ${e.message}`;
@@ -126,7 +126,7 @@ export async function loadTrending(url, key) {
 function renderTrendingTab(results, url, key) {
     const container = document.getElementById('overseerr-trending-results');
     if (!container) return;
-    container.innerHTML = '';
+    container.replaceChildren();
     // Use grid-container to layout cards properly similar to Requests
     container.className = 'grid-container'; 
     container.style = ''; // Clear inline styles
@@ -276,7 +276,7 @@ export async function doSearch(url, key, query) {
     }
     const container = document.getElementById('overseerr-search-results');
     if (container) {
-        container.innerHTML = '';
+        container.replaceChildren();
         const loading = document.createElement('div');
         loading.className = 'loading';
         loading.textContent = 'Searching...';
@@ -289,7 +289,7 @@ export async function doSearch(url, key, query) {
     } catch (e) {
       console.error("Search failed in doSearch:", e);
       if (container) {
-          container.innerHTML = '';
+          container.replaceChildren();
           const err = document.createElement('div');
           err.className = 'error';
           err.textContent = `Search Error: ${e.message}`;
@@ -335,7 +335,7 @@ async function loadRequests(url, key, filter) {
    } catch (e) {
        console.error(e);
         if (!cached && container) {
-            container.innerHTML = '';
+            container.replaceChildren();
             const err = document.createElement('div');
             err.className = 'error-banner';
             err.textContent = `Failed to load requests: ${e.message}`;
@@ -349,7 +349,7 @@ async function loadRequests(url, key, filter) {
 function renderOverseerrSearch(results, url, key) {
     const container = document.getElementById('overseerr-search-results');
     if (!container) return;
-    container.innerHTML = '';
+    container.replaceChildren();
     
     if (results.length === 0) {
         const card = document.createElement('div');
@@ -416,6 +416,18 @@ function renderOverseerrSearch(results, url, key) {
                 span.textContent = statusText;
                 statusDiv.appendChild(span);
 
+                canRequest = false;
+            } else if (item.mediaInfo.status === 4) {
+                statusText = "Partially Available";
+                const span = document.createElement('span');
+                span.className = 'request-status';
+                span.style.color = '#4caf50';
+                span.style.borderColor = '#4caf50';
+                span.style.background = 'rgba(76,175,80,0.1)';
+                span.textContent = statusText;
+                statusDiv.appendChild(span);
+                
+                // Treat partial as "owned" for simple UI to avoid confusion
                 canRequest = false;
             } else if (item.mediaInfo.status === 2 || item.mediaInfo.status === 3) {
                  statusText = "Requested";
@@ -497,7 +509,7 @@ async function hydrateRequests(requests, url, key) {
 function renderHydratedRequests(requests, url, key) {
     const container = document.getElementById('overseerr-requests');
     if (!container) return;
-    container.innerHTML = '';
+    container.replaceChildren();
 
     if (requests.length === 0) {
         const card = document.createElement('div');

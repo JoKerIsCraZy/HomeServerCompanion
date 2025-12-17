@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/services/overseerr.css">
   <link rel="stylesheet" href="css/services/unraid.css">
 </head>
-<body>
+<body class="dark-mode">
   <div class="app-container">
     <!-- Sidebar -->
     <nav class="sidebar">
@@ -44,17 +44,64 @@
     <!-- Main Content -->
     <main class="content-area">
       <!-- Header -->
-      <header id="main-header">
+      <header id="main-header" style="position: relative;">
         <h1 id="page-title">SABnzbd</h1>
+        
+        <!-- Centered Omnibox -->
+        <div id="omnibox-container" style="
+            position: absolute; 
+            left: 50%; 
+            top: 50%; 
+            transform: translate(-50%, -50%); 
+            display: flex; 
+            align-items: center; 
+            background: #1e1e1e; 
+            border-radius: 20px; 
+            padding: 5px 15px; 
+            border: 1px solid #333; 
+            width: 250px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            z-index: 10;
+        ">
+             <input type="text" id="omnibox-input" placeholder=" " style="
+                background: none; 
+                border: none; 
+                color: #fff; 
+                outline: none; 
+                font-size: 13px; 
+                width: 100%; 
+                text-align: center;
+                z-index: 2;
+                position: relative;
+             ">
+             <span id="omnibox-placeholder-text" style="
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #aaa;
+                font-size: 13px;
+                pointer-events: none;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                white-space: nowrap;
+                z-index: 1;
+             ">Search All...</span>
+        </div>
+
         <div id="header-actions">
-           <button id="open-link-btn" title="Open Web Interface" style="background:none; border:none; cursor:pointer; margin-right:15px; color:var(--text-secondary); display:flex; align-items:center;">
+           <!-- Removed Omnibox from here -->
+           
+           <button id="search-toggle-btn" title="Global Search" style="display:none; background:none; border:none; cursor:pointer; margin-right:10px; color:var(--text-secondary);">
+             <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor"><path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/></svg>
+           </button>
+
+           <button id="open-link-btn" title="Open Web Interface" style="background:none; border:none; cursor:pointer; color:var(--text-secondary); display:flex; align-items:center;">
              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                <polyline points="15 3 21 3 21 9"></polyline>
                <line x1="10" y1="14" x2="21" y2="3"></line>
              </svg>
            </button>
-           <button id="theme-toggle" title="Toggle Dark Mode">🌙</button>
         </div>
       </header>
       
@@ -373,22 +420,6 @@
     </div>
   </template>
 
-  <template id="docker-card">
-    <div class="docker-item">
-        <div class="docker-left" style="display: flex; align-items: center; gap: 12px;">
-            <div class="status-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #ccc;"></div>
-            <div class="docker-info">
-                <div class="docker-name" style="font-weight: 600; font-size: 14px;">Container Name</div>
-                <div class="docker-image" style="font-size: 11px; color: var(--text-secondary);">Image</div>
-            </div>
-        </div>
-        <div class="docker-controls" style="display: flex; gap: 8px;">
-            <button class="control-btn start-btn" title="Start">▶</button>
-            <button class="control-btn restart-btn" title="Restart">↻</button>
-            <button class="control-btn stop-btn" title="Stop">⏹</button>
-        </div>
-    </div>
-  </template>
 
   <template id="media-card">
     <div class="card media-item">
@@ -495,6 +526,9 @@
             </div>
             <div class="card-body">
                 <div class="card-meta">Image Name</div>
+                <div class="update-badge hidden" title="Update Available" style="color: #2196f3; font-size: 11px; margin-top: 2px; font-weight: bold;">
+                    ↑ Update Available
+                </div>
             </div>
             <div class="card-actions">
                 <button class="action-btn start-btn" title="Start">▶</button>

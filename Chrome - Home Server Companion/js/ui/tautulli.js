@@ -49,118 +49,215 @@ export async function initTautulli(url, key, state) {
 function renderTautulliActivity(sessions, url, key, state) {
     const container = document.getElementById("tautulli-activity");
     if (!container) return;
-    container.textContent = "";
+    
+    // Handle empty state separately if container is empty
     if (sessions.length === 0) {
-      const card = document.createElement('div');
-      card.className = "card";
-      const header = document.createElement('div');
-      header.className = "card-header";
-      header.textContent = "No active streams";
-      card.appendChild(header);
-      container.appendChild(card);
-      return;
+        // Only verify if we already showed "No active streams" to avoid redraw
+        if (container.querySelector('.no-streams-msg')) return;
+        
+        container.textContent = "";
+        const card = document.createElement('div');
+        card.className = "card no-streams-msg";
+        const header = document.createElement('div');
+        header.className = "card-header";
+        header.textContent = "No active streams";
+        card.appendChild(header);
+        container.appendChild(card);
+        return;
     }
+    
+    // Clear "No streams" message if it exists
+    const noMsg = container.querySelector('.no-streams-msg');
+    if (noMsg) noMsg.remove();
 
     const tmpl = document.getElementById("tautulli-card");
     if (!tmpl) return;
 
+    // Track existing items to identify removals
+    const existingItems = Array.from(container.querySelectorAll('.tautulli-item-wrapper'));
+    const existingMap = new Map();
+    existingItems.forEach(item => existingMap.set(item.dataset.sessionId, item));
+    const processedIds = new Set();
+
     sessions.forEach((session) => {
-      const clone = tmpl.content.cloneNode(true);
-      const card = clone.querySelector('.tautulli-item');
-
-      // --- Main Info ---
-      // Title logic: Grandparent - Title (Series) or Title (Movie)
-      const title = session.grandparent_title
-        ? session.grandparent_title
-        : session.title;
-      const subtitle = session.grandparent_title 
-        ? `${session.parent_media_index}x${session.media_index} • ${session.title}`
-        : session.year || '';
-        
-      clone.querySelector(".media-title").textContent = title;
-      clone.querySelector(".media-subtitle").textContent = subtitle;
-
-      // User & Time
-      clone.querySelector(".user-name").textContent = session.user || session.username;
+      processedIds.add(session.session_id);
+      let cardWrapper = existingMap.get(session.session_id);
       
-      // Time Left Calculation
-      // duration (ms) - view_offset (ms)
+      // CREATE NEW
+      if (!cardWrapper) {
+          const clone = tmpl.content.cloneNode(true);
+          // Wrapper for identification
+          cardWrapper = document.createElement('div');
+          cardWrapper.className = 'tautulli-item-wrapper';
+          cardWrapper.dataset.sessionId = session.session_id;
+          cardWrapper.appendChild(clone);
+          container.appendChild(cardWrapper);
+          
+          // Setup One-Time Static Data (Images, Title, User Init)
+          // Title
+          const title = session.grandparent_title ? session.grandparent_title : session.title;
+          const subtitle = session.grandparent_title 
+            ? `${session.parent_media_index}x${session.media_index} • ${session.title}`
+            : session.year || '';
+            
+          // Wrapper: Clear and add span
+          const titleContainer = cardWrapper.querySelector(".media-title");
+          titleContainer.textContent = ""; 
+          const titleSpan = document.createElement("span");
+          titleSpan.textContent = title;
+          titleContainer.appendChild(titleSpan);
+
+          cardWrapper.querySelector(".media-subtitle").textContent = subtitle;
+          
+          // User Static
+          const userNameEl = cardWrapper.querySelector(".user-name");
+          userNameEl.textContent = session.user || session.username;
+          if (session.user_id) {
+              userNameEl.classList.add('clickable-link');
+              userNameEl.title = "Open User Profile";
+              userNameEl.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  const userUrl = `${url}/user?user_id=${session.user_id}`;
+                  chrome.tabs.create({ url: userUrl });
+              });
+          }
+
+          // Posters
+          if (session.art) {
+            const backdropUrl = `${url}/pms_image_proxy?img=${session.art}&width=800&opacity=100&background=000000&apikey=${key}`;
+            cardWrapper.querySelector(".tautulli-backdrop").style.backgroundImage = `url('${backdropUrl}')`;
+          }
+          const posterImg = session.grandparent_thumb || session.thumb;
+          const posterEl = cardWrapper.querySelector(".poster-img");
+          if (posterImg) {
+            const posterUrl = `${url}/pms_image_proxy?img=${posterImg}&width=300&apikey=${key}`;
+            posterEl.src = posterUrl;
+          } else {
+            cardWrapper.querySelector(".tautulli-poster").style.display = "none";
+          }
+          
+          // Link Logic
+          const linkKey = session.grandparent_rating_key || session.rating_key;
+          const itemLink = `${url}/info?rating_key=${linkKey}`;
+          const openMedia = (e) => {
+              e.stopPropagation();
+              chrome.tabs.create({ url: itemLink });
+          };
+          
+          // Target the span created earlier
+          const titleSpanTarget = cardWrapper.querySelector(".media-title span");
+          if(titleSpanTarget) {
+              titleSpanTarget.title = "Open in Tautulli";
+              titleSpanTarget.style.cursor = "pointer";
+              titleSpanTarget.classList.add("hover-underline"); // We can add a class or inline style
+              titleSpanTarget.addEventListener('click', openMedia);
+              
+              // Add inline hover effect via JS since we are here, or rely on CSS. 
+              // Simplest is direct style for now as requested "text cursor behavior"
+              titleSpanTarget.addEventListener("mouseenter", () => titleSpanTarget.style.textDecoration = "underline");
+              titleSpanTarget.addEventListener("mouseleave", () => titleSpanTarget.style.textDecoration = "none");
+          }
+          
+          if(posterEl) {
+              posterEl.style.cursor = "pointer";
+              posterEl.title = "Open in Tautulli";
+              posterEl.addEventListener('click', openMedia);
+          }
+
+          // Interaction Logic
+          const mainDiv = cardWrapper.querySelector('.tautulli-main');
+          const detailsDiv = cardWrapper.querySelector('.tautulli-details');
+          const card = cardWrapper.querySelector('.tautulli-item');
+
+          const toggleDetails = () => {
+              const isHidden = detailsDiv.classList.contains('hidden');
+              if (isHidden) {
+                  detailsDiv.classList.remove('hidden');
+                  card.classList.add('expanded');
+                  state.expandedSessions.add(session.session_id);
+                  setTimeout(() => {
+                      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 100); 
+              } else {
+                  detailsDiv.classList.add('hidden');
+                  card.classList.remove('expanded');
+                  state.expandedSessions.delete(session.session_id);
+              }
+          };
+          mainDiv.addEventListener('click', toggleDetails);
+          
+          // Terminate
+          const terminateLogic = async (e) => {
+            e.stopPropagation();
+            const reason = prompt(
+              `Kill stream for user "${session.user || session.username}"?\nEnter a reason (optional):`,
+              "Terminated via Chrome Extension"
+            );
+            if (reason !== null) {
+              await Tautulli.terminateSession(url, key, session.session_id, reason);
+              setTimeout(() => initTautulli(url, key, state), 1000);
+            }
+          };
+          const killIcon = cardWrapper.querySelector('.kill-icon-btn');
+          if (killIcon) killIcon.addEventListener('click', terminateLogic);
+      } // End Create New
+
+      // UPDATE DYNAMIC DATA (For both new and existing)
+      const cardWrapperRef = cardWrapper; // safe ref
+
+      // Time Left
       let timeText = "";
       if (session.duration && session.view_offset) {
           const leftMs = session.duration - session.view_offset;
           const leftMins = Math.round(leftMs / 1000 / 60);
           timeText = `${leftMins}m left`;
       }
-      clone.querySelector(".time-left").textContent = timeText;
+      cardWrapperRef.querySelector(".time-left").textContent = timeText;
 
-      // Meta Row: Direct Play • 7.7 Mbps • Original
+      // Stream Info
       const streamDecision = session.transcode_decision === 'direct play' ? 'Direct Play' : 'Transcode';
-      clone.querySelector(".stream-decision").textContent = streamDecision;
-      
+      cardWrapperRef.querySelector(".stream-decision").textContent = streamDecision;
       const bandwidth = session.bandwidth ? `${(session.bandwidth / 1000).toFixed(1)} Mbps` : '';
-      clone.querySelector(".bandwidth").textContent = bandwidth;
-      
+      cardWrapperRef.querySelector(".bandwidth").textContent = bandwidth;
       const quality = session.quality_profile || session.video_resolution || "";
-      clone.querySelector(".quality").textContent = quality;
+      cardWrapperRef.querySelector(".quality").textContent = quality;
+      
+      // Progress
+      cardWrapperRef.querySelector(".progress-bar-fill").style.width = `${session.progress_percent}%`;
 
-      // Progress Bar
-      clone.querySelector(".progress-bar-fill").style.width = `${session.progress_percent}%`;
+      // Detailed Stats (Hidden but updated)
+      cardWrapperRef.querySelector('.val-container').textContent = `${streamDecision} (${session.container.toUpperCase()})`;
+      cardWrapperRef.querySelector('.val-video').textContent = `${session.stream_video_decision.toUpperCase()} (${session.video_codec.toUpperCase()} ${session.video_resolution}p)`;
+      cardWrapperRef.querySelector('.val-audio').textContent = `${session.stream_audio_decision.toUpperCase()} (${session.audio_language.toUpperCase()} - ${session.audio_codec.toUpperCase()} ${session.audio_channels})`;
       
-      // Images (Auth required for proxied images)
-      if (session.art) {
-        const backdropUrl = `${url}/pms_image_proxy?img=${session.art}&width=800&opacity=100&background=000000&apikey=${key}`;
-        clone.querySelector(".tautulli-backdrop").style.backgroundImage = `url('${backdropUrl}')`;
-      }
-      
-      const posterImg = session.grandparent_thumb || session.thumb;
-      const posterEl = clone.querySelector(".poster-img");
-      if (posterImg) {
-        const posterUrl = `${url}/pms_image_proxy?img=${posterImg}&width=300&apikey=${key}`;
-        posterEl.src = posterUrl;
-      } else {
-        clone.querySelector(".tautulli-poster").style.display = "none";
-      }
-
-      // --- Click Link Logic ---
-      // Prefer Grandparent (Show) if available, else Item (Movie)
-      const linkKey = session.grandparent_rating_key || session.rating_key;
-      // Tautulli Info URL: /info?rating_key=12345
-      const itemLink = `${url}/info?rating_key=${linkKey}`;
-      
-      const openMedia = (e) => {
-          e.stopPropagation(); // Don't toggle details
-          chrome.tabs.create({ url: itemLink });
-      };
-
-      // Add listeners to Title and Poster
-      const titleEl = clone.querySelector(".media-title");
-      if(titleEl) titleEl.addEventListener('click', openMedia);
-      
-      if(posterEl) posterEl.addEventListener('click', openMedia);
-
-      // --- Hidden Details ---
-      // Stream
-      clone.querySelector('.val-container').textContent = `${streamDecision} (${session.container.toUpperCase()})`;
-      clone.querySelector('.val-video').textContent = `${session.stream_video_decision.toUpperCase()} (${session.video_codec.toUpperCase()} ${session.video_resolution}p)`;
-      clone.querySelector('.val-audio').textContent = `${session.stream_audio_decision.toUpperCase()} (${session.audio_language.toUpperCase()} - ${session.audio_codec.toUpperCase()} ${session.audio_channels})`;
-      
-      // Subs
       const subText = session.subtitle_decision === 'burn' ? 'Burn' : (session.selected_subtitle_codec ? 'Direct' : 'None');
-      clone.querySelector('.val-subs').textContent = subText;
-
-      // Player
-      clone.querySelector('.val-platform').textContent = session.platform;
-      clone.querySelector('.val-product').textContent = session.product;
-      clone.querySelector('.val-player').textContent = session.player;
-
-      // User / Network
-      clone.querySelector('.val-username').textContent = session.user || session.username;
+      cardWrapperRef.querySelector('.val-subs').textContent = subText;
       
-      // Tautulli session object has `session.location` = 'lan' or 'wan'
+      cardWrapperRef.querySelector('.val-platform').textContent = session.platform;
+      cardWrapperRef.querySelector('.val-product').textContent = session.product;
+      cardWrapperRef.querySelector('.val-player').textContent = session.player;
+      
+      // Detailed User
+      const valUser = cardWrapperRef.querySelector('.val-username');
+      valUser.textContent = session.user || session.username;
+      
+       // Re-apply clickable logic to detailed user if needed (idempotent safe)
+       if (session.user_id && !valUser.dataset.listenerAttached) {
+          valUser.style.cursor = 'pointer';
+          valUser.style.textDecoration = 'underline';
+          valUser.title = "Open User Profile";
+          valUser.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const userUrl = `${url}/user?user_id=${session.user_id}`;
+              chrome.tabs.create({ url: userUrl });
+          });
+          valUser.dataset.listenerAttached = "true";
+      }
+
       const netText = session.location ? session.location.toUpperCase() : 'WAN';
-      clone.querySelector('.val-network').textContent = netText;
+      cardWrapperRef.querySelector('.val-network').textContent = netText;
       
-      const secureIcon = clone.querySelector('.secure-icon');
+      const secureIcon = cardWrapperRef.querySelector('.secure-icon');
       if (session.secure === '1' || session.secure === 1 || session.secure === true) {
           secureIcon.textContent = '🔒';
           secureIcon.title = 'Secure Connection';
@@ -170,58 +267,28 @@ function renderTautulliActivity(sessions, url, key, state) {
           secureIcon.title = 'Insecure Connection';
           secureIcon.style.color = '#f44336';
       }
+      cardWrapperRef.querySelector('.val-ip').textContent = session.ip_address;
       
-      clone.querySelector('.val-ip').textContent = session.ip_address;
-
-      // --- Interactivity ---
-      // Toggle
-      const mainDiv = clone.querySelector('.tautulli-main');
-      const detailsDiv = clone.querySelector('.tautulli-details');
-      
-      // Check persistent state
+      // Check Expansion State (keep in sync)
+      const detailsDiv = cardWrapperRef.querySelector('.tautulli-details');
+      const cardItem = cardWrapperRef.querySelector('.tautulli-item');
       if (state.expandedSessions.has(session.session_id)) {
           detailsDiv.classList.remove('hidden');
-          card.classList.add('expanded');
+          cardItem.classList.add('expanded');
+      } else {
+          detailsDiv.classList.add('hidden');
+          cardItem.classList.remove('expanded');
       }
 
-      const toggleDetails = () => {
-          const isHidden = detailsDiv.classList.contains('hidden');
-          if (isHidden) {
-              detailsDiv.classList.remove('hidden');
-              card.classList.add('expanded');
-              state.expandedSessions.add(session.session_id);
-              
-              // Auto-scroll if cut off
-              setTimeout(() => {
-                  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 100); 
-          } else {
-              detailsDiv.classList.add('hidden');
-              card.classList.remove('expanded');
-              state.expandedSessions.delete(session.session_id);
-          }
-      };
-
-      mainDiv.addEventListener('click', toggleDetails); // Whole card clickable 
-
-      // Terminate Logic
-      const terminateLogic = async (e) => {
-        e.stopPropagation(); // Don't toggle
-        const reason = prompt(
-          `Kill stream for user "${session.user || session.username}"?\nEnter a reason (optional):`,
-          "Terminated via Chrome Extension"
-        );
-        if (reason !== null) {
-          await Tautulli.terminateSession(url, key, session.session_id, reason);
-          setTimeout(() => initTautulli(url, key, state), 1000);
-        }
-      };
-
-      const killIcon = clone.querySelector('.kill-icon-btn');
-      if (killIcon) killIcon.addEventListener('click', terminateLogic);
-
-      container.appendChild(clone);
     });
+
+    // Remove Stale
+    existingMap.forEach((el, id) => {
+        if (!processedIds.has(id)) {
+            el.remove();
+        }
+    });
+
 }
 
 // Background Badge Update Function (exported for use by popup.js)

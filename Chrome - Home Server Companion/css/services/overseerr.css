@@ -28,9 +28,6 @@ body.dark-mode .overseerr-header {
   position: relative; /* For glider absolute pos */
   z-index: 1;
 }
-body.light-theme #overseerr-view .sub-tabs {
-  background: rgba(0, 0, 0, 0.05);
-}
 
 #overseerr-view .tab-glider {
   position: absolute;
@@ -75,9 +72,6 @@ body.light-theme #overseerr-view .sub-tabs {
   font-weight: 700;
   opacity: 1;
   box-shadow: none;
-}
-body.light-theme #overseerr-view .sub-tab-btn.active {
-  color: white; /* Gold on light might need white text or dark text? Gold is usually light. Let's stick to black text for gold bg. */
 }
 
 .grid-container {
@@ -246,10 +240,6 @@ body.dark-mode .overseerr-card {
   z-index: 1;
 }
 
-body.light-theme #overseerr-search-input {
-  background: rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.1);
-}
 
 #overseerr-search-input:focus {
   border-color: #AB47BC;
