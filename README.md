@@ -72,7 +72,7 @@ A comprehensive dashboard for your self-hosted services:
   - **Persistent State**: Remembers your last viewed service and tabs across sessions.
 
 ## 📸 Screenshots
-
+**Old from 2.0** im to lazy :D
 <div align="center">
   <img src="images/screenshot_1.png" alt="Dashboard View" width="750">
   <img src="images/screenshot_2.png" alt="Requests View" width="750">
