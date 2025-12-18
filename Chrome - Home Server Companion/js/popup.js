@@ -31,12 +31,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Determine Service Order
     let order = [
+      "unraid",
       "sabnzbd",
       "sonarr",
       "radarr",
       "tautulli",
       "overseerr",
-      "unraid",
     ];
     if (items.serviceOrder && Array.isArray(items.serviceOrder)) {
       order = items.serviceOrder;
@@ -324,8 +324,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (omniboxInput) {
         omniboxInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
-                const query = omniboxInput.value;
+                const query = omniboxInput.value.trim();
                 if (!query) return;
+                
+                // Validate query length (security measure)
+                if (query.length > 100) {
+                    alert("Search query too long (max 100 characters)");
+                    return;
+                }
 
                 // 0. CAPTURE CURRENT PERSISTENT STATE
                 // We want to return to the CURRENT service on next boot, not Overseerr

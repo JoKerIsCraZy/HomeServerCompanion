@@ -1,4 +1,4 @@
-const services = ['sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'unraid'];
+const services = ['unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr'];
 
 // --- UI Navigation ---
 // --- UI Navigation ---
@@ -393,13 +393,39 @@ const renderOrderList = (initialLoad = true) => {
             // Add Hamburger Icon (Drag Handle)
             const handle = document.createElement('div');
             handle.style.cssText = "cursor: grab; display: flex; align-items: center; opacity: 0.5; margin-right: 15px;";
-            handle.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
-            `;
+            
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("width", "16");
+            svg.setAttribute("height", "16");
+            svg.setAttribute("viewBox", "0 0 24 24");
+            svg.setAttribute("fill", "none");
+            svg.setAttribute("stroke", "currentColor");
+            svg.setAttribute("stroke-width", "2");
+            svg.setAttribute("stroke-linecap", "round");
+            svg.setAttribute("stroke-linejoin", "round");
+
+            const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line1.setAttribute("x1", "3");
+            line1.setAttribute("y1", "12");
+            line1.setAttribute("x2", "21");
+            line1.setAttribute("y2", "12");
+
+            const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line2.setAttribute("x1", "3");
+            line2.setAttribute("y1", "6");
+            line2.setAttribute("x2", "21");
+            line2.setAttribute("y2", "6");
+
+            const line3 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line3.setAttribute("x1", "3");
+            line3.setAttribute("y1", "18");
+            line3.setAttribute("x2", "21");
+            line3.setAttribute("y2", "18");
+
+            svg.appendChild(line1);
+            svg.appendChild(line2);
+            svg.appendChild(line3);
+            handle.appendChild(svg);
 
             const name = service.charAt(0).toUpperCase() + service.slice(1);
             const nameSpan = document.createElement('span');
