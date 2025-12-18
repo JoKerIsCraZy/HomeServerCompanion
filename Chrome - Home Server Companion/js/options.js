@@ -1,11 +1,41 @@
 const services = ['sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'unraid'];
 
 // --- UI Navigation ---
-document.querySelectorAll('.nav-item').forEach(item => {
+// --- UI Navigation ---
+const tabs = document.querySelectorAll('.tab-btn');
+const glider = document.getElementById('glider');
+
+const moveGlider = (el) => {
+    if (!el || !glider) return;
+    // sub-tabs padding is 5px, glider is absolute at left: 5px
+    // We want glider visual position to match button visual position
+    // glidetLeft + translateX = buttonLeft
+    // 5 + translateX = offsetLeft
+    const offset = el.offsetLeft - 5;
+    glider.style.width = `${el.offsetWidth}px`;
+    glider.style.transform = `translateX(${offset}px)`;
+};
+
+// Initialize Glider
+const initGlider = () => {
+    const initialActive = document.querySelector('.tab-btn.active');
+    if (initialActive) {
+        moveGlider(initialActive);
+    }
+};
+
+// Wait for fonts/layout
+window.addEventListener('load', initGlider);
+// Also try immediately
+initGlider();
+
+tabs.forEach(item => {
     item.addEventListener('click', () => {
-        // Active Sidebar Item
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        // Active Tab
+        tabs.forEach(el => el.classList.remove('active'));
         item.classList.add('active');
+        
+        moveGlider(item);
 
         // Active Section
         const target = item.dataset.target;
@@ -341,106 +371,121 @@ services.forEach(service => {
 // --- General / Reordering Logic ---
 window.currentOrder = [...services]; // Default attached to window for easy access in listener
 
-const renderOrderList = () => {
-    chrome.storage.sync.get(['serviceOrder'], (items) => {
-        if (items.serviceOrder) {
-            // Merge with default to ensure no services are lost if config is old
-
-            window.currentOrder = items.serviceOrder;
-            // Ensure all known services are present (in case of new ones added later)
-            services.forEach(s => {
-                if (!window.currentOrder.includes(s)) window.currentOrder.push(s);
-            });
-        }
-        
+const renderOrderList = (initialLoad = true) => {
+    const render = () => {
         const container = document.getElementById('service-order-list');
         container.replaceChildren();
         
         window.currentOrder.forEach((service, index) => {
             const row = document.createElement('div');
-            row.style.cssText = 'padding: 10px 15px; background: white; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;';
-            if (index === window.currentOrder.length - 1) row.style.borderBottom = 'none';
+            row.className = 'draggable-item';
+            row.setAttribute('draggable', 'true');
+            row.dataset.index = index;
+            
+            // Handle Drop Events
+            row.addEventListener('dragstart', dragStart);
+            row.addEventListener('dragover', dragOver);
+            row.addEventListener('drop', dragDrop);
+            row.addEventListener('dragenter', dragEnter);
+            row.addEventListener('dragleave', dragLeave);
+            row.addEventListener('dragend', dragEnd);
+
+            // Add Hamburger Icon (Drag Handle)
+            const handle = document.createElement('div');
+            handle.style.cssText = "cursor: grab; display: flex; align-items: center; opacity: 0.5; margin-right: 15px;";
+            handle.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            `;
 
             const name = service.charAt(0).toUpperCase() + service.slice(1);
-            
             const nameSpan = document.createElement('span');
+            nameSpan.style.fontWeight = '500';
             nameSpan.textContent = name;
             
-            const controls = document.createElement('div');
-            controls.style.display = 'flex';
-            controls.style.gap = '5px';
+            // Left Side Container (Handle + Name)
+            const left = document.createElement('div');
+            left.style.display = 'flex';
+            left.style.alignItems = 'center';
+            left.appendChild(handle);
+            left.appendChild(nameSpan);
 
-            const upBtn = document.createElement('button');
-            upBtn.textContent = '\u2191'; // Up Arrow
-            upBtn.className = 'btn-secondary';
-            upBtn.style.padding = '5px 10px';
-            upBtn.disabled = index === 0;
-            upBtn.onclick = () => moveItem(index, -1);
-
-            const downBtn = document.createElement('button');
-            downBtn.textContent = '\u2193'; // Down Arrow
-            downBtn.className = 'btn-secondary';
-            downBtn.style.padding = '5px 10px';
-            downBtn.disabled = index === window.currentOrder.length - 1;
-            downBtn.onclick = () => moveItem(index, 1);
-
-            controls.appendChild(upBtn);
-            controls.appendChild(downBtn);
-
-            row.appendChild(nameSpan);
-            row.appendChild(controls);
+            row.appendChild(left);
             container.appendChild(row);
         });
-    });
+    };
+
+    if (initialLoad) {
+        chrome.storage.sync.get(['serviceOrder'], (items) => {
+            if (items.serviceOrder) {
+                window.currentOrder = items.serviceOrder;
+                // Ensure all known services are present
+                services.forEach(s => {
+                    if (!window.currentOrder.includes(s)) window.currentOrder.push(s);
+                });
+            }
+            render();
+        });
+    } else {
+        render();
+    }
 };
 
-const moveItem = (index, direction) => {
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= window.currentOrder.length) return;
+// Drag & Drop Handlers
+let dragSrcEl = null;
+
+function dragStart(e) {
+    dragSrcEl = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', this.dataset.index);
+    this.classList.add('dragging');
+}
+
+function dragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function dragEnter(e) {
+    this.classList.add('over');
+}
+
+function dragLeave(e) {
+    this.classList.remove('over');
+}
+
+function dragDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
     
-    // Swap
-    [window.currentOrder[index], window.currentOrder[newIndex]] = [window.currentOrder[newIndex], window.currentOrder[index]];
+    const srcIndex = parseInt(dragSrcEl.dataset.index);
+    const destIndex = parseInt(this.dataset.index);
+
+    if (srcIndex !== destIndex) {
+        // Reorder Array
+        const item = window.currentOrder.splice(srcIndex, 1)[0];
+        window.currentOrder.splice(destIndex, 0, item);
+        
+        // Re-render
+        renderOrderList(false);
+    }
     
-    // Re-render (optimistic)
-    // Keep UI in sync with reordering without waiting for storage callback
-    const container = document.getElementById('service-order-list');
-    container.innerHTML = '';
-    window.currentOrder.forEach((service, i) => {
-        const row = document.createElement('div');
-         row.style.cssText = 'padding: 10px 15px; background: white; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;';
-        if (i === window.currentOrder.length - 1) row.style.borderBottom = 'none';
+    return false;
+}
 
-        const name = service.charAt(0).toUpperCase() + service.slice(1);
-        
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = name;
-        
-        const controls = document.createElement('div');
-        controls.style.display = 'flex';
-        controls.style.gap = '5px';
-
-        const upBtn = document.createElement('button');
-        upBtn.textContent = '\u2191'; // Up Arrow
-        upBtn.className = 'btn-secondary';
-        upBtn.style.padding = '5px 10px';
-        upBtn.disabled = i === 0;
-        upBtn.onclick = () => moveItem(i, -1);
-
-        const downBtn = document.createElement('button');
-        downBtn.textContent = '\u2193'; // Down Arrow
-        downBtn.className = 'btn-secondary';
-        downBtn.style.padding = '5px 10px';
-        downBtn.disabled = i === window.currentOrder.length - 1;
-        downBtn.onclick = () => moveItem(i, 1);
-
-        controls.appendChild(upBtn);
-        controls.appendChild(downBtn);
-
-        row.appendChild(nameSpan);
-        row.appendChild(controls);
-        container.appendChild(row);
+function dragEnd(e) {
+    this.classList.remove('dragging');
+    document.querySelectorAll('.draggable-item').forEach(item => {
+        item.classList.remove('over');
     });
-};
+}
 
 
 
