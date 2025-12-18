@@ -76,12 +76,48 @@ A comprehensive dashboard for your self-hosted services:
 
 ## 📸 Screenshots
 
-**Old from 2.0** im to lazy :D
+### SABnzbd
 
 <div align="center">
-  <img src="images/screenshot_1.png" alt="Dashboard View" width="750">
-  <img src="images/screenshot_2.png" alt="Requests View" width="750">
-  <img src="images/screenshot_3.png" alt="Settings View" width="750">
+  <img src="images/sabnzbd_queue.png" alt="SABnzbd Queue" width="45%">
+  <img src="images/sabnzbd_history.png" alt="SABnzbd History" width="45%">
+</div>
+
+### Sonarr
+
+<div align="center">
+  <img src="images/sonarr_calendar.png" alt="Sonarr Calendar" width="45%">
+  <img src="images/sonarr_recent.png" alt="Sonarr Recent" width="45%">
+</div>
+
+### Radarr
+
+<div align="center">
+  <img src="images/radarr_calendar.png" alt="Radarr Calendar" width="45%">
+  <img src="images/radarr_recent.png" alt="Radarr Recent" width="45%">
+</div>
+
+### Tautulli
+
+<div align="center">
+  <img src="images/tautulli_activity.png" alt="Tautulli Activity" width="45%">
+</div>
+
+### Overseerr
+
+<div align="center">
+  <img src="images/overseerr_requests.png" alt="Overseerr Requests" width="40%">
+  <img src="images/overseerr_search.png" alt="Overseerr Search" width="40%">
+  <img src="images/overseerr_trending.png" alt="Overseerr Trending" width="40%">
+</div>
+
+### Unraid
+
+<div align="center">
+  <img src="images/unraid_dashboard.png" alt="Unraid Dashboard" width="30%">
+  <img src="images/unraid_storage.png" alt="Unraid Storage" width="30%">
+  <img src="images/unraid_docker.png" alt="Unraid Docker" width="30%">
+  <img src="images/unraid_vms.png" alt="Unraid VMs" width="30%">
 </div>
 
 ## 🚀 Installation
