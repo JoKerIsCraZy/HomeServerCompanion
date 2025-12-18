@@ -76,6 +76,15 @@ A comprehensive dashboard for your self-hosted services:
 
 ## 📸 Screenshots
 
+### Unraid
+
+<div align="center">
+  <img src="images/unraid_dashboard.png" alt="Unraid Dashboard" width="45%">
+  <img src="images/unraid_storage.png" alt="Unraid Storage" width="45%">
+  <img src="images/unraid_docker.png" alt="Unraid Docker" width="45%">
+  <img src="images/unraid_vms.png" alt="Unraid VMs" width="45%">
+</div>
+
 ### SABnzbd
 
 <div align="center">
@@ -109,15 +118,6 @@ A comprehensive dashboard for your self-hosted services:
   <img src="images/overseerr_requests.png" alt="Overseerr Requests" width="45%">
   <img src="images/overseerr_search.png" alt="Overseerr Search" width="45%">
   <img src="images/overseerr_trending.png" alt="Overseerr Trending" width="45%">
-</div>
-
-### Unraid
-
-<div align="center">
-  <img src="images/unraid_dashboard.png" alt="Unraid Dashboard" width="45%">
-  <img src="images/unraid_storage.png" alt="Unraid Storage" width="45%">
-  <img src="images/unraid_docker.png" alt="Unraid Docker" width="45%">
-  <img src="images/unraid_vms.png" alt="Unraid VMs" width="45%">
 </div>
 
 ## 🚀 Installation
