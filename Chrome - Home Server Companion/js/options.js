@@ -48,11 +48,8 @@ tabs.forEach(item => {
 const loadOptions = () => {
     chrome.storage.sync.get(null, (items) => {
         // Apply Dark Mode
-        if (items.darkMode) {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
-        }
+        // Apply Dark Mode (Forced)
+        document.body.classList.add('dark-mode');
 
         // Load Persistence Setting (default true if undefined)
         const persistenceEl = document.getElementById('enablePersistence');
