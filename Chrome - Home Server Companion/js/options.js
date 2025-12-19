@@ -117,86 +117,144 @@ const saveService = (service) => {
     const enabledEl = document.getElementById(enabledId);
     
     const data = {};
-    if (enabledEl) data[enabledId] = enabledEl.checked;
+    const isActive = enabledEl ? enabledEl.checked : false;
+    if (enabledEl) data[enabledId] = isActive;
 
     let originToRequest = null;
 
     if (urlEl) {
         let val = urlEl.value.trim().replace(/\/$/, ""); // Strip trailing slash
         
-        // Basic sanitization - remove dangerous characters
-        if (val.includes('<') || val.includes('>') || val.includes('"') || val.includes("'")) {
-            showStatus(service, 'Invalid characters in URL!', 'error');
-            return;
-        }
+        // If service is enabled, we require a URL
+        // If disabled, we allow empty (and save it as empty)
         
-        // Clean protocol if user pasted it
-        val = val.replace(/^https?:\/\//, '');
-        
-        // Check if empty after cleaning
-        if (!val || val.length === 0) {
-            showStatus(service, 'Please enter a valid URL!', 'error');
-            return;
-        }
-        
-        const protocol = protocolEl ? protocolEl.value : 'http://';
-        const fullUrl = protocol + val;
-        
-        try {
-            // Validate URL format
-            const urlObj = new URL(fullUrl);
-            
-            // Ensure protocol is http or https
-            if (!['http:', 'https:'].includes(urlObj.protocol)) {
-                showStatus(service, 'Only HTTP/HTTPS protocols allowed!', 'error');
+        if (isActive) {
+            // Basic sanitization - remove dangerous characters
+            if (val.includes('<') || val.includes('>') || val.includes('"') || val.includes("'")) {
+                showStatus(service, 'Invalid characters in URL!', 'error');
                 return;
             }
             
-            // Validate hostname exists
-            if (!urlObj.hostname || urlObj.hostname.length === 0) {
-                showStatus(service, 'Invalid hostname!', 'error');
+            // Clean protocol if user pasted it
+            val = val.replace(/^https?:\/\//, '');
+            
+            // Check if empty after cleaning
+            if (!val || val.length === 0) {
+                showStatus(service, 'Please enter a valid URL!', 'error');
                 return;
             }
             
-            // Check for valid hostname format (basic check)
-            const hostnameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$|^localhost$/;
-            if (!hostnameRegex.test(urlObj.hostname)) {
-                showStatus(service, 'Invalid hostname format!', 'error');
+            const protocol = protocolEl ? protocolEl.value : 'http://';
+            const fullUrl = protocol + val;
+            
+            try {
+                // Validate URL format
+                const urlObj = new URL(fullUrl);
+                
+                // Ensure protocol is http or https
+                if (!['http:', 'https:'].includes(urlObj.protocol)) {
+                    showStatus(service, 'Only HTTP/HTTPS protocols allowed!', 'error');
+                    return;
+                }
+                
+                // Validate hostname exists
+                if (!urlObj.hostname || urlObj.hostname.length === 0) {
+                    showStatus(service, 'Invalid hostname!', 'error');
+                    return;
+                }
+                
+                // Check for valid hostname format (basic check)
+                const hostnameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$|^localhost$/;
+                if (!hostnameRegex.test(urlObj.hostname)) {
+                    showStatus(service, 'Invalid hostname format!', 'error');
+                    return;
+                }
+                
+                data[urlId] = fullUrl;
+                originToRequest = `${urlObj.origin}/*`;
+            } catch (e) {
+                showStatus(service, 'Invalid URL format!', 'error');
+                console.warn("Invalid URL:", fullUrl, e);
                 return;
             }
-            
-            data[urlId] = fullUrl;
-            originToRequest = `${urlObj.origin}/*`;
-        } catch (e) {
-            showStatus(service, 'Invalid URL format!', 'error');
-            console.warn("Invalid URL:", fullUrl, e);
-            return;
+        } else {
+            // Disabled: Allow saving existing value OR empty value
+            // We still want to validate if they DID enter something, but if it's empty, that's fine.
+            if (val.length > 0) {
+                 // They entered something, let's try to validate/save it, but be lenient? 
+                 // Actually, if they typed garbage, we probably shouldn't save it even if disabled to avoid issues later.
+                 // let's stick to: If empty -> save empty. If not empty -> validate.
+                 
+                // Clean protocol if user pasted it
+                val = val.replace(/^https?:\/\//, '');
+                const protocol = protocolEl ? protocolEl.value : 'http://';
+                const fullUrl = protocol + val;
+                
+                try {
+                    const urlObj = new URL(fullUrl); // Just check if it parses
+                     data[urlId] = fullUrl;
+                     originToRequest = `${urlObj.origin}/*`;
+                } catch(e) {
+                     // If it's invalid but disabled, maybe just don't save the URL update? 
+                     // Or block? logic: "If you type it, it must be valid."
+                     showStatus(service, 'Invalid URL format (even if disabled)!', 'error');
+                     return;
+                }
+            } else {
+                // Empty and disabled -> Clear it
+                data[urlId] = "";
+            }
         }
     }
     
     // Validate API Key if present
-    if (keyEl && keyEl.value) {
+    if (keyEl) {
         const apiKey = keyEl.value.trim();
         
-        // Check for suspicious characters
-        if (apiKey.includes('<') || apiKey.includes('>') || apiKey.includes('"') || apiKey.includes("'")) {
-            showStatus(service, 'Invalid characters in API key!', 'error');
-            return;
+        if (isActive) {
+             // If enabled, enforces rules
+             // Special case: Unraid might not need a key (optional)? 
+             // The user prompt said: "Wenn aktiviert muss man einen api und url eintragen"
+             // So we enforce it for everyone for now to be safe, unless it's strictly optional in logic.
+             // Looking at testConnection, Unraid CAN work without key.
+             
+             if (service !== 'unraid' && (!apiKey || apiKey.length === 0)) {
+                 showStatus(service, 'API Key is required!', 'error');
+                 return;
+             }
+
+             if (apiKey.length > 0) {
+                // Check for suspicious characters
+                if (apiKey.includes('<') || apiKey.includes('>') || apiKey.includes('"') || apiKey.includes("'")) {
+                    showStatus(service, 'Invalid characters in API key!', 'error');
+                    return;
+                }
+                
+                // Check minimum length (most API keys are at least 20 chars) - Relaxed to 10
+                if (apiKey.length < 10 && service !== 'unraid') { // Unraid might have short password/keys?
+                    showStatus(service, 'API key seems too short!', 'error');
+                    return;
+                }
+                
+                // Check maximum length
+                if (apiKey.length > 500) {
+                    showStatus(service, 'API key seems too long!', 'error');
+                    return;
+                }
+                
+                data[keyId] = apiKey;
+             } else {
+                 // Unraid allowed empty
+                  data[keyId] = "";
+             }
+        } else {
+            // Disabled
+            if (apiKey.length > 0) {
+                 data[keyId] = apiKey; // Save if present
+            } else {
+                 data[keyId] = ""; // Clear if empty
+            }
         }
-        
-        // Check minimum length (most API keys are at least 20 chars)
-        if (apiKey.length < 10) {
-            showStatus(service, 'API key seems too short!', 'error');
-            return;
-        }
-        
-        // Check maximum length (prevent abuse)
-        if (apiKey.length > 500) {
-            showStatus(service, 'API key seems too long!', 'error');
-            return;
-        }
-        
-        data[keyId] = apiKey;
     }
 
     const performSave = () => {
