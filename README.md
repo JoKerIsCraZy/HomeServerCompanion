@@ -9,6 +9,7 @@
 [![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
 
 [![Available on Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Now-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
+[![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/legakiehaacgpdkmlebkjcijaiegoeld?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
 [![Browser Support](https://img.shields.io/badge/Supports-Chrome-critical?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange?style=for-the-badge)](https://developer.chrome.com/docs/extensions/mv3/)
 [![Built With](https://img.shields.io/badge/Built%20With-JavaScript-F7DF1E?logo=javascript&logoColor=black&style=for-the-badge)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
