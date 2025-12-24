@@ -23,16 +23,13 @@ export const getRequests = async (url, apiKey, status = 'pending') => {
     }
 
     const data = await response.json();
-    console.log(`Overseerr Requests (${status}):`, data);
+
     return data; 
   } catch (error) {
     console.error('Failed to fetch Overseerr requests:', error);
     return { results: [] };
   }
 };
-
-// Alias for backward compatibility if needed, though I will update caller
-export const getPendingRequests = (url, apiKey) => getRequests(url, apiKey, 'pending');
 
 /**
  * Approves a request.
@@ -101,7 +98,7 @@ export async function search(url, apiKey, query) {
     }
 
     const endpoint = `${url}/api/v1/search?query=${encodeURIComponent(query)}`;
-    console.log("Overseerr Service: Searching", endpoint);
+
 
     try {
         const response = await fetch(endpoint, {
@@ -118,7 +115,7 @@ export async function search(url, apiKey, query) {
         }
 
         const data = await response.json();
-        console.log("Overseerr Service: Search data", data);
+
         return data.results || [];
     } catch (error) {
         console.error("Overseerr Service: Search logic failed", error);
@@ -211,7 +208,7 @@ export async function request(url, apiKey, payload) {
     // If the server crashes with "filter of undefined", it's likely missing defaults.
     // We try to fetch and inject them if user didn't provide them.
     if (!payload.rootFolder || !payload.profileId) {
-         console.log("Fetching defaults to prevent server crash...");
+
          const defaults = await getDefaults(url, apiKey, payload.mediaType);
          if (defaults) {
              if (!payload.profileId) payload.profileId = defaults.profileId;
@@ -222,7 +219,7 @@ export async function request(url, apiKey, payload) {
          }
     }
 
-    console.log("Overseerr Request Payload (Final):", payload);
+
 
     const response = await fetch(`${url}/api/v1/request`, {
         method: 'POST',

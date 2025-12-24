@@ -11,7 +11,9 @@
   <link rel="stylesheet" href="css/services/radarr.css">
   <link rel="stylesheet" href="css/services/tautulli.css">
   <link rel="stylesheet" href="css/services/overseerr.css">
+  <link rel="stylesheet" href="css/services/overseerr.css">
   <link rel="stylesheet" href="css/services/unraid.css">
+  <link rel="stylesheet" href="css/services/prowlarr.css">
 </head>
 <body class="dark-mode">
   <div class="app-container">
@@ -34,6 +36,9 @@
       </div>
       <div class="nav-item" data-target="unraid" title="Unraid">
         <img src="icons/unraid.png" class="nav-icon" alt="Unraid">
+      </div>
+      <div class="nav-item" data-target="prowlarr" title="Prowlarr">
+        <img src="icons/prowlarr.png" class="nav-icon" alt="Prowlarr">
       </div>
       <div class="spacer"></div>
       <div class="nav-item settings-btn" id="settings-btn" title="Settings">
@@ -300,6 +305,21 @@
             </div>
         </div>
 
+      </div>
+      <div id="prowlarr-view" class="view">
+        <div class="tabs">
+            <div class="tab-glider"></div>
+            <button class="tab-btn active" data-tab="indexers">Indexers</button>
+            <button class="tab-btn" data-tab="stats">Statistics</button>
+        </div>
+        <div class="sub-view active" id="prowlarr-indexers"></div>
+        <div class="sub-view hidden" id="prowlarr-stats">
+            <div class="stats-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -554,6 +574,22 @@
                 <button class="action-btn start-btn" title="Start">▶</button>
                 <button class="action-btn stop-btn" title="Stop">⏹</button>
                 <button class="action-btn webui-btn" title="WebVNC">💻</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="prowlarr-indexer-card">
+        <div class="card indexer-item">
+            <div class="card-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <img class="indexer-icon" src="" alt="" style="width: 16px; height: 16px; border-radius: 2px; display: none;"> <!-- Hidden by default -->
+                    <a class="indexer-name" href="#" target="_blank" style="text-decoration: none; color: inherit;">Indexer Name</a>
+                    <span class="indexer-priority" style="font-size: 10px; color: var(--text-secondary); opacity: 0.8;">P: 25</span>
+                </div>
+                 <div class="indexer-status-badge">OK</div>
+            </div>
+            <div class="card-details">
+                <span class="indexer-protocol">Torrent</span>
             </div>
         </div>
     </template>

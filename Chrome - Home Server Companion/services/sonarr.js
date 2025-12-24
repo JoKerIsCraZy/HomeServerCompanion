@@ -44,20 +44,7 @@ export const getSonarrQueue = async (url, apiKey) => {
     }
 };
 
-export const getSonarrStatus = async (url, apiKey) => {
-    try {
-        const response = await fetch(`${url}/api/v3/system/status`, {
-            headers: {
-                'X-Api-Key': apiKey
-            }
-        });
-        if (!response.ok) throw new Error(`Error: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error("Sonarr Status Error:", error);
-        throw error;
-    }
-};
+
 
 /**
  * Fetches recent history (downloads).
@@ -151,6 +138,45 @@ export const executeManualImport = async (url, apiKey, files) => {
         return await response.json();
     } catch (error) {
         console.error("Sonarr Manual Import Execute Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Fetches all available languages.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Array>} List of languages
+ */
+export const getSonarrLanguages = async (url, apiKey) => {
+    try {
+        const response = await fetch(`${url}/api/v3/language`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Languages Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Sonarr Languages Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Fetches all equality definitions.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Array>} List of quality definitions
+ */
+export const getSonarrQualities = async (url, apiKey) => {
+    try {
+        // qualitydefinition gives us the list of qualities (id, name, title)
+        const response = await fetch(`${url}/api/v3/qualitydefinition`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Qualities Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Sonarr Qualities Error:", error);
         throw error;
     }
 };

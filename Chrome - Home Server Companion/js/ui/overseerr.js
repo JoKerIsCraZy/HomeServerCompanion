@@ -90,7 +90,7 @@ export async function loadTrending(url, key) {
         // RANDOMIZE: Start page between 1 and 10 to show "new" stuff each time
         const startPage = Math.floor(Math.random() * 10) + 1;
         
-        console.log("Loading Trending starting at page:", startPage);
+
 
         const promises = [
             Overseerr.getTrending(url, key, startPage),

@@ -189,7 +189,13 @@ function renderSabnzbdHistory(history, state, url, key) {
   history.slice(0, 10).forEach((item) => {
       const div = document.createElement("div");
       // ...
-      div.className = `sab-history-item ${item.status === 'Completed' ? 'completed' : 'failed'}`;
+      let statusClass = 'failed';
+      const s = (item.status || '').toLowerCase();
+      if (s === 'completed') statusClass = 'completed';
+      else if (s === 'extracting' || s === 'verifying' || s === 'repairing' || s === 'running') statusClass = 'processing';
+      else if (s === 'queued') statusClass = 'processing'; // Queued in history context?
+
+      div.className = `sab-history-item ${statusClass}`;
       
       const date = new Date(item.completed * 1000).toLocaleDateString();
       

@@ -74,20 +74,7 @@ export const getRadarrCalendar = async (url, apiKey) => {
     }
 };
 
-export const getRadarrStatus = async (url, apiKey) => {
-    try {
-         const response = await fetch(`${url}/api/v3/system/status`, {
-            headers: {
-                'X-Api-Key': apiKey
-            }
-         });
-         if (!response.ok) throw new Error(`Error: ${response.status}`);
-         return await response.json();
-    } catch (error) {
-        console.error("Radarr Status Error:", error);
-        throw error;
-    }
-};
+
 
 export const deleteQueueItem = async (url, apiKey, id, removeFromClient = true, blocklist = false) => {
     try {
@@ -160,6 +147,44 @@ export const executeManualImport = async (url, apiKey, files) => {
         return await response.json();
     } catch (error) {
         console.error("Radarr Manual Import Execute Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Fetches all available languages.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Array>} List of languages
+ */
+export const getRadarrLanguages = async (url, apiKey) => {
+    try {
+        const response = await fetch(`${url}/api/v3/language`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Languages Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Radarr Languages Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Fetches all equality definitions.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Array>} List of quality definitions
+ */
+export const getRadarrQualities = async (url, apiKey) => {
+    try {
+        const response = await fetch(`${url}/api/v3/qualitydefinition`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Qualities Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Radarr Qualities Error:", error);
         throw error;
     }
 };

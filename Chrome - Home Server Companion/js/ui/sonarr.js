@@ -488,16 +488,20 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
     document.body.appendChild(dialog);
     
     try {
-        // Fetch import options
+        // Fetch import options AND all available languages/qualities in parallel
         const downloadId = item.downloadId;
         const outputPath = item.outputPath || '';
         
-        const importOptions = await Sonarr.getManualImportOptions(
-            state.configs.sonarrUrl,
-            state.configs.sonarrKey,
-            downloadId,
-            outputPath
-        );
+        const [importOptions, allLanguages, allQualities] = await Promise.all([
+            Sonarr.getManualImportOptions(
+                state.configs.sonarrUrl,
+                state.configs.sonarrKey,
+                downloadId,
+                outputPath
+            ),
+            Sonarr.getSonarrLanguages(state.configs.sonarrUrl, state.configs.sonarrKey),
+            Sonarr.getSonarrQualities(state.configs.sonarrUrl, state.configs.sonarrKey)
+        ]);
         
         loadingDiv.remove();
         
@@ -512,15 +516,36 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         // Use the first file (usually one or more episodes)
         const fileOption = importOptions[0];
         
+        // VIDEO FILENAME Display
+        const originalNameDiv = document.createElement('div');
+        originalNameDiv.style.cssText = 'margin-bottom: 15px;';
+        const originalNameLabel = document.createElement('div');
+        originalNameLabel.textContent = 'Video File:'; // Changed Label
+        originalNameLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); margin-bottom: 5px; font-size: 0.9em;';
+        const originalNameValue = document.createElement('div');
+        
+        // Use relativePath (just the filename usually) or path
+        let videoFileName = fileOption.relativePath || fileOption.path || 'Unknown';
+        // If it's a full path, try to show just the filename for better readability?
+        // Actually user said "Original benennung der nzb file angezeigt werden" initially, 
+        // but now "dateinamen der videofile". 
+        // Let's show the relative path which is usually "Subtitle.mkv" or "Show.S01E01.mkv".
+        
+        originalNameValue.textContent = videoFileName; 
+        originalNameValue.style.cssText = 'color: var(--text-primary); padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; font-family: monospace; font-size: 1.1em; word-break: break-all; line-height: 1.4;';
+        originalNameDiv.appendChild(originalNameLabel);
+        originalNameDiv.appendChild(originalNameValue);
+        dialog.appendChild(originalNameDiv);
+        
         // Series/Episode name
         const episodeNameDiv = document.createElement('div');
         episodeNameDiv.style.cssText = 'margin-bottom: 15px;';
         const episodeLabel = document.createElement('div');
-        episodeLabel.textContent = 'Episode:';
-        episodeLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); margin-bottom: 5px;';
+        episodeLabel.textContent = 'Episode to Import As:';
+        episodeLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); margin-bottom: 5px; font-size: 0.9em;';
         const episodeValue = document.createElement('div');
         
-        let episodeText = item.title || 'Unknown';
+        let episodeText = 'Unknown';
         if (fileOption.series && fileOption.episodes && fileOption.episodes.length > 0) {
             const ep = fileOption.episodes[0];
             const sNum = String(ep.seasonNumber || 0).padStart(2, '0');
@@ -529,7 +554,7 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         }
         
         episodeValue.textContent = episodeText;
-        episodeValue.style.cssText = 'color: var(--text-secondary); padding: 8px; background: var(--bg-secondary); border-radius: 4px;';
+        episodeValue.style.cssText = 'color: var(--text-secondary); padding: 8px; background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);';
         episodeNameDiv.appendChild(episodeLabel);
         episodeNameDiv.appendChild(episodeValue);
         dialog.appendChild(episodeNameDiv);
@@ -539,19 +564,50 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         qualityDiv.style.cssText = 'margin-bottom: 15px;';
         const qualityLabel = document.createElement('label');
         qualityLabel.textContent = 'Quality:';
-        qualityLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px;';
+        qualityLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px; font-size: 0.9em;';
         const qualitySelect = document.createElement('select');
-        qualitySelect.style.cssText = 'width: 100%; padding: 8px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
+        // Force dark background and light text for visibility
+        qualitySelect.style.cssText = 'width: 100%; padding: 8px; background-color: #2b2b2b; color: #eeeeee; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
         
-        // Add quality options
-        if (fileOption.quality?.quality) {
-            const currentQuality = document.createElement('option');
-            currentQuality.value = JSON.stringify(fileOption.quality);
-            currentQuality.textContent = fileOption.quality.quality.name;
-            currentQuality.selected = true;
-            qualitySelect.appendChild(currentQuality);
+        // Populate ALL valid qualities
+        // Current quality from file detection
+        // Populate ALL valid qualities
+        // Current quality from file detection
+        const detectedQualityId = fileOption.quality?.quality?.id;
+        const detectedQualityName = fileOption.quality?.quality?.name; // e.g. "WEBDL-1080p"
+        
+        // Find the BEST matching quality definition
+        // 1. Try matching by Name (most accurate visually)
+        // 2. Fallback to ID match
+        let targetQuality = allQualities.find(q => detectedQualityName && (q.title === detectedQualityName || q.name === detectedQualityName));
+        if (!targetQuality) {
+            targetQuality = allQualities.find(q => q.id == detectedQualityId);
         }
         
+
+
+        allQualities.sort((a,b) => a.title.localeCompare(b.title)).forEach(qDef => {
+             const option = document.createElement('option');
+             
+             const qualityObj = {
+                 quality: { id: qDef.id, name: qDef.name },
+                 revision: fileOption.quality?.revision || { version: 1, real: 0, isRepack: false }
+             };
+
+             option.value = JSON.stringify(qualityObj);
+             option.textContent = qDef.title;
+             option.style.backgroundColor = "#2b2b2b";
+             option.style.color = "#eeeeee";
+             
+             // Select if it matches our determined target
+             if (targetQuality && qDef.id === targetQuality.id) {
+                 option.selected = true;
+             }
+             qualitySelect.appendChild(option);
+        });
+        
+        // (Removed old fallback check)
+
         // Add rejections as info
         if (fileOption.rejections && fileOption.rejections.length > 0) {
             const rejectionsDiv = document.createElement('div');
@@ -569,25 +625,31 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         languageDiv.style.cssText = 'margin-bottom: 20px;';
         const languageLabel = document.createElement('label');
         languageLabel.textContent = 'Language:';
-        languageLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px;';
+        languageLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px; font-size: 0.9em;';
         const languageSelect = document.createElement('select');
-        languageSelect.style.cssText = 'width: 100%; padding: 8px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
+        // Force dark background and light text here too
+        languageSelect.style.cssText = 'width: 100%; padding: 8px; background-color: #2b2b2b; color: #eeeeee; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
         
-        // Add language options
-        if (fileOption.languages && fileOption.languages.length > 0) {
-            fileOption.languages.forEach((lang, index) => {
-                const option = document.createElement('option');
-                option.value = JSON.stringify(lang);
-                option.textContent = lang.name || 'Unknown';
-                if (index === 0) option.selected = true;
-                languageSelect.appendChild(option);
-            });
-        } else {
+        // Populate ALL languages
+        // Current language from file detection
+        // fileOption.languages is an array, usually has 1 main language
+        const detectedLangId = (fileOption.languages && fileOption.languages.length > 0) ? fileOption.languages[0].id : null;
+
+        allLanguages.sort((a,b) => a.name.localeCompare(b.name)).forEach(lang => {
             const option = document.createElement('option');
-            option.value = JSON.stringify({id: 1, name: 'English'});
-            option.textContent = 'English';
+            option.value = JSON.stringify(lang);
+            option.textContent = lang.name;
+            option.style.backgroundColor = "#2b2b2b";
+            option.style.color = "#eeeeee";
+            
+            if (lang.id === detectedLangId) {
+                option.selected = true;
+            } else if (!detectedLangId && lang.name === "English") {
+                // Default to english if nothing detected?
+                // option.selected = true; 
+            }
             languageSelect.appendChild(option);
-        }
+        });
         
         languageDiv.appendChild(languageLabel);
         languageDiv.appendChild(languageSelect);

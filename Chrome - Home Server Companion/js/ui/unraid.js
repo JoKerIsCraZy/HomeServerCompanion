@@ -107,19 +107,38 @@ const getUptime = (iso) => {
 function renderUnraidSystem(data, url, key, state) {
     const card = document.getElementById("unraid-status-card");
     if (card) {
-        const ind = card.querySelector(".status-indicator");
-        if(ind) {
-            ind.textContent = "ONLINE";
-            ind.className = "status-indicator online";
+        // Clear and rebuild for vertical stack (Status -> License -> Version)
+        card.innerHTML = "";
+        card.style.display = "flex";
+        card.style.flexDirection = "column";
+        card.style.justifyContent = "center"; // Vertical center
+        card.style.alignItems = "flex-end";   // Right align (as defined in CSS usually, or center?)
+        // CSS says text-align: right. Let's align flex items to flex-end.
+
+        // 1. Status
+        const ind = document.createElement("div");
+        ind.className = "status-indicator online";
+        ind.textContent = "ONLINE";
+        ind.style.marginBottom = "2px";
+        card.appendChild(ind);
+
+        // 2. License
+        if (data.system && data.system.registration) {
+            const licenseDiv = document.createElement("div");
+            licenseDiv.className = "server-name"; // Reuse style for font/color
+            licenseDiv.style.opacity = "0.7";     // Slightly dimmer
+            licenseDiv.style.fontWeight = "400";
+            licenseDiv.style.marginBottom = "2px";
+            licenseDiv.textContent = data.system.registration; 
+            card.appendChild(licenseDiv);
         }
-        // Update Server Name with Version/License
-        const nameEl = card.querySelector(".server-name");
-        if (nameEl && data.system) {
-            nameEl.textContent = `Unraid v${data.system.version} `;
-            const regSpan = document.createElement('span');
-            regSpan.style.cssText = "opacity:0.6; margin-left:4px;";
-            regSpan.textContent = data.system.registration;
-            nameEl.appendChild(regSpan);
+
+        // 3. Version
+        if (data.system && data.system.version) {
+            const versionDiv = document.createElement("div");
+            versionDiv.className = "server-name"; // Reuse style
+            versionDiv.textContent = `Unraid v${data.system.version}`;
+            card.appendChild(versionDiv);
         }
     }
 

@@ -4,6 +4,7 @@ import { initRadarr } from "./ui/radarr.js";
 import { initTautulli } from "./ui/tautulli.js";
 import { initOverseerr } from "./ui/overseerr.js";
 import { initUnraid } from "./ui/unraid.js";
+import { initProwlarr } from "./ui/prowlarr.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // State
@@ -37,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "radarr",
       "tautulli",
       "overseerr",
+      "prowlarr",
     ];
     if (items.serviceOrder && Array.isArray(items.serviceOrder)) {
       order = items.serviceOrder;
@@ -258,6 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Update View
         views.forEach((v) => v.classList.remove("active"));
         const targetView = document.getElementById(`${target}-view`);
+        targetView.classList.remove("hidden"); // Ensure hidden is removed
         targetView.classList.add("active");
 
         // Update Header
@@ -639,6 +642,9 @@ document.addEventListener("DOMContentLoaded", () => {
           break;
         case "unraid":
           await initUnraid(url, key, state);
+          break;
+        case "prowlarr": 
+          await initProwlarr(url, key, state);
           break;
       }
     } catch (error) {

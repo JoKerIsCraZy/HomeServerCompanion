@@ -125,4 +125,5 @@
 }
 .sab-history-item:last-child { border-bottom: none; }
 .sab-history-item.failed .sab-item-title { color: #fe5f55; }
+.sab-history-item.processing .sab-item-title { color: #ff9800; }
 .sab-history-item.completed .sab-item-title { color: #4caf50; }

@@ -456,6 +456,13 @@ function renderRadarrQueue(records, state) {
  * @param {HTMLElement} itemEl - The queue item element
  * @param {Function} refreshQueue - Function to refresh the queue after import
  */
+/**
+ * Shows a dialog for manual import of a queue item
+ * @param {Object} item - Queue item with warning/error status
+ * @param {Object} state - App state with configs
+ * @param {HTMLElement} itemEl - The queue item element
+ * @param {Function} refreshQueue - Function to refresh the queue after import
+ */
 async function showManualImportDialog(item, state, itemEl, refreshQueue) {
     // Remove any existing dialog
     const existingDialog = document.querySelector('.manual-import-dialog');
@@ -522,16 +529,20 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
     document.body.appendChild(dialog);
     
     try {
-        // Fetch import options
+        // Fetch import options AND all available languages/qualities in parallel
         const downloadId = item.downloadId;
         const outputPath = item.outputPath || '';
         
-        const importOptions = await Radarr.getManualImportOptions(
-            state.configs.radarrUrl,
-            state.configs.radarrKey,
-            downloadId,
-            outputPath
-        );
+        const [importOptions, allLanguages, allQualities] = await Promise.all([
+            Radarr.getManualImportOptions(
+                state.configs.radarrUrl,
+                state.configs.radarrKey,
+                downloadId,
+                outputPath
+            ),
+            Radarr.getRadarrLanguages(state.configs.radarrUrl, state.configs.radarrKey),
+            Radarr.getRadarrQualities(state.configs.radarrUrl, state.configs.radarrKey)
+        ]);
         
         loadingDiv.remove();
         
@@ -546,15 +557,31 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         // Use the first file (usually there's only one for movies)
         const fileOption = importOptions[0];
         
+        // VIDEO FILENAME Display
+        const originalNameDiv = document.createElement('div');
+        originalNameDiv.style.cssText = 'margin-bottom: 15px;';
+        const originalNameLabel = document.createElement('div');
+        originalNameLabel.textContent = 'Video File:'; 
+        originalNameLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); margin-bottom: 5px; font-size: 0.9em;';
+        const originalNameValue = document.createElement('div');
+  
+        // Use relativePath (just the filename usually) or path
+        let videoFileName = fileOption.relativePath || fileOption.path || 'Unknown';
+        originalNameValue.textContent = videoFileName; 
+        originalNameValue.style.cssText = 'color: var(--text-primary); padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; font-family: monospace; font-size: 1.1em; word-break: break-all; line-height: 1.4;';
+        originalNameDiv.appendChild(originalNameLabel);
+        originalNameDiv.appendChild(originalNameValue);
+        dialog.appendChild(originalNameDiv);
+        
         // Movie name
         const movieNameDiv = document.createElement('div');
         movieNameDiv.style.cssText = 'margin-bottom: 15px;';
         const movieLabel = document.createElement('div');
-        movieLabel.textContent = 'Movie:';
-        movieLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); margin-bottom: 5px;';
+        movieLabel.textContent = 'Movie to Import As:';
+        movieLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); margin-bottom: 5px; font-size: 0.9em;';
         const movieValue = document.createElement('div');
         movieValue.textContent = item.title || fileOption.movie?.title || 'Unknown';
-        movieValue.style.cssText = 'color: var(--text-secondary); padding: 8px; background: var(--bg-secondary); border-radius: 4px;';
+        movieValue.style.cssText = 'color: var(--text-secondary); padding: 8px; background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);';
         movieNameDiv.appendChild(movieLabel);
         movieNameDiv.appendChild(movieValue);
         dialog.appendChild(movieNameDiv);
@@ -564,19 +591,38 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         qualityDiv.style.cssText = 'margin-bottom: 15px;';
         const qualityLabel = document.createElement('label');
         qualityLabel.textContent = 'Quality:';
-        qualityLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px;';
+        qualityLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px; font-size: 0.9em;';
         const qualitySelect = document.createElement('select');
-        qualitySelect.style.cssText = 'width: 100%; padding: 8px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
+        qualitySelect.style.cssText = 'width: 100%; padding: 8px; background-color: #2b2b2b; color: #eeeeee; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
         
-        // Add quality options
-        if (fileOption.quality?.quality) {
-            const currentQuality = document.createElement('option');
-            currentQuality.value = JSON.stringify(fileOption.quality);
-            currentQuality.textContent = fileOption.quality.quality.name;
-            currentQuality.selected = true;
-            qualitySelect.appendChild(currentQuality);
+        // Populate ALL valid qualities
+        const detectedQualityId = fileOption.quality?.quality?.id;
+        const detectedQualityName = fileOption.quality?.quality?.name; // e.g. "WEBDL-1080p"
+        
+        // Find the BEST matching quality definition
+        let targetQuality = allQualities.find(q => detectedQualityName && (q.title === detectedQualityName || q.name === detectedQualityName));
+        if (!targetQuality) {
+            targetQuality = allQualities.find(q => q.id == detectedQualityId);
         }
         
+        allQualities.sort((a,b) => a.title.localeCompare(b.title)).forEach(qDef => {
+             const option = document.createElement('option');
+             
+             const qualityObj = {
+                 quality: { id: qDef.id, name: qDef.name },
+                 revision: fileOption.quality?.revision || { version: 1, real: 0, isRepack: false }
+             };
+
+             option.value = JSON.stringify(qualityObj);
+             option.textContent = qDef.title;
+             
+             // Pre-select if matches closest
+             if (targetQuality && qDef.id === targetQuality.id) {
+                 option.selected = true;
+             }
+             qualitySelect.appendChild(option);
+        });
+
         // Add rejections as info
         if (fileOption.rejections && fileOption.rejections.length > 0) {
             const rejectionsDiv = document.createElement('div');
@@ -594,25 +640,21 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         languageDiv.style.cssText = 'margin-bottom: 20px;';
         const languageLabel = document.createElement('label');
         languageLabel.textContent = 'Language:';
-        languageLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px;';
+        languageLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px; font-size: 0.9em;';
         const languageSelect = document.createElement('select');
-        languageSelect.style.cssText = 'width: 100%; padding: 8px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
+        languageSelect.style.cssText = 'width: 100%; padding: 8px; background-color: #2b2b2b; color: #eeeeee; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
         
-        // Add language options
-        if (fileOption.languages && fileOption.languages.length > 0) {
-            fileOption.languages.forEach((lang, index) => {
-                const option = document.createElement('option');
-                option.value = JSON.stringify(lang);
-                option.textContent = lang.name || 'Unknown';
-                if (index === 0) option.selected = true;
-                languageSelect.appendChild(option);
-            });
-        } else {
-            const option = document.createElement('option');
-            option.value = JSON.stringify({id: 1, name: 'English'});
-            option.textContent = 'English';
-            languageSelect.appendChild(option);
-        }
+         // Populate ALL valid languages
+        const detectedLangId = fileOption.languages && fileOption.languages.length > 0 ? fileOption.languages[0].id : 1; // Default to English(1)
+        
+        allLanguages.sort((a,b) => a.name.localeCompare(b.name)).forEach(lang => {
+             const option = document.createElement('option');
+             option.value = JSON.stringify({ id: lang.id, name: lang.name });
+             option.textContent = lang.name;
+             
+             if (lang.id === detectedLangId) option.selected = true;
+             languageSelect.appendChild(option);
+        });
         
         languageDiv.appendChild(languageLabel);
         languageDiv.appendChild(languageSelect);

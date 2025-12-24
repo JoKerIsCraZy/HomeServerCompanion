@@ -200,10 +200,7 @@ export const getSystemData = async (url, apiKey) => {
                      }
                 }
 
-                if (!webuiUrl) {
-                    // Debugging why we missed it
-                    // console.log(`[Unraid] No WebUI for ${c.names[0]}: Label=${!!labels['net.unraid.docker.webui']}, Ports=${c.ports?.length}`);
-                }
+
 
                 return {
                     id: c.id,
@@ -240,17 +237,26 @@ export const controlContainer = async (url, apiKey, id, action) => {
     // Schema: mutation { docker { start(id: "...") { id } } }
     // Note: 'restart' is not supported natively in the API, so we simulate it.
     
+    // Input validation to prevent GraphQL injection
+    const allowedActions = ['start', 'stop', 'restart', 'pause', 'unpause'];
+    if (!allowedActions.includes(action)) {
+        throw new Error(`Invalid action: ${action}`);
+    }
+    
+    // Sanitize ID (remove quotes and backslashes that could break GraphQL)
+    const sanitizedId = String(id).replace(/[\\"\']/g, '');
+    
     if (action === 'restart') {
-        const stopRes = await controlContainer(url, apiKey, id, 'stop');
+        const stopRes = await controlContainer(url, apiKey, sanitizedId, 'stop');
         await new Promise(r => setTimeout(r, 2000)); // Wait for stop
-        const startRes = await controlContainer(url, apiKey, id, 'start');
+        const startRes = await controlContainer(url, apiKey, sanitizedId, 'start');
         return startRes;
     }
 
     const mutation = `
     mutation {
         docker {
-            ${action}(id: "${id}") {
+            ${action}(id: "${sanitizedId}") {
                 id
             }
         }
@@ -303,10 +309,20 @@ export const getVms = async (url, apiKey) => {
 export const controlVm = async (url, apiKey, id, action) => {
     // Mutation: mutation { vm { start(id: "...") } }
     // Action: start, stop, pause, resume, forceStop, reboot, reset
+    
+    // Input validation to prevent GraphQL injection
+    const allowedActions = ['start', 'stop', 'pause', 'resume', 'forceStop', 'reboot', 'reset'];
+    if (!allowedActions.includes(action)) {
+        throw new Error(`Invalid action: ${action}`);
+    }
+    
+    // Sanitize ID (remove quotes and backslashes that could break GraphQL)
+    const sanitizedId = String(id).replace(/[\\"\']/g, '');
+    
     const mutation = `
     mutation {
         vm {
-            ${action}(id: "${id}")
+            ${action}(id: "${sanitizedId}")
         }
     }`;
     return await graphQL(url, apiKey, mutation);

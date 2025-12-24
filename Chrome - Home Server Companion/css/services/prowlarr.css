@@ -1,0 +1,232 @@
+/* Prowlarr CSS */
+:root {
+  --accent-prowlarr: #e66100;
+}
+
+/* .progress-bar-fill removed - unused */
+
+/* Prowlarr Modern Tabs (Glider) */
+#prowlarr-view .tabs {
+  position: relative;
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 5px;
+  border-radius: 12px;
+  gap: 5px;
+  z-index: 1;
+  margin-bottom: 15px;
+}
+
+#prowlarr-view .tab-glider {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  height: calc(100% - 10px);
+  background: linear-gradient(
+    135deg,
+    #e66100,
+    #e66100
+  ); /* Prowlarr Blue Gradient */
+  border-radius: 8px;
+  z-index: 0;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 5px rgba(65, 178, 228, 0.3);
+  width: 0;
+  pointer-events: none;
+}
+
+#prowlarr-view .tab-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 20px;
+  margin: 0;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 13px;
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+#prowlarr-view .tab-btn:hover {
+  color: var(--text-primary);
+}
+
+#prowlarr-view .tab-btn.active {
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Indexer Card Styling */
+.indexer-item {
+  border-left: 3px solid var(--accent-prowlarr);
+  margin-bottom: 10px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.indexer-item .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.indexer-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.indexer-status-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  color: #fff;
+  background: #4caf50; /* OK Green */
+}
+
+/* .indexer-status-badge.error REMOVED - styles set via JS */
+
+.indexer-item .card-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  gap: 10px;
+}
+
+/* Statistics View Styling */
+#prowlarr-stats {
+  padding: 10px 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(65, 178, 228, 0.15);
+  border-color: rgba(65, 178, 228, 0.3);
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff, #bbb);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* Stats Tables */
+.stats-table-wrapper {
+    margin-top: 25px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.stats-table th, .stats-table td {
+    text-align: left;
+    padding: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.stats-table th {
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+
+.stats-table tr:last-child td {
+    border-bottom: none;
+}
+
+.stats-table tr:hover td {
+    background: rgba(255,255,255,0.02);
+    color: var(--text-primary);
+}
+
+
+.indexer-item .card-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* Align items vertically */
+  font-size: 11px;
+  color: var(--text-secondary);
+  gap: 10px; /* Ensure space between items */
+}
+
+.indexer-priority {
+  /* margin-left: auto; REMOVED - now in header */
+  font-weight: normal;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* VIP Timer Badge */
+.indexer-vip-timer {
+  background: rgba(255, 215, 0, 0.15); /* Gold tint */
+  color: #ffd700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  /* margin-left: auto; REMOVED to prevent clumping of previous items */
+}
+
+.indexer-vip-timer.warning {
+  color: #ff9800; /* Orange */
+  border-color: rgba(255, 152, 0, 0.3);
+  background: rgba(255, 152, 0, 0.1);
+}
+
+.indexer-vip-timer.expired {
+  color: #f44336; /* Red */
+  border-color: rgba(244, 67, 54, 0.3);
+  background: rgba(244, 67, 54, 0.1);
+}

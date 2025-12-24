@@ -4,7 +4,7 @@
 
 # Home Server Companion
 
-[![Version](https://img.shields.io/badge/version-2.8-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
+[![Version](https://img.shields.io/badge/version-2.9-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/blob/master/LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
 
@@ -39,12 +39,14 @@ A comprehensive dashboard for your self-hosted services:
   - **Queue**: Track active downloads with warnings for stuck items.
   - **History**: See recently imported episodes grouped by series and season.
   - **Queue Management**: Delete items with options to remove from client or blocklist & search for alternatives.
+  - **Manual Import**: Advanced import dialog with full quality and language selection for problematic downloads.
   - **Badge Notifications**: Visual alerts for queue issues requiring attention.
 - **🎬 Radarr**:
   - **Calendar**: View upcoming movie releases (Digital, Physical, Cinema).
   - **Queue**: Monitor active downloads with issue detection.
   - **History**: Browse recently imported movies with poster art.
   - **Queue Management**: Remove downloads or blocklist releases and trigger automatic re-search.
+  - **Manual Import**: Enhanced import workflow matching Sonarr, with parallel loading and full quality/language control.
   - **Badge Notifications**: Alerts for download warnings and errors.
 - **📊 Tautulli**:
   - View active Plex streams with rich metadata and poster art.
@@ -59,6 +61,13 @@ A comprehensive dashboard for your self-hosted services:
   - **Request Media**: One-click requests for movies and full TV seasons.
   - **Approve/Decline**: Manage pending requests directly from the extension.
   - **Smart Caching**: Instant load times with hydrated request data.
+- **🔍 Prowlarr**:
+  - **Indexer Overview**: Monitor all configured indexers with real-time status.
+  - **Status Indicators**: Visual badges showing enabled, disabled, or temporarily unavailable (failure) states.
+  - **Failure Recovery**: Automatic countdown timers showing when failed indexers retry.
+  - **Statistics Dashboard**: View indexer performance metrics, query counts, and grab statistics.
+  - **Quick Access**: Direct links to indexer configuration and Prowlarr dashboard.
+  - **Favicon Display**: Visual indexer identification with automatic favicon loading.
 - **⚙️ Unraid**:
   - **System Dashboard**: Real-time CPU ring chart, RAM usage bar, and uptime tracking.
   - **Quick Stats**: Array status and storage space overview.

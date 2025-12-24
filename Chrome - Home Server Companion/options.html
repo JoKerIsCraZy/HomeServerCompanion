@@ -444,7 +444,9 @@
             <button class="tab-btn" data-target="sonarr">Sonarr</button>
             <button class="tab-btn" data-target="radarr">Radarr</button>
             <button class="tab-btn" data-target="tautulli">Tautulli</button>
+
             <button class="tab-btn" data-target="overseerr">Overseerr</button>
+            <button class="tab-btn" data-target="prowlarr">Prowlarr</button>
           </div>
 
           <div class="header-links">
@@ -800,15 +802,60 @@
               Generate in Unraid Settings -> Management Access -> API Key
             </div>
           </div>
-          <!-- Unraid doesn't have a standard API key for simple status checks usually, but we'll ask for one if users use a specific plugin, or just skip it for basic ping -->
           <div class="actions">
-            <button id="saveUnraid" class="btn-primary">Save Unraid</button>
+            <button id="saveUnraid" class="btn-primary">
+              Save Unraid
+            </button>
             <button id="testUnraid" class="btn-secondary">
-              Test Reachability
+              Test Connection
             </button>
           </div>
           <div id="statusUnraid" class="status"></div>
         </div>
+
+        <!-- Prowlarr Section -->
+        <div id="prowlarr" class="section">
+          <h2>Prowlarr Settings</h2>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; cursor: pointer">
+              <input
+                type="checkbox"
+                id="prowlarrEnabled"
+                style="width: auto; margin-right: 10px"
+              />
+              Enable Prowlarr
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="prowlarrUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="prowlarrProtocol" style="width: auto">
+                <option value="http://">http://</option>
+                <option value="https://">https://</option>
+              </select>
+              <input
+                type="text"
+                id="prowlarrUrl"
+                placeholder="localhost:9696"
+                style="flex: 1"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="prowlarrKey">API Key</label>
+            <input type="password" id="prowlarrKey" />
+          </div>
+          <div class="actions">
+            <button id="saveProwlarr" class="btn-primary">
+              Save Prowlarr
+            </button>
+            <button id="testProwlarr" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusProwlarr" class="status"></div>
+        </div>
+
       </div>
     </div>
 

@@ -1,4 +1,4 @@
-const services = ['unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr'];
+const services = ['unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'prowlarr'];
 
 // --- UI Navigation ---
 // --- UI Navigation ---
@@ -336,6 +336,9 @@ const testConnection = async (service) => {
             } else {
                  testUrl = url; 
             }
+            break;
+        case 'prowlarr':
+            testUrl = `${url}/api/v1/health?apikey=${apiKey}`;
             break;
     }
 
