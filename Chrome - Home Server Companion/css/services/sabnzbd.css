@@ -85,7 +85,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 220px;
+    flex: 1;
+    min-width: 0;
 }
 .sab-item-status {
     font-size: 11px;

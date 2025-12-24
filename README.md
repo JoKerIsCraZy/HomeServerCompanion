@@ -107,6 +107,9 @@ A comprehensive dashboard for your self-hosted services:
 <div align="center">
   <img src="images/sonarr_calendar.png" alt="Sonarr Calendar" width="45%">
   <img src="images/sonarr_recent.png" alt="Sonarr Recent" width="45%">
+  <h2>1:1 same design as radarr so same pictures :P</h2>
+    <img src="images/radarr_queue.png" alt="Radarr Queue" width="45%">
+  <img src="images/radarr_manual_import.png" alt="Radarr Manual Import" width="45%">
 </div>
 
 ### Radarr
@@ -114,6 +117,8 @@ A comprehensive dashboard for your self-hosted services:
 <div align="center">
   <img src="images/radarr_calendar.png" alt="Radarr Calendar" width="45%">
   <img src="images/radarr_recent.png" alt="Radarr Recent" width="45%">
+  <img src="images/radarr_queue.png" alt="Radarr Queue" width="45%">
+  <img src="images/radarr_manual_import.png" alt="Radarr Manual Import" width="45%">
 </div>
 
 ### Tautulli
@@ -128,6 +133,13 @@ A comprehensive dashboard for your self-hosted services:
   <img src="images/overseerr_requests.png" alt="Overseerr Requests" width="45%">
   <img src="images/overseerr_search.png" alt="Overseerr Search" width="45%">
   <img src="images/overseerr_trending.png" alt="Overseerr Trending" width="45%">
+</div>
+
+### Prowlarr
+
+<div align="center">
+  <img src="images/prowlarr_indexer.png" alt="Prowlarr Indexer" width="45%">
+  <img src="images/prowlarr_stats.png" alt="Prowlarr Stats" width="45%">
 </div>
 
 ## 🚀 Installation
@@ -158,16 +170,17 @@ Once installed, you need to connect your services.
 1.  Right-click the extension icon and select **Options**.
 2.  Navigate through the tabs to configure each service you use.
 
-| Service         | Setting        | Description                                                                             |
-| :-------------- | :------------- | :-------------------------------------------------------------------------------------- |
-| **General**     | Service Order  | Drag and drop (or use arrows) to reorder the sidebar. The top item opens by default.    |
-| **SABnzbd**     | URL & API Key  | Found in Config -> General / API.                                                       |
-| **Sonarr**      | URL & API Key  | Found in Settings -> General.                                                           |
-| **Radarr**      | URL & API Key  | Found in Settings -> General.                                                           |
-| **Tautulli**    | URL & API Key  | Found in Settings -> Web Interface.                                                     |
-| **Overseerr**   | URL & API Key  | Found in Settings -> General.                                                           |
-| **Unraid**      | URL            | IP Address or Hostname (e.g., `http://192.168.1.10`).                                   |
-|                 | API Key        | Required for advanced control. Generate via "Management Access" settings if available.  |
+| Service         | Setting        | Description                                                                            |
+| :-------------- | :------------- | :------------------------------------------------------------------------------------- |
+| **General**     | Service Order  | Drag and drop to reorder the sidebar. The top item opens by default.                   |
+| **SABnzbd**     | URL & API Key  | Found in Config -> General / API.                                                      |
+| **Sonarr**      | URL & API Key  | Found in Settings -> General.                                                          |
+| **Radarr**      | URL & API Key  | Found in Settings -> General.                                                          |
+| **Tautulli**    | URL & API Key  | Found in Settings -> Web Interface.                                                    |
+| **Overseerr**   | URL & API Key  | Found in Settings -> General.                                                          |
+| **Prowlarr**    | URL & API Key  | Found in Settings -> General.                                                          |
+| **Unraid**      | URL            | IP Address or Hostname (e.g., `http://192.168.1.10`).                                  |
+|                 | API Key        | Required for advanced control. Generate via "Management Access" settings if available. |
 
 > **Note**: Ensure your URLs include the protocol (`http://` or `https://`) and port if non-standard (e.g., `:8080`).
 
