@@ -303,7 +303,7 @@ function renderUnraidSystem(data, url, key, state) {
         const healthGrid = mkDiv('unraid-dashboard-grid');
 
         // Parity Check Status
-        const parityCard = mkDiv('unraid-card full-width-card');
+        const parityCard = mkDiv('unraid-card system-stat-card');
         parityCard.id = 'dash-parity-card';
         const parityLabel = mkDiv('stat-label', 'PARITY CHECK');
         parityCard.appendChild(parityLabel);
@@ -316,7 +316,7 @@ function renderUnraidSystem(data, url, key, state) {
         healthGrid.appendChild(parityCard);
 
         // SMART Status
-        const smartCard = mkDiv('unraid-card full-width-card');
+        const smartCard = mkDiv('unraid-card system-stat-card');
         smartCard.id = 'dash-smart-card'; // Added ID for border styling
         smartCard.appendChild(mkDiv('stat-label', 'DISK HEALTH (SMART)'));
         const smartStatus = mkDiv('stat-value', 'All Healthy');

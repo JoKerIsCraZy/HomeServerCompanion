@@ -41,6 +41,23 @@
           <img src="icons/prowlarr.png" class="nav-icon" alt="Prowlarr" />
         </div>
         <div class="spacer"></div>
+        <div class="nav-item" id="fullscreen-btn" title="Open as Dashboard">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </div>
         <div class="nav-item settings-btn" id="settings-btn" title="Settings">
           <div class="icon-placeholder settings-icon">⚙️</div>
         </div>
@@ -356,34 +373,38 @@
 
           <!-- Trending Tab -->
           <div id="overseerr-trending-tab" class="overseerr-tab-content hidden">
-            <div class="trending-filter-bar" style="
-              display: flex;
-              justify-content: flex-end;
-              align-items: center;
-              margin-bottom: 12px;
-              padding: 0 10px;
-            ">
-              <div class="trending-filter-wrapper" style="
+            <div
+              class="trending-filter-bar"
+              style="
                 display: flex;
+                justify-content: flex-end;
                 align-items: center;
-                gap: 8px;
-                background: rgba(171, 71, 188, 0.1);
-                padding: 6px 12px;
-                border-radius: 20px;
-                border: 1px solid rgba(171, 71, 188, 0.3);
-              ">
-                <span style="
-                  font-size: 12px;
-                  color: #AB47BC;
-                  font-weight: 600;
-                ">🎬 Filter:</span>
+                margin-bottom: 12px;
+                padding: 0 10px;
+              "
+            >
+              <div
+                class="trending-filter-wrapper"
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  background: rgba(171, 71, 188, 0.1);
+                  padding: 6px 12px;
+                  border-radius: 20px;
+                  border: 1px solid rgba(171, 71, 188, 0.3);
+                "
+              >
+                <span style="font-size: 12px; color: #ab47bc; font-weight: 600"
+                  >🎬 Filter:</span
+                >
                 <select
                   id="overseerr-trending-filter"
                   style="
                     padding: 4px 24px 4px 8px;
                     border-radius: 8px;
                     border: none;
-                    background: #7E57C2;
+                    background: #7e57c2;
                     color: #fff;
                     font-size: 12px;
                     font-weight: 600;
@@ -397,9 +418,18 @@
                     background-size: 16px;
                   "
                 >
-                  <option value="both" style="background: #2d2d2d; color: #fff;">Both</option>
-                  <option value="movie" style="background: #2d2d2d; color: #fff;">Movies</option>
-                  <option value="tv" style="background: #2d2d2d; color: #fff;">Series</option>
+                  <option value="both" style="background: #2d2d2d; color: #fff">
+                    Both
+                  </option>
+                  <option
+                    value="movie"
+                    style="background: #2d2d2d; color: #fff"
+                  >
+                    Movies
+                  </option>
+                  <option value="tv" style="background: #2d2d2d; color: #fff">
+                    Series
+                  </option>
                 </select>
               </div>
             </div>
@@ -536,18 +566,43 @@
           </div>
         </div>
         <div id="prowlarr-view" class="view">
-          <div class="header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-              <div class="tabs" style="margin-bottom: 0;">
-                <div class="tab-glider"></div>
-                <button class="tab-btn active" data-tab="indexers">Indexers</button>
-                <button class="tab-btn" data-tab="search">Search</button>
-                <button class="tab-btn" data-tab="stats">Statistics</button>
-              </div>
-              
-              <div class="keep-search-container" style="display: none; align-items: center; gap: 8px;">
-                  <input type="checkbox" id="prowlarr-keep-search" style="accent-color: var(--accent-prowlarr); cursor: pointer;">
-                  <label for="prowlarr-keep-search" style="font-size: 12px; color: var(--text-secondary); cursor: pointer;">Keep last search</label>
-              </div>
+          <div
+            class="header-row"
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 15px;
+            "
+          >
+            <div class="tabs" style="margin-bottom: 0">
+              <div class="tab-glider"></div>
+              <button class="tab-btn active" data-tab="indexers">
+                Indexers
+              </button>
+              <button class="tab-btn" data-tab="search">Search</button>
+              <button class="tab-btn" data-tab="stats">Statistics</button>
+            </div>
+
+            <div
+              class="keep-search-container"
+              style="display: none; align-items: center; gap: 8px"
+            >
+              <input
+                type="checkbox"
+                id="prowlarr-keep-search"
+                style="accent-color: var(--accent-prowlarr); cursor: pointer"
+              />
+              <label
+                for="prowlarr-keep-search"
+                style="
+                  font-size: 12px;
+                  color: var(--text-secondary);
+                  cursor: pointer;
+                "
+                >Keep last search</label
+              >
+            </div>
           </div>
           <div class="sub-view active" id="prowlarr-indexers"></div>
           <div class="sub-view hidden" id="prowlarr-stats">
@@ -557,48 +612,119 @@
             <div id="prowlarr-stats-tables"></div>
           </div>
           <div class="sub-view hidden" id="prowlarr-search">
-            <div class="search-bar" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; gap: 10px; width: 100%;">
-                    <!-- Multi-Select Indexer Dropdown -->
-                    <div class="custom-dropdown" id="prowlarr-indexer-dropdown" style="width: 240px; flex: none;">
-                        <div class="dropdown-trigger" id="indexer-dropdown-trigger">
-                            All Indexers
-                        </div>
-                        <div class="dropdown-options hidden" id="indexer-dropdown-options">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-                    
-                    <!-- Category Select (Standard) -->
-                    <select id="prowlarr-search-category" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--card-bg); color: var(--text-primary); outline: none; font-size: 13px;">
-                        <option value="">All Categories</option>
-                    </select>
+            <div
+              class="search-bar"
+              style="
+                margin-bottom: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+              "
+            >
+              <div style="display: flex; gap: 10px; width: 100%">
+                <!-- Multi-Select Indexer Dropdown -->
+                <div
+                  class="custom-dropdown"
+                  id="prowlarr-indexer-dropdown"
+                  style="width: 240px; flex: none"
+                >
+                  <div class="dropdown-trigger" id="indexer-dropdown-trigger">
+                    All Indexers
+                  </div>
+                  <div
+                    class="dropdown-options hidden"
+                    id="indexer-dropdown-options"
+                  >
+                    <!-- Populated by JS -->
+                  </div>
                 </div>
-                
-                <div style="display: flex; gap: 10px; width: 100%;">
-                    <div style="flex: 1; position: relative;">
-                        <input
-                            type="text"
-                            id="prowlarr-search-input"
-                            placeholder="Search..."
-                            style="width: 100%; padding: 8px 35px 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--card-bg); color: var(--text-primary); outline: none; box-sizing: border-box; height: 36px;"
-                        />
-                         <div id="prowlarr-search-clear" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #ff4444; cursor: pointer; display: none; width: 20px; height: 20px; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; user-select: none;">&times;</div>
-                    </div>
-                    <button id="prowlarr-search-btn" style="width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.1); cursor: pointer;">
-                        <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        height="20px"
-                        viewBox="0 -960 960 960"
-                        width="20px"
-                        fill="#ffffff"
-                        >
-                        <path
-                            d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"
-                        />
-                        </svg>
-                    </button>
+
+                <!-- Category Select (Standard) -->
+                <select
+                  id="prowlarr-search-category"
+                  style="
+                    flex: 1;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    background: var(--card-bg);
+                    color: var(--text-primary);
+                    outline: none;
+                    font-size: 13px;
+                  "
+                >
+                  <option value="">All Categories</option>
+                </select>
+              </div>
+
+              <div style="display: flex; gap: 10px; width: 100%">
+                <div style="flex: 1; position: relative">
+                  <input
+                    type="text"
+                    id="prowlarr-search-input"
+                    placeholder="Search..."
+                    style="
+                      width: 100%;
+                      padding: 8px 35px 8px 12px;
+                      border-radius: 8px;
+                      border: 1px solid rgba(255, 255, 255, 0.1);
+                      background: var(--card-bg);
+                      color: var(--text-primary);
+                      outline: none;
+                      box-sizing: border-box;
+                      height: 36px;
+                    "
+                  />
+                  <div
+                    id="prowlarr-search-clear"
+                    style="
+                      position: absolute;
+                      right: 8px;
+                      top: 50%;
+                      transform: translateY(-50%);
+                      color: #ff4444;
+                      cursor: pointer;
+                      display: none;
+                      width: 20px;
+                      height: 20px;
+                      align-items: center;
+                      justify-content: center;
+                      font-weight: bold;
+                      font-size: 18px;
+                      user-select: none;
+                    "
+                  >
+                    &times;
+                  </div>
                 </div>
+                <button
+                  id="prowlarr-search-btn"
+                  style="
+                    width: 36px;
+                    height: 36px;
+                    padding: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 8px;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    background: rgba(255, 255, 255, 0.1);
+                    cursor: pointer;
+                  "
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="20px"
+                    viewBox="0 -960 960 960"
+                    width="20px"
+                    fill="#ffffff"
+                  >
+                    <path
+                      d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div
               id="prowlarr-search-results"
@@ -1262,12 +1388,22 @@
               "
             >
               <span class="result-indexer">Indexer</span>
-                <span>•</span>
-                <span class="result-category" style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: #eee;">Cat</span>
-                <span>•</span>
-                <span class="result-size">0 GB</span>
-                <span>•</span>
-                <span class="result-age">0d</span>
+              <span>•</span>
+              <span
+                class="result-category"
+                style="
+                  background: rgba(255, 255, 255, 0.1);
+                  padding: 2px 8px;
+                  border-radius: 4px;
+                  font-size: 11px;
+                  color: #eee;
+                "
+                >Cat</span
+              >
+              <span>•</span>
+              <span class="result-size">0 GB</span>
+              <span>•</span>
+              <span class="result-age">0d</span>
               <span class="is-torrent hidden">
                 <span>•</span>
                 <span class="peers" style="color: #4caf50">S: 0</span> /

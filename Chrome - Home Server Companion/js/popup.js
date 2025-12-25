@@ -7,6 +7,19 @@ import { initUnraid } from "./ui/unraid.js";
 import { initProwlarr } from "./ui/prowlarr.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Fullscreen Mode Detection - check if opened as standalone window
+  if (new URLSearchParams(window.location.search).get('fullscreen') === 'true') {
+    document.body.classList.add('fullscreen-mode');
+  }
+
+  // Fullscreen Button Handler - opens extension as standalone dashboard tab
+  document.getElementById('fullscreen-btn')?.addEventListener('click', () => {
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('popup.html?fullscreen=true')
+    });
+    window.close();
+  });
+
   // State
   const state = {
     configs: {},
