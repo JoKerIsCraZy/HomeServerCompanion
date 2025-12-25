@@ -1,85 +1,95 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>Home Server Companion</title>
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/layout.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/services/sabnzbd.css">
-  <link rel="stylesheet" href="css/services/sonarr.css">
-  <link rel="stylesheet" href="css/services/radarr.css">
-  <link rel="stylesheet" href="css/services/tautulli.css">
-  <link rel="stylesheet" href="css/services/overseerr.css">
-  <link rel="stylesheet" href="css/services/overseerr.css">
-  <link rel="stylesheet" href="css/services/unraid.css">
-  <link rel="stylesheet" href="css/services/prowlarr.css">
-</head>
-<body class="dark-mode">
-  <div class="app-container">
-    <!-- Sidebar -->
-    <nav class="sidebar">
-      <div class="nav-item active" data-target="sabnzbd" title="SABnzbd">
-        <img src="icons/sabnzbd.png" class="nav-icon" alt="SABnzbd">
-      </div>
-      <div class="nav-item" data-target="sonarr" title="Sonarr">
-        <img src="icons/sonarr.png" class="nav-icon" alt="Sonarr">
-      </div>
-      <div class="nav-item" data-target="radarr" title="Radarr">
-        <img src="icons/radarr.png" class="nav-icon" alt="Radarr">
-      </div>
-      <div class="nav-item" data-target="tautulli" title="Tautulli">
-        <img src="icons/tautulli.png" class="nav-icon" alt="Tautulli">
-      </div>
-      <div class="nav-item" data-target="overseerr" title="Overseerr">
-        <img src="icons/overseerr.png" alt="Overseerr" class="nav-icon" />
-      </div>
-      <div class="nav-item" data-target="unraid" title="Unraid">
-        <img src="icons/unraid.png" class="nav-icon" alt="Unraid">
-      </div>
-      <div class="nav-item" data-target="prowlarr" title="Prowlarr">
-        <img src="icons/prowlarr.png" class="nav-icon" alt="Prowlarr">
-      </div>
-      <div class="spacer"></div>
-      <div class="nav-item settings-btn" id="settings-btn" title="Settings">
-        <div class="icon-placeholder settings-icon">⚙️</div>
-      </div>
-    </nav>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Home Server Companion</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/services/sabnzbd.css" />
+    <link rel="stylesheet" href="css/services/sonarr.css" />
+    <link rel="stylesheet" href="css/services/radarr.css" />
+    <link rel="stylesheet" href="css/services/tautulli.css" />
+    <link rel="stylesheet" href="css/services/overseerr.css" />
+    <link rel="stylesheet" href="css/services/overseerr.css" />
+    <link rel="stylesheet" href="css/services/unraid.css" />
+    <link rel="stylesheet" href="css/services/prowlarr.css" />
+  </head>
+  <body class="dark-mode">
+    <div class="app-container">
+      <!-- Sidebar -->
+      <nav class="sidebar">
+        <div class="nav-item active" data-target="sabnzbd" title="SABnzbd">
+          <img src="icons/sabnzbd.png" class="nav-icon" alt="SABnzbd" />
+        </div>
+        <div class="nav-item" data-target="sonarr" title="Sonarr">
+          <img src="icons/sonarr.png" class="nav-icon" alt="Sonarr" />
+        </div>
+        <div class="nav-item" data-target="radarr" title="Radarr">
+          <img src="icons/radarr.png" class="nav-icon" alt="Radarr" />
+        </div>
+        <div class="nav-item" data-target="tautulli" title="Tautulli">
+          <img src="icons/tautulli.png" class="nav-icon" alt="Tautulli" />
+        </div>
+        <div class="nav-item" data-target="overseerr" title="Overseerr">
+          <img src="icons/overseerr.png" alt="Overseerr" class="nav-icon" />
+        </div>
+        <div class="nav-item" data-target="unraid" title="Unraid">
+          <img src="icons/unraid.png" class="nav-icon" alt="Unraid" />
+        </div>
+        <div class="nav-item" data-target="prowlarr" title="Prowlarr">
+          <img src="icons/prowlarr.png" class="nav-icon" alt="Prowlarr" />
+        </div>
+        <div class="spacer"></div>
+        <div class="nav-item settings-btn" id="settings-btn" title="Settings">
+          <div class="icon-placeholder settings-icon">⚙️</div>
+        </div>
+      </nav>
 
-    <!-- Main Content -->
-    <main class="content-area">
-      <!-- Header -->
-      <header id="main-header" style="position: relative;">
-        <h1 id="page-title">SABnzbd</h1>
-        
-        <!-- Centered Omnibox -->
-        <div id="omnibox-container" style="
-            position: absolute; 
-            left: 50%; 
-            top: 50%; 
-            transform: translate(-50%, -50%); 
-            display: flex; 
-            align-items: center; 
-            background: #1e1e1e; 
-            border-radius: 20px; 
-            padding: 5px 15px; 
-            border: 1px solid #333; 
-            width: 250px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            z-index: 10;
-        ">
-             <input type="text" id="omnibox-input" placeholder=" " style="
-                background: none; 
-                border: none; 
-                color: #fff; 
-                outline: none; 
-                font-size: 13px; 
-                width: 100%; 
+      <!-- Main Content -->
+      <main class="content-area">
+        <!-- Header -->
+        <header id="main-header" style="position: relative">
+          <h1 id="page-title">SABnzbd</h1>
+
+          <!-- Centered Omnibox -->
+          <div
+            id="omnibox-container"
+            style="
+              position: absolute;
+              left: 50%;
+              top: 50%;
+              transform: translate(-50%, -50%);
+              display: flex;
+              align-items: center;
+              background: #1e1e1e;
+              border-radius: 20px;
+              padding: 5px 15px;
+              border: 1px solid #333;
+              width: 250px;
+              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+              z-index: 10;
+            "
+          >
+            <input
+              type="text"
+              id="omnibox-input"
+              placeholder=" "
+              style="
+                background: none;
+                border: none;
+                color: #fff;
+                outline: none;
+                font-size: 13px;
+                width: 100%;
                 text-align: center;
                 z-index: 2;
                 position: relative;
-             ">
-             <span id="omnibox-placeholder-text" style="
+              "
+            />
+            <span
+              id="omnibox-placeholder-text"
+              style="
                 position: absolute;
                 top: 50%;
                 left: 50%;
@@ -90,510 +100,1170 @@
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 white-space: nowrap;
                 z-index: 1;
-             ">Search All...</span>
-        </div>
+              "
+              >Search All...</span
+            >
+          </div>
 
-        <div id="header-actions">
-           <!-- Removed Omnibox from here -->
-           
-           <button id="search-toggle-btn" title="Global Search" style="display:none; background:none; border:none; cursor:pointer; margin-right:10px; color:var(--text-secondary);">
-             <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor"><path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/></svg>
-           </button>
+          <div id="header-actions">
+            <!-- Removed Omnibox from here -->
 
-           <button id="open-link-btn" title="Open Web Interface" style="background:none; border:none; cursor:pointer; color:var(--text-secondary); display:flex; align-items:center;">
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-               <polyline points="15 3 21 3 21 9"></polyline>
-               <line x1="10" y1="14" x2="21" y2="3"></line>
-             </svg>
-           </button>
-        </div>
-      </header>
-      
-      <!-- Error Message -->
-      <div id="error-msg" class="error-banner hidden"></div>
+            <button
+              id="search-toggle-btn"
+              title="Global Search"
+              style="
+                display: none;
+                background: none;
+                border: none;
+                cursor: pointer;
+                margin-right: 10px;
+                color: var(--text-secondary);
+              "
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="18px"
+                viewBox="0 -960 960 960"
+                width="18px"
+                fill="currentColor"
+              >
+                <path
+                  d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"
+                />
+              </svg>
+            </button>
 
-      <!-- Views -->
-      <div id="sabnzbd-view" class="view active">
-        <!-- New Modern Header (Status) -->
-        <div class="unraid-list-header">
-             <div class="unraid-list-header-stack">
-                 <div class="unraid-list-title-row">
-                     <div class="unraid-list-title">SABnzbd</div>
-                     <div class="sab-controls" style="position: relative; display: flex; align-items: center; gap: 10px;">
-                        <div id="sab-status-bubble" class="status-bubble">Idle</div>
-                        <div class="split-btn-group">
-                            <button id="sab-pause-arrow" class="split-btn-arrow">▼</button>
-                            <button id="sab-pause-main" class="split-btn-main" title="Pause/Resume">⏸️</button>
-                        </div>
-                        <div id="sab-pause-menu" class="dropdown-menu hidden">
-                            <div class="menu-item" data-time="15">Pause 15 min</div>
-                            <div class="menu-item" data-time="30">Pause 30 min</div>
-                            <div class="menu-item" data-time="60">Pause 1 hour</div>
-                            <div class="menu-item" data-time="120">Pause 2 hours</div>
-                            <div class="menu-item" data-time="360">Pause 6 hours</div>
-                            <div class="menu-divider"></div>
-                            <div class="menu-item" data-time="0">Pause indefinitely</div>
-                        </div>
-                     </div>
-                 </div>
-                 <div class="sab-status-row" style="display: flex; gap: 15px; margin-top: 5px; font-size: 13px; color: var(--text-secondary);">
-                     <div class="status-pill status-running">
-                         <span id="sab-speed" style="font-weight: 700;">0 KB/s</span>
-                     </div>
-                     <div class="status-pill" style="background: rgba(255,255,255,0.05);">
-                         <span id="sab-timeleft">00:00:00</span>
-                     </div>
-                 </div>
-             </div>
-        </div>
+            <button
+              id="open-link-btn"
+              title="Open Web Interface"
+              style="
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--text-secondary);
+                display: flex;
+                align-items: center;
+              "
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                ></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </button>
+          </div>
+        </header>
 
-        <!-- Modern Tabs with Glider -->
-        <div class="tabs">
+        <!-- Error Message -->
+        <div id="error-msg" class="error-banner hidden"></div>
+
+        <!-- Views -->
+        <div id="sabnzbd-view" class="view active">
+          <!-- New Modern Header (Status) -->
+          <div class="unraid-list-header">
+            <div class="unraid-list-header-stack">
+              <div class="unraid-list-title-row">
+                <div class="unraid-list-title">SABnzbd</div>
+                <div
+                  class="sab-controls"
+                  style="
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                  "
+                >
+                  <div id="sab-status-bubble" class="status-bubble">Idle</div>
+                  <div class="split-btn-group">
+                    <button id="sab-pause-arrow" class="split-btn-arrow">
+                      ▼
+                    </button>
+                    <button
+                      id="sab-pause-main"
+                      class="split-btn-main"
+                      title="Pause/Resume"
+                    >
+                      ⏸️
+                    </button>
+                  </div>
+                  <div id="sab-pause-menu" class="dropdown-menu hidden">
+                    <div class="menu-item" data-time="15">Pause 15 min</div>
+                    <div class="menu-item" data-time="30">Pause 30 min</div>
+                    <div class="menu-item" data-time="60">Pause 1 hour</div>
+                    <div class="menu-item" data-time="120">Pause 2 hours</div>
+                    <div class="menu-item" data-time="360">Pause 6 hours</div>
+                    <div class="menu-divider"></div>
+                    <div class="menu-item" data-time="0">
+                      Pause indefinitely
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="sab-status-row"
+                style="
+                  display: flex;
+                  gap: 15px;
+                  margin-top: 5px;
+                  font-size: 13px;
+                  color: var(--text-secondary);
+                "
+              >
+                <div class="status-pill status-running">
+                  <span id="sab-speed" style="font-weight: 700">0 KB/s</span>
+                </div>
+                <div
+                  class="status-pill"
+                  style="background: rgba(255, 255, 255, 0.05)"
+                >
+                  <span id="sab-timeleft">00:00:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modern Tabs with Glider -->
+          <div class="tabs">
             <div class="tab-glider"></div>
             <button class="tab-btn active" data-tab="queue">Queue</button>
             <button class="tab-btn" data-tab="history">History</button>
+          </div>
+
+          <div class="sub-view active" id="sab-queue"></div>
+          <div class="sub-view hidden" id="sab-history"></div>
         </div>
 
-        <div class="sub-view active" id="sab-queue"></div>
-        <div class="sub-view hidden" id="sab-history"></div>
-      </div>
-
-      <div id="sonarr-view" class="view hidden">
-        <div class="tabs">
+        <div id="sonarr-view" class="view hidden">
+          <div class="tabs">
             <div class="tab-glider"></div>
             <button class="tab-btn active" data-tab="calendar">Calendar</button>
             <button class="tab-btn" data-tab="history">Recent</button>
             <button class="tab-btn" data-tab="queue">Queue</button>
+          </div>
+          <div class="sub-view active" id="sonarr-calendar"></div>
+          <div class="sub-view hidden" id="sonarr-history"></div>
+          <div class="sub-view hidden" id="sonarr-queue"></div>
         </div>
-         <div class="sub-view active" id="sonarr-calendar"></div>
-         <div class="sub-view hidden" id="sonarr-history"></div>
-         <div class="sub-view hidden" id="sonarr-queue"></div>
-      </div>
 
-      <div id="radarr-view" class="view hidden">
-        <div class="tabs">
+        <div id="radarr-view" class="view hidden">
+          <div class="tabs">
             <div class="tab-glider"></div>
             <button class="tab-btn active" data-tab="calendar">Calendar</button>
             <button class="tab-btn" data-tab="movies">Recent</button>
             <button class="tab-btn" data-tab="queue">Queue</button>
+          </div>
+          <div class="sub-view active" id="radarr-calendar"></div>
+          <div class="sub-view hidden" id="radarr-movies"></div>
+          <div class="sub-view hidden" id="radarr-queue"></div>
         </div>
-        <div class="sub-view active" id="radarr-calendar"></div>
-        <div class="sub-view hidden" id="radarr-movies"></div>
-        <div class="sub-view hidden" id="radarr-queue"></div>
-      </div>
 
-      <div id="tautulli-view" class="view hidden">
-        <h2 class="fancy-header">Current Activity</h2>
-        <div id="tautulli-activity"></div>
-      </div>
+        <div id="tautulli-view" class="view hidden">
+          <h2 class="fancy-header">Current Activity</h2>
+          <div id="tautulli-activity"></div>
+        </div>
 
-      <!-- Overseerr View -->
-      <div id="overseerr-view" class="view hidden">
-        <div class="overseerr-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <!-- Overseerr View -->
+        <div id="overseerr-view" class="view hidden">
+          <div
+            class="overseerr-header"
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
             <div class="sub-tabs">
-                <div class="tab-glider"></div>
-                <button class="sub-tab-btn active" data-target="overseerr-requests-tab">Requests</button>
-                <button class="sub-tab-btn" data-target="overseerr-search-tab">Search</button>
-                <button class="sub-tab-btn" data-target="overseerr-trending-tab">Trending</button>
+              <div class="tab-glider"></div>
+              <button
+                class="sub-tab-btn active"
+                data-target="overseerr-requests-tab"
+              >
+                Requests
+              </button>
+              <button class="sub-tab-btn" data-target="overseerr-search-tab">
+                Search
+              </button>
+              <button class="sub-tab-btn" data-target="overseerr-trending-tab">
+                Trending
+              </button>
             </div>
-             <div id="overseerr-filter-container" class="filter-bar">
-                 <select id="overseerr-filter" style="padding: 6px; border-radius: 6px; border: 1px solid var(--text-secondary); background: var(--card-bg); color: var(--text-primary); font-size: 13px; cursor: pointer;">
-                     <option value="pending" selected>Pending Approval</option>
-                     <option value="approved">Approved</option>
-                     <option value="processing">Processing</option>
-                     <option value="available">Available</option>
-                     <option value="all">All Requests</option>
-                 </select>
-             </div>
-        </div>
+            <div id="overseerr-filter-container" class="filter-bar">
+              <select
+                id="overseerr-filter"
+                style="
+                  padding: 6px;
+                  border-radius: 6px;
+                  border: 1px solid var(--text-secondary);
+                  background: var(--card-bg);
+                  color: var(--text-primary);
+                  font-size: 13px;
+                  cursor: pointer;
+                "
+              >
+                <option value="pending" selected>Pending Approval</option>
+                <option value="approved">Approved</option>
+                <option value="processing">Processing</option>
+                <option value="available">Available</option>
+                <option value="all">All Requests</option>
+              </select>
+            </div>
+          </div>
 
-        <!-- Requests Tab -->
-        <div id="overseerr-requests-tab" class="overseerr-tab-content active">
-             <div id="overseerr-requests" class="grid-container">
-                <!-- Populated by JS -->
-             </div>
-        </div>
+          <!-- Requests Tab -->
+          <div id="overseerr-requests-tab" class="overseerr-tab-content active">
+            <div id="overseerr-requests" class="grid-container">
+              <!-- Populated by JS -->
+            </div>
+          </div>
 
-        <!-- Search Tab -->
-        <div id="overseerr-search-tab" class="overseerr-tab-content hidden">
+          <!-- Search Tab -->
+          <div id="overseerr-search-tab" class="overseerr-tab-content hidden">
             <div class="search-bar">
-                <input type="text" id="overseerr-search-input" placeholder="Search Movies & TV...">
-                <button id="overseerr-search-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#ffffff"><path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/></svg>
-                </button>
+              <input
+                type="text"
+                id="overseerr-search-input"
+                placeholder="Search Movies & TV..."
+              />
+              <button id="overseerr-search-btn">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="20px"
+                  viewBox="0 -960 960 960"
+                  width="20px"
+                  fill="#ffffff"
+                >
+                  <path
+                    d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"
+                  />
+                </svg>
+              </button>
             </div>
             <div id="overseerr-search-results" class="grid-container">
-                <!-- Results -->
+              <!-- Results -->
             </div>
+          </div>
+
+          <!-- Trending Tab -->
+          <div id="overseerr-trending-tab" class="overseerr-tab-content hidden">
+            <div
+              id="overseerr-trending-results"
+              style="
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+              "
+            >
+              <!-- Populated by JS -->
+            </div>
+          </div>
         </div>
 
-        <!-- Trending Tab -->
-        <div id="overseerr-trending-tab" class="overseerr-tab-content hidden">
-             <div id="overseerr-trending-results" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-                 <!-- Populated by JS -->
-             </div>
-        </div>
-      </div>
-
-      <div id="unraid-view" class="view hidden">
-        <div class="unraid-header-row">
+        <div id="unraid-view" class="view hidden">
+          <div class="unraid-header-row">
             <!-- Sub Tabs -->
             <div class="sub-tabs">
-                <div class="tab-glider"></div>
-                <button class="sub-tab-btn active" data-target="unraid-tab-system">System</button>
-                <button class="sub-tab-btn" data-target="unraid-tab-storage">Storage</button>
-                <button class="sub-tab-btn" data-target="unraid-tab-docker">Docker</button>
-                <button class="sub-tab-btn" data-target="unraid-tab-vms">VMs</button>
+              <div class="tab-glider"></div>
+              <button
+                class="sub-tab-btn active"
+                data-target="unraid-tab-system"
+              >
+                System
+              </button>
+              <button class="sub-tab-btn" data-target="unraid-tab-storage">
+                Storage
+              </button>
+              <button class="sub-tab-btn" data-target="unraid-tab-docker">
+                Docker
+              </button>
+              <button class="sub-tab-btn" data-target="unraid-tab-vms">
+                VMs
+              </button>
             </div>
 
             <div class="status-card" id="unraid-status-card">
-                <div class="status-indicator">Checking...</div>
-                <div class="server-name">Unraid Server</div>
-                <div class="server-url" id="unraid-url-display"></div>
+              <div class="status-indicator">Checking...</div>
+              <div class="server-name">Unraid Server</div>
+              <div class="server-url" id="unraid-url-display"></div>
             </div>
-        </div>
-        <!-- 1. System Tab -->
-        <div id="unraid-tab-system" class="sub-view">
-             <!-- Populated dynamically by JS to match "Genau so" screenshot -->
-        </div>
+          </div>
+          <!-- 1. System Tab -->
+          <div id="unraid-tab-system" class="sub-view">
+            <!-- Populated dynamically by JS to match "Genau so" screenshot -->
+          </div>
 
-        <!-- 2. Storage Tab -->
-        <div id="unraid-tab-storage" class="sub-view hidden">
+          <!-- 2. Storage Tab -->
+          <div id="unraid-tab-storage" class="sub-view hidden">
             <div class="storage-card">
-                 <div class="storage-header" id="storage-toggle" style="cursor: pointer; display: flex; justify-content: space-between;">
-                     <div style="display: flex; align-items: center; gap: 10px;">
-                         <div class="storage-icon"></div>
-                         <span>Array</span>
-                     </div>
-                     <div class="dropdown-arrow" style="transition: transform 0.3s;">▼</div>
-                 </div>
-                 <div class="storage-usage-text" id="unraid-storage-text">-- used of --</div>
-                 <div class="progress-track" style="margin-bottom: 10px;">
-                     <div class="progress-fill" id="unraid-storage-bar" style="width: 0%"></div>
-                 </div>
-                 
-                 <!-- Hidden Details List -->
-                 <div id="storage-details-dropdown" class="hidden" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-                    <!-- Populated by JS -->
-                 </div>
-            </div>
-        </div>
-
-        <!-- 3. Docker Tab -->
-        <div id="unraid-tab-docker" class="sub-view hidden">
-            <div class="unraid-section-wrapper">
-                <div class="unraid-list-header-stack" style="margin-bottom: 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <h3 id="unraid-containers-header" style="margin-bottom: 0;">Containers</h3>
-                        <select id="unraid-docker-sort" class="sort-select">
-                            <option value="status-asc">Status (Running)</option>
-                            <option value="status-desc">Status (Stopped)</option>
-                        </select>
-                    </div>
-                    <input type="text" id="unraid-docker-search" placeholder="Search..." class="search-input-full">
+              <div
+                class="storage-header"
+                id="storage-toggle"
+                style="
+                  cursor: pointer;
+                  display: flex;
+                  justify-content: space-between;
+                "
+              >
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <div class="storage-icon"></div>
+                  <span>Array</span>
                 </div>
-                <div id="unraid-docker-list"></div>
-        </div>
-        </div>
+                <div class="dropdown-arrow" style="transition: transform 0.3s">
+                  ▼
+                </div>
+              </div>
+              <div class="storage-usage-text" id="unraid-storage-text">
+                -- used of --
+              </div>
+              <div class="progress-track" style="margin-bottom: 10px">
+                <div
+                  class="progress-fill"
+                  id="unraid-storage-bar"
+                  style="width: 0%"
+                ></div>
+              </div>
 
-        <!-- 4. VM Tab -->
-        <div id="unraid-tab-vms" class="sub-view hidden">
-            <div class="unraid-section-wrapper">
-                <h3 id="unraid-vms-header">Virtual Machines</h3>
-                <div id="unraid-vm-list"></div>
-            </div>
-        </div>
-
-      </div>
-      <div id="prowlarr-view" class="view">
-        <div class="tabs">
-            <div class="tab-glider"></div>
-            <button class="tab-btn active" data-tab="indexers">Indexers</button>
-            <button class="tab-btn" data-tab="stats">Statistics</button>
-        </div>
-        <div class="sub-view active" id="prowlarr-indexers"></div>
-        <div class="sub-view hidden" id="prowlarr-stats">
-            <div class="stats-grid">
+              <!-- Hidden Details List -->
+              <div
+                id="storage-details-dropdown"
+                class="hidden"
+                style="
+                  margin-top: 15px;
+                  border-top: 1px solid rgba(255, 255, 255, 0.1);
+                  padding-top: 10px;
+                "
+              >
                 <!-- Populated by JS -->
+              </div>
             </div>
+          </div>
+
+          <!-- 3. Docker Tab -->
+          <div id="unraid-tab-docker" class="sub-view hidden">
+            <div class="unraid-section-wrapper">
+              <div class="unraid-list-header-stack" style="margin-bottom: 15px">
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+                  "
+                >
+                  <h3 id="unraid-containers-header" style="margin-bottom: 0">
+                    Containers
+                  </h3>
+                  <select id="unraid-docker-sort" class="sort-select">
+                    <option value="status-asc">Status (Running)</option>
+                    <option value="status-desc">Status (Stopped)</option>
+                  </select>
+                </div>
+                <input
+                  type="text"
+                  id="unraid-docker-search"
+                  placeholder="Search..."
+                  class="search-input-full"
+                />
+              </div>
+              <div id="unraid-docker-list"></div>
+            </div>
+          </div>
+
+          <!-- 4. VM Tab -->
+          <div id="unraid-tab-vms" class="sub-view hidden">
+            <div class="unraid-section-wrapper">
+              <h3 id="unraid-vms-header">Virtual Machines</h3>
+              <div id="unraid-vm-list"></div>
+            </div>
+          </div>
+        </div>
+        <div id="prowlarr-view" class="view">
+          <div class="header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <div class="tabs" style="margin-bottom: 0;">
+                <div class="tab-glider"></div>
+                <button class="tab-btn active" data-tab="indexers">Indexers</button>
+                <button class="tab-btn" data-tab="search">Search</button>
+                <button class="tab-btn" data-tab="stats">Statistics</button>
+              </div>
+              
+              <div class="keep-search-container" style="display: none; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="prowlarr-keep-search" style="accent-color: var(--accent-prowlarr); cursor: pointer;">
+                  <label for="prowlarr-keep-search" style="font-size: 12px; color: var(--text-secondary); cursor: pointer;">Keep last search</label>
+              </div>
+          </div>
+          <div class="sub-view active" id="prowlarr-indexers"></div>
+          <div class="sub-view hidden" id="prowlarr-stats">
+            <div class="stats-grid">
+              <!-- Populated by JS -->
+            </div>
+            <div id="prowlarr-stats-tables"></div>
+          </div>
+          <div class="sub-view hidden" id="prowlarr-search">
+            <div class="search-bar" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 10px; width: 100%;">
+                    <!-- Multi-Select Indexer Dropdown -->
+                    <div class="custom-dropdown" id="prowlarr-indexer-dropdown" style="width: 240px; flex: none;">
+                        <div class="dropdown-trigger" id="indexer-dropdown-trigger">
+                            All Indexers
+                        </div>
+                        <div class="dropdown-options hidden" id="indexer-dropdown-options">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Category Select (Standard) -->
+                    <select id="prowlarr-search-category" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--card-bg); color: var(--text-primary); outline: none; font-size: 13px;">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 10px; width: 100%;">
+                    <div style="flex: 1; position: relative;">
+                        <input
+                            type="text"
+                            id="prowlarr-search-input"
+                            placeholder="Search..."
+                            style="width: 100%; padding: 8px 35px 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--card-bg); color: var(--text-primary); outline: none; box-sizing: border-box; height: 36px;"
+                        />
+                         <div id="prowlarr-search-clear" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #ff4444; cursor: pointer; display: none; width: 20px; height: 20px; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; user-select: none;">&times;</div>
+                    </div>
+                    <button id="prowlarr-search-btn" style="width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.1); cursor: pointer;">
+                        <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        height="20px"
+                        viewBox="0 -960 960 960"
+                        width="20px"
+                        fill="#ffffff"
+                        >
+                        <path
+                            d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"
+                        />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div
+              id="prowlarr-search-results"
+              class="prowlarr-results-list"
+            ></div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Templates -->
+    <template id="sab-queue-item">
+      <div class="card queue-item">
+        <div class="card-header">
+          <span class="filename">Title</span>
+          <!-- Delete Button -->
+          <button class="delete-btn" title="Remove from Queue">×</button>
+        </div>
+        <div
+          class="card-row"
+          style="justify-content: space-between; margin-bottom: 5px"
+        >
+          <span class="percentage">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-bar-fill"></div>
+        </div>
+        <div class="card-footer">
+          <span class="size">0 MB / 0 MB</span>
+          <span class="status">Downloading</span>
         </div>
       </div>
+    </template>
 
-    </main>
-  </div>
+    <template id="sab-history-item">
+      <div class="card history-item">
+        <div class="card-header">
+          <span class="filename">Title</span>
+          <button class="delete-btn" title="Remove from History">×</button>
+        </div>
+        <div class="card-details">
+          <span class="size">1.2 GB</span>
+          <span class="time">2 mins ago</span>
+        </div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 5px">
+          <span class="status-badge">Completed</span>
+        </div>
+      </div>
+    </template>
 
-  <!-- Templates -->
-  <template id="sab-queue-item">
-    <div class="card queue-item">
-      <div class="card-header">
-        <span class="filename">Title</span>
-        <!-- Delete Button -->
-        <button class="delete-btn" title="Remove from Queue">×</button>
-      </div>
-      <div class="card-row" style="justify-content:space-between; margin-bottom: 5px;">
-         <span class="percentage">0%</span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-bar-fill"></div>
-      </div>
-      <div class="card-footer">
-        <span class="size">0 MB / 0 MB</span>
-        <span class="status">Downloading</span>
-      </div>
-    </div>
-  </template>
-
-  <template id="sab-history-item">
-    <div class="card history-item">
-      <div class="card-header">
-         <span class="filename">Title</span>
-         <button class="delete-btn" title="Remove from History">×</button>
-      </div>
-      <div class="card-details">
-         <span class="size">1.2 GB</span>
-         <span class="time">2 mins ago</span>
-      </div>
-      <div style="display: flex; justify-content: flex-end; margin-top: 5px;">
-         <span class="status-badge">Completed</span>
-      </div>
-    </div>
-  </template>
-
-  <template id="tautulli-card">
-    <div class="card tautulli-item">
+    <template id="tautulli-card">
+      <div class="card tautulli-item">
         <!-- Background Image -->
         <div class="tautulli-backdrop"></div>
 
         <!-- Top Section: Main Info -->
         <div class="tautulli-main">
-            <!-- Poster -->
-            <div class="tautulli-poster" style="width: 60px; height: 90px; background: #333; border-radius: 4px; overflow: hidden; flex-shrink:0; box-shadow: 0 4px 6px rgba(0,0,0,0.3); position: relative;">
-                <img class="poster-img" src="" style="width: 100%; height: 100%; object-fit: cover;">
-            </div>
-            
-            <!-- Info -->
-            <div class="tautulli-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
-                <div class="media-title" style="font-size: 16px; font-weight: 700; margin-bottom: 2px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Title</div>
-                <div class="media-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Episode Title</div>
-                
-                <div class="meta-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                    <div class="user-info" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
-                        <span class="user-name">User</span> <span style="color: var(--text-secondary); font-weight: 400;">•</span> <span class="time-left" style="color: var(--text-secondary); font-weight: 400;">12m left</span>
-                    </div>
-                </div>
+          <!-- Poster -->
+          <div
+            class="tautulli-poster"
+            style="
+              width: 60px;
+              height: 90px;
+              background: #333;
+              border-radius: 4px;
+              overflow: hidden;
+              flex-shrink: 0;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+              position: relative;
+            "
+          >
+            <img
+              class="poster-img"
+              src=""
+              style="width: 100%; height: 100%; object-fit: cover"
+            />
+          </div>
 
-                <div class="meta-row" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary);">
-                    <span class="stream-decision">Direct Play</span> • <span class="bandwidth">7.7 Mbps</span> • <span class="quality">Original</span>
-                </div>
-                
-                <!-- Progress -->
-                <div class="progress-bar" style="background: rgba(0,0,0,0.1); height: 3px; margin-top: 8px; border-radius: 2px;">
-                     <div class="progress-bar-fill" style="background: var(--accent-sab); height: 100%;"></div>
-                </div>
+          <!-- Info -->
+          <div
+            class="tautulli-info"
+            style="
+              flex: 1;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+            "
+          >
+            <div
+              class="media-title"
+              style="
+                font-size: 16px;
+                font-weight: 700;
+                margin-bottom: 2px;
+                color: var(--text-primary);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+            >
+              Title
+            </div>
+            <div
+              class="media-subtitle"
+              style="
+                font-size: 13px;
+                color: var(--text-secondary);
+                margin-bottom: 8px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+            >
+              Episode Title
             </div>
 
-            <!-- Right Actions Column -->
-             <div class="tautulli-actions" style="display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding-left: 5px;">
-                 <!-- Kill Icon (Top) -->
-                 <div class="kill-icon-btn" title="Kill Stream" style="cursor: pointer; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: rgba(244,67,54,0.15); color: #f44336; border-radius: 6px; font-weight: bold; font-size: 14px; transition: all 0.2s;">✕</div>
-                 
-                 <!-- Toggle Icon (Bottom) -->
-                 <div class="details-toggle" style="cursor: pointer; opacity: 0.5; transition: transform 0.3s, opacity 0.2s; color: var(--text-secondary); font-size: 14px;">▼</div>
-             </div>
+            <div
+              class="meta-row"
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 6px;
+              "
+            >
+              <div
+                class="user-info"
+                style="
+                  font-size: 13px;
+                  font-weight: 600;
+                  color: var(--text-primary);
+                "
+              >
+                <span class="user-name">User</span>
+                <span style="color: var(--text-secondary); font-weight: 400"
+                  >•</span
+                >
+                <span
+                  class="time-left"
+                  style="color: var(--text-secondary); font-weight: 400"
+                  >12m left</span
+                >
+              </div>
+            </div>
+
+            <div
+              class="meta-row"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 12px;
+                color: var(--text-secondary);
+              "
+            >
+              <span class="stream-decision">Direct Play</span> •
+              <span class="bandwidth">7.7 Mbps</span> •
+              <span class="quality">Original</span>
+            </div>
+
+            <!-- Progress -->
+            <div
+              class="progress-bar"
+              style="
+                background: rgba(0, 0, 0, 0.1);
+                height: 3px;
+                margin-top: 8px;
+                border-radius: 2px;
+              "
+            >
+              <div
+                class="progress-bar-fill"
+                style="background: var(--accent-sab); height: 100%"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Right Actions Column -->
+          <div
+            class="tautulli-actions"
+            style="
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+              align-items: center;
+              padding-left: 5px;
+            "
+          >
+            <!-- Kill Icon (Top) -->
+            <div
+              class="kill-icon-btn"
+              title="Kill Stream"
+              style="
+                cursor: pointer;
+                width: 26px;
+                height: 26px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(244, 67, 54, 0.15);
+                color: #f44336;
+                border-radius: 6px;
+                font-weight: bold;
+                font-size: 14px;
+                transition: all 0.2s;
+              "
+            >
+              ✕
+            </div>
+
+            <!-- Toggle Icon (Bottom) -->
+            <div
+              class="details-toggle"
+              style="
+                cursor: pointer;
+                opacity: 0.5;
+                transition: transform 0.3s, opacity 0.2s;
+                color: var(--text-secondary);
+                font-size: 14px;
+              "
+            >
+              ▼
+            </div>
+          </div>
         </div>
 
         <!-- Hidden Details Section -->
         <div class="tautulli-details hidden">
-            
-            <!-- GROUP: STREAM -->
-            <div class="detail-section" style="margin-bottom: 12px;">
-                <div class="detail-header" style="font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; letter-spacing: 0.5px;">STREAM</div>
-                <div class="detail-row" style="margin-bottom: 3px;"><span style="color: var(--text-secondary); opacity: 0.7; display: inline-block; width: 70px;">Container:</span> <span class="val-container" style="color: var(--text-primary);">Direct Play (MKV)</span></div>
-                <div class="detail-row" style="margin-bottom: 3px;"><span style="color: var(--text-secondary); opacity: 0.7; display: inline-block; width: 70px;">Video:</span> <span class="val-video" style="color: var(--text-primary);">Direct Play (H264 1080p)</span></div>
-                <div class="detail-row" style="margin-bottom: 3px;"><span style="color: var(--text-secondary); opacity: 0.7; display: inline-block; width: 70px;">Audio:</span> <span class="val-audio" style="color: var(--text-primary);">Direct Play (English - AC3 5.1)</span></div>
-                <div class="detail-row"><span style="color: var(--text-secondary); opacity: 0.7; display: inline-block; width: 70px;">Subtitles:</span> <span class="val-subs" style="color: var(--text-primary);">None</span></div>
+          <!-- GROUP: STREAM -->
+          <div class="detail-section" style="margin-bottom: 12px">
+            <div
+              class="detail-header"
+              style="
+                font-weight: 700;
+                color: var(--text-secondary);
+                margin-bottom: 6px;
+                letter-spacing: 0.5px;
+              "
+            >
+              STREAM
+            </div>
+            <div class="detail-row" style="margin-bottom: 3px">
+              <span
+                style="
+                  color: var(--text-secondary);
+                  opacity: 0.7;
+                  display: inline-block;
+                  width: 70px;
+                "
+                >Container:</span
+              >
+              <span class="val-container" style="color: var(--text-primary)"
+                >Direct Play (MKV)</span
+              >
+            </div>
+            <div class="detail-row" style="margin-bottom: 3px">
+              <span
+                style="
+                  color: var(--text-secondary);
+                  opacity: 0.7;
+                  display: inline-block;
+                  width: 70px;
+                "
+                >Video:</span
+              >
+              <span class="val-video" style="color: var(--text-primary)"
+                >Direct Play (H264 1080p)</span
+              >
+            </div>
+            <div class="detail-row" style="margin-bottom: 3px">
+              <span
+                style="
+                  color: var(--text-secondary);
+                  opacity: 0.7;
+                  display: inline-block;
+                  width: 70px;
+                "
+                >Audio:</span
+              >
+              <span class="val-audio" style="color: var(--text-primary)"
+                >Direct Play (English - AC3 5.1)</span
+              >
+            </div>
+            <div class="detail-row">
+              <span
+                style="
+                  color: var(--text-secondary);
+                  opacity: 0.7;
+                  display: inline-block;
+                  width: 70px;
+                "
+                >Subtitles:</span
+              >
+              <span class="val-subs" style="color: var(--text-primary)"
+                >None</span
+              >
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between">
+            <!-- GROUP: PLAYER -->
+            <div class="detail-section" style="flex: 1">
+              <div
+                class="detail-header"
+                style="
+                  font-weight: 700;
+                  color: var(--text-secondary);
+                  margin-bottom: 6px;
+                  letter-spacing: 0.5px;
+                "
+              >
+                PLAYER
+              </div>
+              <div class="detail-row" style="margin-bottom: 3px">
+                <span
+                  style="
+                    color: var(--text-secondary);
+                    opacity: 0.7;
+                    display: inline-block;
+                    width: 60px;
+                  "
+                  >Platform:</span
+                >
+                <span class="val-platform" style="color: var(--text-primary)"
+                  >Windows</span
+                >
+              </div>
+              <div class="detail-row" style="margin-bottom: 3px">
+                <span
+                  style="
+                    color: var(--text-secondary);
+                    opacity: 0.7;
+                    display: inline-block;
+                    width: 60px;
+                  "
+                  >Product:</span
+                >
+                <span class="val-product" style="color: var(--text-primary)"
+                  >Plex for Windows</span
+                >
+              </div>
+              <div class="detail-row">
+                <span
+                  style="
+                    color: var(--text-secondary);
+                    opacity: 0.7;
+                    display: inline-block;
+                    width: 60px;
+                  "
+                  >Player:</span
+                >
+                <span class="val-player" style="color: var(--text-primary)"
+                  >DESKTOP-ABC</span
+                >
+              </div>
             </div>
 
-            <div style="display: flex; justify-content: space-between;">
-                <!-- GROUP: PLAYER -->
-                <div class="detail-section" style="flex: 1;">
-                    <div class="detail-header" style="font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; letter-spacing: 0.5px;">PLAYER</div>
-                    <div class="detail-row" style="margin-bottom: 3px;"><span style="color: var(--text-secondary); opacity: 0.7; display: inline-block; width: 60px;">Platform:</span> <span class="val-platform" style="color: var(--text-primary);">Windows</span></div>
-                    <div class="detail-row" style="margin-bottom: 3px;"><span style="color: var(--text-secondary); opacity: 0.7; display: inline-block; width: 60px;">Product:</span> <span class="val-product" style="color: var(--text-primary);">Plex for Windows</span></div>
-                    <div class="detail-row"><span style="color: var(--text-secondary); opacity: 0.7; display: inline-block; width: 60px;">Player:</span> <span class="val-player" style="color: var(--text-primary);">DESKTOP-ABC</span></div>
+            <!-- GROUP: USER -->
+            <div
+              class="detail-section"
+              style="
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+              "
+            >
+              <div style="text-align: left; min-width: 140px">
+                <div
+                  class="detail-header"
+                  style="
+                    font-weight: 700;
+                    color: var(--text-secondary);
+                    margin-bottom: 6px;
+                    letter-spacing: 0.5px;
+                  "
+                >
+                  USER
                 </div>
-
-                <!-- GROUP: USER -->
-                <div class="detail-section" style="flex: 1; display: flex; flex-direction: column; align-items: flex-end;">
-                    <div style="text-align: left; min-width: 140px;">
-                        <div class="detail-header" style="font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; letter-spacing: 0.5px;">USER</div>
-                        <div class="detail-row" style="margin-bottom: 3px;"><span style="color: var(--text-secondary); opacity: 0.7;">Username:</span> <span class="val-username" style="color: var(--text-primary);">User</span></div>
-                        <div class="detail-row" style="margin-bottom: 3px;"><span style="color: var(--text-secondary); opacity: 0.7;">Network:</span> <span class="val-network" style="color: var(--text-primary);">LAN</span> <span class="secure-icon" title="Secure">🔒</span></div>
-                        <div class="detail-row"><span style="color: var(--text-secondary); opacity: 0.7;">IP Address:</span> <span class="val-ip" style="color: var(--text-primary);">192.168.1.1</span></div>
-                    </div>
+                <div class="detail-row" style="margin-bottom: 3px">
+                  <span style="color: var(--text-secondary); opacity: 0.7"
+                    >Username:</span
+                  >
+                  <span class="val-username" style="color: var(--text-primary)"
+                    >User</span
+                  >
                 </div>
+                <div class="detail-row" style="margin-bottom: 3px">
+                  <span style="color: var(--text-secondary); opacity: 0.7"
+                    >Network:</span
+                  >
+                  <span class="val-network" style="color: var(--text-primary)"
+                    >LAN</span
+                  >
+                  <span class="secure-icon" title="Secure">🔒</span>
+                </div>
+                <div class="detail-row">
+                  <span style="color: var(--text-secondary); opacity: 0.7"
+                    >IP Address:</span
+                  >
+                  <span class="val-ip" style="color: var(--text-primary)"
+                    >192.168.1.1</span
+                  >
+                </div>
+              </div>
             </div>
-            
-            <!-- Terminate Button Removed -->
+          </div>
+
+          <!-- Terminate Button Removed -->
         </div>
-    </div>
-  </template>
+      </div>
+    </template>
 
-
-  <template id="media-card">
-    <div class="card media-item">
+    <template id="media-card">
+      <div class="card media-item">
         <div class="card-row">
-            <div class="media-info">
-                <div class="media-title">Title</div>
-                <div class="media-meta">Season 1 - Ep 1</div>
-            </div>
-            <div class="media-status">
-                <span class="status-badge">Airing</span>
-            </div>
+          <div class="media-info">
+            <div class="media-title">Title</div>
+            <div class="media-meta">Season 1 - Ep 1</div>
+          </div>
+          <div class="media-status">
+            <span class="status-badge">Airing</span>
+          </div>
         </div>
         <div class="card-row date-row">
-            <span class="air-date">Today</span>
+          <span class="air-date">Today</span>
         </div>
-    </div>
-  </template>
+      </div>
+    </template>
 
-  <template id="activity-card">
-    <div class="card activity-item">
+    <template id="activity-card">
+      <div class="card activity-item">
         <div class="card-row">
-             <div class="user-info">User</div>
-             <div class="state">Playing</div>
+          <div class="user-info">User</div>
+          <div class="state">Playing</div>
         </div>
         <div class="media-title">Movie Title</div>
         <div class="progress-container">
-            <div class="progress-bar-fill"></div>
+          <div class="progress-bar-fill"></div>
         </div>
-    </div>
-  </template>
+      </div>
+    </template>
 
     <!-- Overseerr Card Template -->
     <template id="overseerr-card">
-        <div class="overseerr-card">
-            <div class="overseerr-backdrop"></div>
-            <div class="overseerr-content">
-                <img class="poster-img" src="" alt="Poster">
-                <div class="overseerr-info">
-                    <div class="media-title">Title</div>
-                    <div class="request-info">
-                        <span class="requester-name">User</span> · <span class="request-date">Date</span>
-                    </div>
-                    <div class="request-status">Pending Approval</div>
-                </div>
-                <div class="overseerr-actions">
-                    <button class="action-btn approve-btn" title="Approve">✔</button>
-                    <button class="action-btn decline-btn" title="Decline">✖</button>
-                </div>
+      <div class="overseerr-card">
+        <div class="overseerr-backdrop"></div>
+        <div class="overseerr-content">
+          <img class="poster-img" src="" alt="Poster" />
+          <div class="overseerr-info">
+            <div class="media-title">Title</div>
+            <div class="request-info">
+              <span class="requester-name">User</span> ·
+              <span class="request-date">Date</span>
             </div>
+            <div class="request-status">Pending Approval</div>
+          </div>
+          <div class="overseerr-actions">
+            <button class="action-btn approve-btn" title="Approve">✔</button>
+            <button class="action-btn decline-btn" title="Decline">✖</button>
+          </div>
         </div>
+      </div>
     </template>
 
     <!-- Overseerr Search Card Template -->
     <template id="overseerr-search-card">
-        <div class="overseerr-card">
-            <div class="overseerr-backdrop"></div>
-            <div class="overseerr-content">
-                <img class="poster-img" src="" alt="Poster">
-                <div class="overseerr-info">
-                    <div class="media-title">Title</div>
-                    <div class="request-info">
-                        <span class="media-year">Year</span> · <span class="media-type">Type</span>
-                    </div>
-                    <div class="search-status-container"></div> 
-                </div>
-                <div class="overseerr-actions">
-                    <button class="action-btn request-btn" title="Request">➕</button>
-                </div>
+      <div class="overseerr-card">
+        <div class="overseerr-backdrop"></div>
+        <div class="overseerr-content">
+          <img class="poster-img" src="" alt="Poster" />
+          <div class="overseerr-info">
+            <div class="media-title">Title</div>
+            <div class="request-info">
+              <span class="media-year">Year</span> ·
+              <span class="media-type">Type</span>
             </div>
+            <div class="search-status-container"></div>
+          </div>
+          <div class="overseerr-actions">
+            <button class="action-btn request-btn" title="Request">➕</button>
+          </div>
         </div>
+      </div>
     </template>
 
     <!-- Overseerr Trending Card Template -->
     <template id="overseerr-trending-card">
-        <div class="overseerr-card">
-            <div class="overseerr-backdrop"></div>
-            <div class="overseerr-content">
-                <img class="poster-img" src="" alt="Poster">
-                <div class="overseerr-info">
-                    <div class="media-title">Title</div>
-                    <div class="request-info">
-                        <span class="media-year">Year</span> · <span class="media-rating">Rating</span>
-                    </div>
-                    <div class="trending-meta" style="margin-top: 4px;">
-                        <span class="media-type-badge" style="font-size: 10px; font-weight: bold; background: #eee; padding: 2px 6px; border-radius: 4px; color: #555;">MOVIE</span>
-                    </div>
-                </div>
-                <div class="overseerr-actions">
-                    <button class="action-btn request-btn" title="Request" style="width: auto; padding: 0 12px; border-radius: 14px; background: #2196f3; color: white; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 12px;">
-                        Request
-                    </button>
-                </div>
+      <div class="overseerr-card">
+        <div class="overseerr-backdrop"></div>
+        <div class="overseerr-content">
+          <img class="poster-img" src="" alt="Poster" />
+          <div class="overseerr-info">
+            <div class="media-title">Title</div>
+            <div class="request-info">
+              <span class="media-year">Year</span> ·
+              <span class="media-rating">Rating</span>
             </div>
+            <div class="trending-meta" style="margin-top: 4px">
+              <span
+                class="media-type-badge"
+                style="
+                  font-size: 10px;
+                  font-weight: bold;
+                  background: #eee;
+                  padding: 2px 6px;
+                  border-radius: 4px;
+                  color: #555;
+                "
+                >MOVIE</span
+              >
+            </div>
+          </div>
+          <div class="overseerr-actions">
+            <button
+              class="action-btn request-btn"
+              title="Request"
+              style="
+                width: auto;
+                padding: 0 12px;
+                border-radius: 14px;
+                background: #2196f3;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+                font-size: 12px;
+              "
+            >
+              Request
+            </button>
+          </div>
         </div>
+      </div>
     </template>
 
     <!-- Unraid Docker Card Template -->
     <template id="docker-card-template">
-        <div class="unraid-card docker-card">
-            <div class="card-header">
-                <div class="status-dot"></div>
-                <div class="card-icon"></div>
-                <div class="card-title">Container Name</div>
-            </div>
-            <div class="card-body">
-                <div class="card-meta">Image Name</div>
-                <div class="update-badge hidden" title="Update Available" style="color: #2196f3; font-size: 11px; margin-top: 2px; font-weight: bold;">
-                    ↑ Update Available
-                </div>
-            </div>
-            <div class="card-actions">
-                <button class="action-btn start-btn" title="Start">▶</button>
-                <button class="action-btn restart-btn" title="Restart">↻</button>
-                <button class="action-btn stop-btn" title="Stop">⏹</button>
-                <button class="action-btn webui-btn" title="WebUI">🌐</button>
-            </div>
+      <div class="unraid-card docker-card">
+        <div class="card-header">
+          <div class="status-dot"></div>
+          <div class="card-icon"></div>
+          <div class="card-title">Container Name</div>
         </div>
+        <div class="card-body">
+          <div class="card-meta">Image Name</div>
+          <div
+            class="update-badge hidden"
+            title="Update Available"
+            style="
+              color: #2196f3;
+              font-size: 11px;
+              margin-top: 2px;
+              font-weight: bold;
+            "
+          >
+            ↑ Update Available
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="action-btn start-btn" title="Start">▶</button>
+          <button class="action-btn restart-btn" title="Restart">↻</button>
+          <button class="action-btn stop-btn" title="Stop">⏹</button>
+          <button class="action-btn webui-btn" title="WebUI">🌐</button>
+        </div>
+      </div>
     </template>
 
     <!-- Unraid VM Card Template -->
     <template id="vm-card-template">
-        <div class="unraid-card vm-card">
-             <div class="card-header">
-                <div class="status-dot"></div>
-                <div class="card-icon"></div> <!-- OS Icon -->
-                <div class="card-title">VM Name</div>
-            </div>
-             <div class="card-body">
-                <div class="card-meta">Cores / RAM</div>
-            </div>
-            <div class="card-actions">
-                <button class="action-btn start-btn" title="Start">▶</button>
-                <button class="action-btn stop-btn" title="Stop">⏹</button>
-                <button class="action-btn webui-btn" title="WebVNC">💻</button>
-            </div>
+      <div class="unraid-card vm-card">
+        <div class="card-header">
+          <div class="status-dot"></div>
+          <div class="card-icon"></div>
+          <!-- OS Icon -->
+          <div class="card-title">VM Name</div>
         </div>
+        <div class="card-body">
+          <div class="card-meta">Cores / RAM</div>
+        </div>
+        <div class="card-actions">
+          <button class="action-btn start-btn" title="Start">▶</button>
+          <button class="action-btn stop-btn" title="Stop">⏹</button>
+          <button class="action-btn webui-btn" title="WebVNC">💻</button>
+        </div>
+      </div>
     </template>
 
     <template id="prowlarr-indexer-card">
-        <div class="card indexer-item">
-            <div class="card-header">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <img class="indexer-icon" src="" alt="" style="width: 16px; height: 16px; border-radius: 2px; display: none;"> <!-- Hidden by default -->
-                    <a class="indexer-name" href="#" target="_blank" style="text-decoration: none; color: inherit;">Indexer Name</a>
-                    <span class="indexer-priority" style="font-size: 10px; color: var(--text-secondary); opacity: 0.8;">P: 25</span>
-                </div>
-                 <div class="indexer-status-badge">OK</div>
-            </div>
-            <div class="card-details">
-                <span class="indexer-protocol">Torrent</span>
-            </div>
+      <div class="card indexer-item">
+        <div class="card-header">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <img
+              class="indexer-icon"
+              src=""
+              alt=""
+              style="
+                width: 16px;
+                height: 16px;
+                border-radius: 2px;
+                display: none;
+              "
+            />
+            <!-- Hidden by default -->
+            <a
+              class="indexer-name"
+              href="#"
+              target="_blank"
+              style="text-decoration: none; color: inherit"
+              >Indexer Name</a
+            >
+            <span
+              class="indexer-priority"
+              style="
+                font-size: 10px;
+                color: var(--text-secondary);
+                opacity: 0.8;
+              "
+              >P: 25</span
+            >
+          </div>
+          <div class="indexer-status-badge">OK</div>
         </div>
+        <div class="card-details">
+          <span class="indexer-protocol">Torrent</span>
+        </div>
+      </div>
     </template>
 
-  <script type="module" src="js/popup.js"></script>
-</body>
+    <template id="prowlarr-search-card">
+      <div class="card prowlarr-result-item" style="padding: 10px 15px">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 5px;
+          "
+        >
+          <div style="flex: 1; padding-right: 10px">
+            <div
+              class="result-title"
+              style="
+                font-weight: 600;
+                font-size: 14px;
+                margin-bottom: 4px;
+                word-break: break-all;
+              "
+            >
+              Title
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 11px;
+                color: var(--text-secondary);
+              "
+            >
+              <span class="result-indexer">Indexer</span>
+                <span>•</span>
+                <span class="result-category" style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: #eee;">Cat</span>
+                <span>•</span>
+                <span class="result-size">0 GB</span>
+                <span>•</span>
+                <span class="result-age">0d</span>
+              <span class="is-torrent hidden">
+                <span>•</span>
+                <span class="peers" style="color: #4caf50">S: 0</span> /
+                <span style="color: #f44336">L: 0</span>
+              </span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px">
+            <a
+              class="action-btn download-btn"
+              href="#"
+              target="_blank"
+              title="Download"
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                color: var(--text-primary);
+                text-decoration: none;
+                transition: background 0.2s;
+              "
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="20px"
+                viewBox="0 -960 960 960"
+                width="20px"
+                fill="currentColor"
+              >
+                <path
+                  d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"
+                />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <script type="module" src="js/popup.js"></script>
+  </body>
 </html>
