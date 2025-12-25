@@ -264,9 +264,12 @@ function renderUnraidSystem(data, url, key, state) {
         // Space Used
         const spaceCard = mkDiv('unraid-card system-stat-card');
         spaceCard.appendChild(mkDiv('stat-label', 'SPACE USED'));
-        const spaceVal = mkDiv('stat-value', '0%');
+        const spaceVal = mkDiv('stat-value', '0 B');
         spaceVal.id = 'dash-space-text';
         spaceCard.appendChild(spaceVal);
+        const spaceSub = mkDiv('stat-sub', '0 B Free');
+        spaceSub.id = 'dash-space-detail';
+        spaceCard.appendChild(spaceSub);
         statsGrid.appendChild(spaceCard);
 
         // Docker Count
@@ -375,12 +378,22 @@ function renderUnraidSystem(data, url, key, state) {
     // Space
     const usedBytes = data.array.used || 0;
     const totalBytes = data.array.total || 0;
+    const freeBytes = totalBytes - usedBytes;
     const spacePct = totalBytes > 0 ? (usedBytes / totalBytes) * 100 : 0;
     
     const spaceText = document.getElementById('dash-space-text');
     if(spaceText) {
-        spaceText.textContent = `${Math.round(spacePct)}%`;
-        spaceText.title = `${formatBytes(usedBytes)} / ${formatBytes(totalBytes)}`;
+        spaceText.textContent = `${formatBytes(usedBytes)} (${Math.round(spacePct)}%)`;
+        
+        let spaceDetail = document.getElementById('dash-space-detail');
+        if (!spaceDetail) {
+             spaceDetail = document.createElement('div');
+             spaceDetail.className = 'stat-sub';
+             spaceDetail.id = 'dash-space-detail';
+             spaceText.parentNode.appendChild(spaceDetail);
+        }
+        const freePct = 100 - spacePct;
+        spaceDetail.textContent = `${formatBytes(freeBytes)} (${Math.round(freePct)}%) Free`;
     }
 
     // Docker Count
@@ -477,82 +490,160 @@ function renderUnraidStorage(data) {
     const storageTab = document.getElementById("unraid-tab-storage");
     if (!storageTab || storageTab.classList.contains('hidden')) return; 
 
+    // Helper for clearing
     const containerId = 'storage-list-container';
     let container = document.getElementById(containerId);
     
     if(!container) {
          storageTab.textContent = "";
          const wrap = document.createElement('div');
-         wrap.className = "unraid-section-wrapper";
+         wrap.className = "unraid-storage-wrapper";
          wrap.id = containerId;
          storageTab.appendChild(wrap);
          container = wrap;
     }
     
-    container.replaceChildren();
-    
+    // Sort groups
     const diskGroups = [
-        { title: 'Array', disks: [...(data.array.parities || []), ...(data.array.disks || [])] },
-        { title: 'Cache / Pools', disks: data.array.caches },
-        { title: 'Boot', disks: data.array.boot ? [data.array.boot] : [] }
+        { title: 'Array Devices', id: 'grp-array', type: 'array', disks: [...(data.array.parities || []), ...(data.array.disks || [])] },
+        { title: 'Pool Devices', id: 'grp-pool', type: 'pool', disks: data.array.caches },
+        { title: 'Boot Device', id: 'grp-boot', type: 'boot', disks: data.array.boot ? [data.array.boot] : [] }
     ];
     
     diskGroups.forEach(group => {
-         if(!group.disks || group.disks.length === 0) return;
+         if(!group.disks || group.disks.length === 0) {
+             const oldGrp = document.getElementById(`storage-${group.id}`);
+             if (oldGrp) oldGrp.style.display = 'none';
+             return;
+         }
          
-         const header = document.createElement('h3');
-         header.textContent = group.title;
-         header.style.cssText = "font-size:12px; font-weight:700; color:var(--text-secondary); margin:15px 0 5px 0; text-transform:uppercase;";
-         container.appendChild(header);
+         // 1. Check/Create Group Container
+         let groupContainer = document.getElementById(`storage-${group.id}`);
+         let grid;
          
-         group.disks.forEach(disk => {
-             const div = document.createElement('div');
-             div.className = 'unraid-card storage-disk-row';
+         if (!groupContainer) {
+             groupContainer = document.createElement('div');
+             groupContainer.id = `storage-${group.id}`;
              
+             // Group Header
+             const header = document.createElement('div');
+             header.className = 'storage-group-header';
+             const title = document.createElement('div');
+             title.className = 'storage-group-title';
+             title.textContent = group.title;
+             header.appendChild(title);
+             groupContainer.appendChild(header);
+             
+             // Grid
+             grid = document.createElement('div');
+             grid.className = 'unraid-storage-grid';
+             groupContainer.appendChild(grid);
+             
+             container.appendChild(groupContainer);
+         } else {
+             groupContainer.style.display = 'block';
+             grid = groupContainer.querySelector('.unraid-storage-grid');
+         }
+
+         // 2. Update/Create Disks
+         group.disks.forEach(disk => {
+             const diskId = `disk-${disk.name.replace(/[^a-zA-Z0-9]/g, '')}`; 
+             let card = document.getElementById(diskId);
+             
+             // Calculations
              const used = disk.used || 0;
              const total = disk.total || 0;
+             const free = disk.free !== undefined ? disk.free : (total - used);
              const percent = total > 0 ? (used / total) * 100 : 0;
+             
+             // Status Logic
+             const isSpinning = disk.spinning; 
+             const temp = disk.temp; 
+             
+             // Color Logic
+             let barClass = '';
+             if (percent > 80) barClass = 'warn';
+             if (percent > 90) barClass = 'crit';
 
-             let colorClass = 'ok';
-             if(percent > 80) colorClass = 'warn';
-             if(percent > 90) colorClass = 'crit';
+             // Temp Color logic
+             let tempClass = 'cool';
+             const tempNum = parseFloat(temp);
+             if (!isNaN(tempNum)) {
+                 if (tempNum >= 40) tempClass = 'warm';
+                 if (tempNum >= 50) tempClass = 'hot';
+             }
+             
+             // Icon Selection
+             let iconChar = '💾'; 
+             if (group.type === 'boot') iconChar = '🔌'; 
+             if (group.type === 'pool') iconChar = '⚡'; 
 
-             // Securely build the disk card
-             // 1. Meta Row
-             const meta = document.createElement('div');
-             meta.className = 'storage-disk-meta';
-             const nameSpan = document.createElement('span');
-             nameSpan.style.fontWeight = '700';
-             nameSpan.textContent = disk.name;
-             const tempSpan = document.createElement('span');
-             tempSpan.style.fontSize = '11px';
-             tempSpan.style.opacity = '0.8';
-             tempSpan.textContent = disk.temp ? disk.temp + '°C' : '';
-             meta.appendChild(nameSpan);
-             meta.appendChild(tempSpan);
+             if (!card) {
+                 // CREATE NEW
+                 card = document.createElement('div');
+                 card.className = 'storage-card';
+                 card.id = diskId;
+                 
+                 card.innerHTML = `
+                    <div class="disk-header">
+                        <div class="disk-info">
+                            <span class="disk-icon ${isSpinning ? 'spinning-icon' : 'sleeping-icon'}">${iconChar}</span>
+                            <span class="disk-name">${disk.name}</span>
+                            <span class="disk-temp ${tempClass}" style="display:none">0°C</span>
+                        </div>
+                    </div>
+                    
+                    <div class="disk-usage-section">
+                        <div class="disk-pct">0%</div>
+                        <div class="disk-bar-bg">
+                            <div class="disk-bar-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="disk-stats">
+                            <span class="disk-used">0 B / 0 B</span>
+                            <span class="disk-free">0 B Free</span>
+                        </div>
+                    </div>
+                 `;
+                 grid.appendChild(card);
+             }
 
-             // 2. Track
-             const track = document.createElement('div');
-             track.className = 'storage-track';
-             const fill = document.createElement('div');
-             fill.className = `storage-fill ${colorClass}`;
-             fill.style.width = `${percent}%`;
-             track.appendChild(fill);
-
-             // 3. Stats Row
-             const stats = document.createElement('div');
-             stats.style.cssText = "font-size:11px; color:var(--text-secondary); margin-top:4px; display:flex; justify-content:space-between;";
-             const usedSpan = document.createElement('span');
-             usedSpan.textContent = `${formatBytes(used)} Used`;
-             const totalSpan = document.createElement('span');
-             totalSpan.textContent = formatBytes(total);
-             stats.appendChild(usedSpan);
-             stats.appendChild(totalSpan);
-
-             div.appendChild(meta);
-             div.appendChild(track);
-             div.appendChild(stats);
-             container.appendChild(div);
+             // UPDATE EXISTING (Smart Update)
+             // Icon
+             const iconEl = card.querySelector('.disk-icon');
+             if (iconEl) {
+                 iconEl.className = `disk-icon ${isSpinning ? 'spinning-icon' : 'sleeping-icon'}`;
+                 iconEl.textContent = iconChar;
+             }
+             
+             // Temp update - forcing display if valid
+             const tempEl = card.querySelector('.disk-temp');
+             if (tempEl) {
+                 if (temp !== undefined && temp !== null && temp !== "") {
+                     tempEl.textContent = `${temp}°C`;
+                     tempEl.className = `disk-temp ${tempClass}`;
+                     tempEl.style.display = 'inline-block';
+                 } else {
+                     tempEl.style.display = 'none';
+                 }
+             }
+             
+             // Pct
+             const pctEl = card.querySelector('.disk-pct');
+             if (pctEl) pctEl.textContent = `${Math.round(percent)}%`;
+             
+             // Bar
+             const barEl = card.querySelector('.disk-bar-fill');
+             if (barEl) {
+                 barEl.className = `disk-bar-fill ${barClass}`;
+                 barEl.style.width = `${percent}%`;
+             }
+             
+             // Stats
+             const usedEl = card.querySelector('.disk-used');
+             if (usedEl) usedEl.textContent = `${formatBytes(used)} / ${formatBytes(total)}`;
+             
+             const freeEl = card.querySelector('.disk-free');
+             if (freeEl) freeEl.textContent = `${formatBytes(free)} Free`;
          });
     });
 }
@@ -562,8 +653,9 @@ function renderUnraidDocker(containers, url, key) {
     if (!list) return;
     
     // Changed to vertical list as requested
-    list.className = 'unraid-vertical-list';
-    list.replaceChildren();
+    if (list.className !== 'unraid-vertical-list') {
+        list.className = 'unraid-vertical-list';
+    }
 
     if (!containers || containers.length === 0) {
         list.textContent = "";
@@ -595,87 +687,156 @@ function renderUnraidDocker(containers, url, key) {
         
         // Status sort
         if (sortMode === 'status-desc') {
-             // Stopped First (Running = 1, Stopped = 0 -> 1 > 0 -> swap)
              return a.running ? 1 : -1;
         } else {
-             // Default: Running First
              return a.running ? -1 : 1; 
         }
     });
 
-    containers.forEach(container => {
-        const clone = template.content.cloneNode(true);
-        const card = clone.querySelector('.docker-card');
+    const existingCards = new Set();
+    
+    containers.forEach((container, index) => {
+        const cardId = `docker-card-${container.id}`;
+        existingCards.add(cardId);
         
-        // Add row class for styling
-        card.classList.add('row-layout');
-        
-        const dot = card.querySelector('.status-dot');
-        const isRunning = container.running;
-        dot.className = `status-dot ${isRunning ? 'started' : 'stopped'}`;
-        
-        const iconDiv = card.querySelector('.card-icon');
-        // Simple icon placeholder (first letter) if no image
-        iconDiv.textContent = container.name.substring(0,2).toUpperCase();
-        iconDiv.style.display = "flex";
-        iconDiv.style.alignItems = "center";
-        iconDiv.style.justifyContent = "center";
-        iconDiv.style.backgroundColor = "rgba(255,255,255,0.1)";
-        iconDiv.style.fontSize = "10px";
-        iconDiv.style.fontWeight = "bold";
+        let card = document.getElementById(cardId);
 
-        const titleEl = card.querySelector('.card-title');
-        titleEl.textContent = container.name;
-        // Tooltip still useful
-        titleEl.setAttribute('data-title', container.name);
-
-        card.querySelector('.card-meta').textContent = container.image || "Unknown Image";
-
-        // Update Badge Logic
-        const badge = card.querySelector('.update-badge');
-        if (container.updateAvailable) {
-             badge.classList.remove('hidden');
+        if (!card) {
+            // CREATE NEW
+            const clone = template.content.cloneNode(true);
+            card = clone.querySelector('.docker-card');
+            card.id = cardId;
+            card.classList.add('row-layout');
+            updateDockerCard(card, container, url, key);
+            
+            // Insert at correct position
+            if (index < list.children.length) {
+                list.insertBefore(card, list.children[index]);
+            } else {
+                list.appendChild(card);
+            }
         } else {
-             badge.classList.add('hidden');
+            // UPDATE EXISTING
+            updateDockerCard(card, container, url, key);
+            
+            // Check position: Is this card at the current index?
+            const currentChild = list.children[index];
+            if (currentChild !== card) {
+                // Not in correct position, move it
+                if (index < list.children.length) {
+                    list.insertBefore(card, list.children[index]);
+                } else {
+                    list.appendChild(card);
+                }
+            }
         }
-
-        const startBtn = card.querySelector('.start-btn');
-        const stopBtn = card.querySelector('.stop-btn');
-        const restartBtn = card.querySelector('.restart-btn');
-        const webBtn = card.querySelector('.webui-btn');
-
-        if (isRunning) {
-            startBtn.style.display = 'none';
-        } else {
-            stopBtn.style.display = 'none';
-            restartBtn.style.display = 'none';
-            webBtn.style.display = 'none';
-        }
-        
-        startBtn.onclick = async () => {
-             dot.className = 'status-dot paused'; 
-             await controlContainer(url, key, container.id, 'start');
-        };
-        stopBtn.onclick = async () => {
-             dot.className = 'status-dot paused';
-             await controlContainer(url, key, container.id, 'stop');
-        };
-        restartBtn.onclick = async () => {
-             dot.className = 'status-dot paused';
-             await controlContainer(url, key, container.id, 'restart');
-        };
-        webBtn.onclick = (e) => {
-             e.preventDefault();
-             if (container.webui) {
-                 chrome.tabs.create({ url: container.webui, active: true });
-             } else {
-                 // Fallback to Unraid Dashboard
-                 chrome.tabs.create({ url: url, active: true });
-             }
-        };
-
-        list.appendChild(card);
     });
+
+    // 3. Remove stale
+    Array.from(list.children).forEach(child => {
+        if (child.id && child.id.startsWith('docker-card-') && !existingCards.has(child.id)) {
+            child.remove();
+        }
+    });
+}
+
+function updateDockerCard(card, container, url, key) {
+    const isRunning = container.running;
+    
+    // Dot
+    const dot = card.querySelector('.status-dot');
+    const dotClass = `status-dot ${isRunning ? 'started' : 'stopped'}`;
+    if(dot.className !== dotClass) dot.className = dotClass; 
+    
+    // Icon
+    const iconDiv = card.querySelector('.card-icon');
+    const iconLetter = container.name.substring(0,2).toUpperCase();
+    if (iconDiv.textContent !== iconLetter) {
+         iconDiv.textContent = iconLetter;
+         // Static styles that don't change frequently can typically stay in CSS or be set once
+         // But ensuring they are set if we recreated the card (which we didn't) or if js overwrote them
+         if(!iconDiv.style.display) {
+             iconDiv.style.display = "flex";
+             iconDiv.style.alignItems = "center";
+             iconDiv.style.justifyContent = "center";
+             iconDiv.style.backgroundColor = "rgba(255,255,255,0.1)";
+             iconDiv.style.fontSize = "10px";
+             iconDiv.style.fontWeight = "bold";
+         }
+    }
+
+    // Title
+    const titleEl = card.querySelector('.card-title');
+    if(titleEl.textContent !== container.name) {
+        titleEl.textContent = container.name;
+        titleEl.setAttribute('data-title', container.name);
+    }
+
+    // Meta (Image)
+    const meta = card.querySelector('.card-meta');
+    const metaText = container.image || "Unknown Image";
+    if(meta.textContent !== metaText) meta.textContent = metaText;
+
+    // Badge
+    const badge = card.querySelector('.update-badge');
+    if (container.updateAvailable) {
+         if(badge.classList.contains('hidden')) badge.classList.remove('hidden');
+    } else {
+         if(!badge.classList.contains('hidden')) badge.classList.add('hidden');
+    }
+
+    // Actions
+    const startBtn = card.querySelector('.start-btn');
+    const stopBtn = card.querySelector('.stop-btn');
+    const restartBtn = card.querySelector('.restart-btn');
+    const webBtn = card.querySelector('.webui-btn');
+
+    // Display Logic - ONLY touch DOM if changed
+    const startDisp = isRunning ? 'none' : 'flex';
+    if(startBtn.style.display !== startDisp) startBtn.style.display = startDisp;
+
+    const stopDisp = isRunning ? 'flex' : 'none';
+    if(stopBtn.style.display !== stopDisp) stopBtn.style.display = stopDisp;
+
+    const restartDisp = isRunning ? 'flex' : 'none';
+    if(restartBtn.style.display !== restartDisp) restartBtn.style.display = restartDisp;
+
+    const webDisp = isRunning ? 'flex' : 'none';
+    if(webBtn.style.display !== webDisp) webBtn.style.display = webDisp;
+    
+    // Handlers - ONLY attach if missing (or use delegation in future, but this is fine)
+    // To prevent "flicker" from handler re-attachment (unlikely but possible), 
+    // we can attach once on creation. 
+    // BUT since we are passing updated 'container' object (closure), we typically re-attach.
+    // However, function references change every render.
+    // Better: use card.dataset.id and a single delegated listener on list. 
+    // For now: Just re-attach, it shouldn't cause visual flicker.
+    // THE ISSUE was likely the appendChild moving the element.
+    
+    startBtn.onclick = async (e) => {
+         e.stopPropagation();
+         dot.className = 'status-dot paused'; 
+         await controlContainer(url, key, container.id, 'start');
+    };
+    stopBtn.onclick = async (e) => {
+         e.stopPropagation();
+         dot.className = 'status-dot paused';
+         await controlContainer(url, key, container.id, 'stop');
+    };
+    restartBtn.onclick = async (e) => {
+         e.stopPropagation();
+         dot.className = 'status-dot paused';
+         await controlContainer(url, key, container.id, 'restart');
+    };
+    webBtn.onclick = (e) => {
+         e.stopPropagation();
+         e.preventDefault();
+         if (container.webui) {
+             chrome.tabs.create({ url: container.webui, active: true });
+         } else {
+             chrome.tabs.create({ url: url, active: true });
+         }
+    };
 }
 
 async function renderUnraidVms(url, key) {

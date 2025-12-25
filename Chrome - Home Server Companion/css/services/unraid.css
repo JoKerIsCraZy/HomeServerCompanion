@@ -405,22 +405,25 @@ body.dark-mode .unraid-card {
   cursor: pointer;
   color: var(--text-primary);
   font-size: 10px;
+  transition: all 0.2s;
 }
 .action-btn:hover {
-  background: var(--primary-color);
+  background: #f15a2c; /* Unraid Orange per user request */
   color: white;
+  transform: scale(1.1);
 }
+/* Override specific colors to strictly follow user request */
 .start-btn:hover {
-  background: #4caf50;
+  background: #f15a2c;
 }
 .stop-btn:hover {
-  background: #f44336;
+  background: #f15a2c;
 }
 .restart-btn:hover {
-  background: #ff9800;
+  background: #f15a2c; 
 }
 .webui-btn:hover {
-  background: #2196f3;
+  background: #f15a2c;
 }
 
 /* Vertical List Layout - Added for User Request */
@@ -763,6 +766,162 @@ body.dark-mode .unraid-card {
 .text-blue { color: #2196f3 !important; }
 .text-orange { color: #ff9800 !important; }
 .text-warning { color: #ffc107 !important; }
+
+/* === Modern Storage Tab Redesign === */
+
+.unraid-storage-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.storage-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 20px 0 10px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.storage-group-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.storage-group-title::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 16px;
+    background: var(--primary-color);
+    border-radius: 2px;
+}
+
+.storage-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 8px 12px; /* Reduced padding */
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* Reduced gap */
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.storage-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(4px);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Disk Top Row: Name + Temp + Status */
+.disk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.disk-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.disk-icon {
+    font-size: 16px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.disk-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.disk-temp {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-secondary);
+}
+
+.disk-temp.hot { color: #f44336; background: rgba(244, 67, 54, 0.15); }
+.disk-temp.warm { color: #ff9800; background: rgba(255, 152, 0, 0.15); }
+.disk-temp.cool { color: #4caf50; background: rgba(76, 175, 80, 0.15); }
+
+/* Progress Bar Section */
+.disk-usage-section {
+    position: relative;
+    padding-top: 10px; /* Reduced space */
+}
+
+.disk-bar-bg {
+    height: 6px; /* Thinner bar */
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.disk-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #2196f3, #4caf50); /* Blue to Green */
+    opacity: 0.9;
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+    transition: width 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.disk-bar-fill.warn { background: linear-gradient(90deg, #ff9800, #f57c00); box-shadow: 0 0 10px rgba(255, 152, 0, 0.3); }
+.disk-bar-fill.crit { background: linear-gradient(90deg, #f44336, #d32f2f); box-shadow: 0 0 10px rgba(244, 67, 54, 0.3); }
+
+/* Floating Stats */
+.disk-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.disk-free {
+    font-weight: 500;
+    color: var(--text-primary);
+    opacity: 0.9;
+}
+
+.disk-pct {
+    position: absolute;
+    top: -5px; /* Moved up per user request */
+    right: 0;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Spinner Animation Removed */
+.spinning-icon {
+    display: inline-block;
+    /* animation: spin-slow 3s linear infinite; REMOVED per request */
+    color: #4caf50; /* Green when active */
+    text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+.sleeping-icon {
+    color: var(--text-secondary);
+    opacity: 0.3;
+}
 
 
 
