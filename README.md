@@ -4,7 +4,7 @@
 
 # Home Server Companion
 
-[![Version](https://img.shields.io/badge/version-3.0-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
+[![Version](https://img.shields.io/badge/version-3.1-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/blob/master/LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
 
@@ -57,7 +57,7 @@ A comprehensive dashboard for your self-hosted services:
 - **✍️ Overseerr**:
   - **Browse Requests**: View and filter requests by status (Pending, Approved, Processing, Available).
   - **Search**: Search TMDB for movies and TV shows to request.
-  - **Trending**: Discover trending content with random rotation on each view.
+  - **Trending**: Discover trending content with random rotation on each view and **type filter** (Movies, TV, or Both).
   - **Request Media**: One-click requests for movies and full TV seasons.
   - **Approve/Decline**: Manage pending requests directly from the extension.
   - **Smart Caching**: Instant load times with hydrated request data.
@@ -65,7 +65,9 @@ A comprehensive dashboard for your self-hosted services:
   - **Indexer Overview**: Monitor all configured indexers with real-time status.
   - **Status Indicators**: Visual badges showing enabled, disabled, or temporarily unavailable (failure) states.
   - **Failure Recovery**: Automatic countdown timers showing when failed indexers retry.
-  - **Statistics Dashboard**: View indexer performance metrics, query counts, and grab statistics.
+  - **VIP Timer**: Track VIP expiration dates for indexers that require subscriptions.
+  - **Statistics Dashboard**: View indexer performance metrics, query counts, and grab statistics with sortable tables.
+  - **Search**: Search across all indexers with category and indexer filtering, persistent search state option.
   - **Quick Access**: Direct links to indexer configuration and Prowlarr dashboard.
   - **Favicon Display**: Visual indexer identification with automatic favicon loading.
 - **⚙️ Unraid**:
@@ -139,6 +141,7 @@ A comprehensive dashboard for your self-hosted services:
 
 <div align="center">
   <img src="images/prowlarr_indexer.png" alt="Prowlarr Indexer" width="45%">
+  <img src="images/prowlarr_search.png" alt="Prowlarr Search" width="45%">
   <img src="images/prowlarr_stats.png" alt="Prowlarr Stats" width="45%">
 </div>
 
