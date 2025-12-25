@@ -503,43 +503,54 @@ function renderOverseerrSearch(results, url, key) {
 }
 
 async function hydrateRequests(requests, url, key) {
-    if (!requests) return [];
-    return await Promise.all(requests.map(async (req) => {
-        // Clone req to avoid mutating original if needed
-        const enhancedReq = { ...req }; 
-        const media = req.media;
+    if (!requests || requests.length === 0) return [];
+    
+    // PERFORMANCE: Batch API calls instead of sequential per-request calls
+    // 1. Collect IDs by type
+    const movieRequests = [];
+    const tvRequests = [];
+    
+    requests.forEach((req, index) => {
+        if (req.type === 'movie' && req.media?.tmdbId) {
+            movieRequests.push({ index, id: req.media.tmdbId });
+        } else if (req.type === 'tv' && req.media?.tmdbId) {
+            tvRequests.push({ index, id: req.media.tmdbId });
+        }
+    });
+    
+    // 2. Fetch all in parallel (movies and TVs simultaneously)
+    const [movieResults, tvResults] = await Promise.all([
+        Promise.all(movieRequests.map(m => Overseerr.getMovie(url, key, m.id))),
+        Promise.all(tvRequests.map(t => Overseerr.getTv(url, key, t.id)))
+    ]);
+    
+    // 3. Build lookup maps for O(1) access
+    const movieMap = new Map();
+    const tvMap = new Map();
+    movieRequests.forEach((m, i) => movieMap.set(m.id, movieResults[i]));
+    tvRequests.forEach((t, i) => tvMap.set(t.id, tvResults[i]));
+    
+    // 4. Enrich requests
+    return requests.map(req => {
+        const enhancedReq = { ...req };
+        const tmdbId = req.media?.tmdbId;
+        let details = null;
+        
+        if (req.type === 'movie') {
+            details = movieMap.get(tmdbId);
+        } else if (req.type === 'tv') {
+            details = tvMap.get(tmdbId);
+        }
         
         enhancedReq.details = {
-            title: "Unknown",
-            posterPath: "",
-            backdropPath: "",
-            year: ""
+            title: details?.title || details?.name || "Unknown",
+            posterPath: details?.posterPath || "",
+            backdropPath: details?.backdropPath || "",
+            year: (details?.releaseDate || details?.firstAirDate || "").split('-')[0]
         };
-
-        try {
-           if (req.type === 'movie') {
-               // media.tmdbId is reliable for movies
-               const d = await Overseerr.getMovie(url, key, media.tmdbId);
-               if (d) {
-                   enhancedReq.details.title = d.title;
-                   enhancedReq.details.posterPath = d.posterPath;
-                   enhancedReq.details.backdropPath = d.backdropPath;
-                   enhancedReq.details.year = d.releaseDate ? d.releaseDate.split('-')[0] : "";
-               }
-           } else if (req.type === 'tv') {
-               const d = await Overseerr.getTv(url, key, media.tmdbId);
-               if (d) {
-                   enhancedReq.details.title = d.name;
-                   enhancedReq.details.posterPath = d.posterPath;
-                   enhancedReq.details.backdropPath = d.backdropPath;
-                   enhancedReq.details.year = d.firstAirDate ? d.firstAirDate.split('-')[0] : "";
-               }
-           }
-        } catch (e) {
-            console.error("Hydration failed for", req.id, e);
-        }
+        
         return enhancedReq;
-    }));
+    });
 }
 
 function renderHydratedRequests(requests, url, key) {

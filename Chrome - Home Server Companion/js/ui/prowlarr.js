@@ -34,18 +34,22 @@ const loadProwlarrData = async (url, apiKey) => {
     const errorMsg = document.getElementById("error-msg");
     if (errorMsg) errorMsg.classList.add("hidden");
 
-    // 1. CACHE CHECK (Stale-while-revalidate)
+    // 1. CACHE CHECK (Stale-while-revalidate with TTL)
     const CACHE_KEY = "prowlarr_cache";
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
     const cachedData = localStorage.getItem(CACHE_KEY);
+    let cacheValid = false;
     
     if (cachedData) {
         try {
             const parsed = JSON.parse(cachedData);
-            // Render cached data properly
-            // Old cache might not have statuses
-            const cachedStatuses = parsed.statuses || []; 
-            renderIndexers(parsed.indexers, cachedStatuses);
-            renderStats(parsed.stats, parsed.indexers);
+            // Check TTL - only use cache if less than 5 minutes old
+            if (parsed.timestamp && (Date.now() - parsed.timestamp < CACHE_TTL)) {
+                const cachedStatuses = parsed.statuses || []; 
+                renderIndexers(parsed.indexers, cachedStatuses);
+                renderStats(parsed.stats, parsed.indexers);
+                cacheValid = true;
+            }
         } catch (e) {
             console.warn("Invalid Prowlarr cache", e);
         }

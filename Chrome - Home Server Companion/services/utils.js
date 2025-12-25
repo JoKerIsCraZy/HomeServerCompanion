@@ -16,3 +16,15 @@ export const formatTime = (minutes) => {
     const m = minutes % 60;
     return `${h}h ${m}m`;
 };
+
+/**
+ * Normalizes a URL by ensuring http prefix and removing trailing slash.
+ * @param {string} url - The URL to normalize
+ * @returns {string} Normalized URL
+ */
+export const normalizeUrl = (url) => {
+    if (!url) return '';
+    if (!url.startsWith('http')) url = 'http://' + url;
+    if (url.endsWith('/')) url = url.slice(0, -1);
+    return url;
+};

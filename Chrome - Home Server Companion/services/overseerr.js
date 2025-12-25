@@ -1,3 +1,5 @@
+import { normalizeUrl } from './utils.js';
+
 /**
  * Fetches requests (pending, approved, etc).
  * @param {string} url 
@@ -7,8 +9,7 @@
  */
 export const getRequests = async (url, apiKey, status = 'pending') => {
   if (!url || !apiKey) return { results: [] };
-  if (!url.startsWith('http')) { url = 'http://' + url; }
-  if (url.endsWith('/')) { url = url.slice(0, -1); }
+  url = normalizeUrl(url);
 
   try {
     const filterParam = status === 'all' ? 'all' : status;
@@ -39,8 +40,7 @@ export const getRequests = async (url, apiKey, status = 'pending') => {
  * @returns {Promise<boolean>} Success status
  */
 export const approveRequest = async (url, apiKey, requestId) => {
-    if (!url.startsWith('http')) { url = 'http://' + url; }
-    if (url.endsWith('/')) { url = url.slice(0, -1); }
+    url = normalizeUrl(url);
     try {
         const response = await fetch(`${url}/api/v1/request/${requestId}/approve`, {
             method: 'POST',
@@ -64,8 +64,7 @@ export const approveRequest = async (url, apiKey, requestId) => {
  * @returns {Promise<boolean>} Success status
  */
 export const declineRequest = async (url, apiKey, requestId) => {
-    if (!url.startsWith('http')) { url = 'http://' + url; }
-    if (url.endsWith('/')) { url = url.slice(0, -1); }
+    url = normalizeUrl(url);
     try {
         const response = await fetch(`${url}/api/v1/request/${requestId}/decline`, {
             method: 'POST',
@@ -89,13 +88,7 @@ export const declineRequest = async (url, apiKey, requestId) => {
  * @returns {Promise<Array>} List of results
  */
 export async function search(url, apiKey, query) {
-    if (!url.startsWith('http')) {
-        url = 'http://' + url;
-    }
-    // Remove trailing slash
-    if (url.endsWith('/')) {
-        url = url.slice(0, -1);
-    }
+    url = normalizeUrl(url);
 
     const endpoint = `${url}/api/v1/search?query=${encodeURIComponent(query)}`;
 
@@ -194,12 +187,7 @@ async function getDefaults(url, apiKey, mediaType) {
  * @returns {Promise<Object>} Response data
  */
 export async function request(url, apiKey, payload) {
-    if (!url.startsWith('http')) {
-        url = 'http://' + url;
-    }
-    if (url.endsWith('/')) {
-        url = url.slice(0, -1);
-    }
+    url = normalizeUrl(url);
     
     // Ensure mediaType is lowercase
     if (payload.mediaType) payload.mediaType = payload.mediaType.toLowerCase();
@@ -238,8 +226,7 @@ export async function request(url, apiKey, payload) {
 }
 
 export async function getMovie(url, apiKey, id) {
-    if (!url.startsWith('http')) { url = 'http://' + url; }
-    if (url.endsWith('/')) { url = url.slice(0, -1); }
+    url = normalizeUrl(url);
     try {
         const response = await fetch(`${url}/api/v1/movie/${id}`, {
             headers: { 'X-Api-Key': apiKey }
@@ -253,8 +240,7 @@ export async function getMovie(url, apiKey, id) {
 }
 
 export async function getTv(url, apiKey, id) {
-    if (!url.startsWith('http')) { url = 'http://' + url; }
-    if (url.endsWith('/')) { url = url.slice(0, -1); }
+    url = normalizeUrl(url);
     try {
         const response = await fetch(`${url}/api/v1/tv/${id}`, {
             headers: { 'X-Api-Key': apiKey }
@@ -268,8 +254,7 @@ export async function getTv(url, apiKey, id) {
 }
 
 export async function getTrending(url, apiKey, page = 1) {
-    if (!url.startsWith('http')) { url = 'http://' + url; }
-    if (url.endsWith('/')) { url = url.slice(0, -1); }
+    url = normalizeUrl(url);
     try {
         const response = await fetch(`${url}/api/v1/discover/trending?page=${page}`, {
             headers: { 'X-Api-Key': apiKey }
