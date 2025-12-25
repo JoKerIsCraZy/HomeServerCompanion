@@ -107,7 +107,7 @@ function renderUnraidSystem(data, url, key, state) {
     const card = document.getElementById("unraid-status-card");
     if (card) {
         // Clear and rebuild for vertical stack (Status -> License -> Version)
-        card.innerHTML = "";
+        card.replaceChildren();
         card.style.display = "flex";
         card.style.flexDirection = "column";
         card.style.justifyContent = "center"; // Vertical center
@@ -254,7 +254,6 @@ function renderUnraidSystem(data, url, key, state) {
         const arrayCard = mkDiv('unraid-card system-stat-card');
         arrayCard.appendChild(mkDiv('stat-label', 'ARRAY STATUS'));
         const arrayVal = mkDiv('stat-value', 'Started');
-        arrayVal.id = 'dash-array-status';
         arrayVal.id = 'dash-array-status';
         arrayVal.classList.add('text-green');
         arrayCard.appendChild(arrayVal);

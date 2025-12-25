@@ -8,7 +8,12 @@ export async function initProwlarr(url, apiKey, state) {
     const indexersContainer = document.getElementById("prowlarr-indexers");
     
     if (indexersContainer) {
-         indexersContainer.innerHTML = '<div class="loading-spinner" style="padding: 20px; text-align: center; color: var(--text-secondary);">Loading Prowlarr...</div>';
+         indexersContainer.replaceChildren();
+         const loadingDiv = document.createElement('div');
+         loadingDiv.className = 'loading-spinner';
+         loadingDiv.style.cssText = 'padding: 20px; text-align: center; color: var(--text-secondary);';
+         loadingDiv.textContent = 'Loading Prowlarr...';
+         indexersContainer.appendChild(loadingDiv);
     } else {
         console.error("Critical: prowlarr-indexers container not found!");
         return;
@@ -78,8 +83,11 @@ const loadProwlarrData = async (url, apiKey) => {
         if (!cachedData) {
              const container = document.getElementById("prowlarr-indexers");
              if (container) {
-                 container.innerHTML = `<div class="error-state"></div>`;
-                 container.querySelector('.error-state').textContent = `Failed to load: ${error.message}`;
+                 container.replaceChildren();
+                 const errDiv = document.createElement('div');
+                 errDiv.className = 'error-state';
+                 errDiv.textContent = `Failed to load: ${error.message}`;
+                 container.appendChild(errDiv);
              }
         }
     }
@@ -89,16 +97,23 @@ const renderIndexers = (indexers, statuses = []) => {
     const container = document.getElementById("prowlarr-indexers");
     if (!container) return;
     
-    container.innerHTML = "";
+    container.replaceChildren();
 
     if (!Array.isArray(indexers)) {
         console.error("Prowlarr Indexers is not an array:", indexers);
-        container.innerHTML = '<div class="error-state">Invalid data received</div>';
+        const errDiv = document.createElement('div');
+        errDiv.className = 'error-state';
+        errDiv.textContent = 'Invalid data received';
+        container.replaceChildren(errDiv);
         return;
     }
 
     if (indexers.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="padding: 20px; text-align: center; color: #888;">No indexers found.</div>';
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'empty-state';
+        emptyDiv.style.cssText = 'padding: 20px; text-align: center; color: #888;';
+        emptyDiv.textContent = 'No indexers found.';
+        container.replaceChildren(emptyDiv);
         return;
     }
 
@@ -269,10 +284,16 @@ const renderStats = (stats, indexers = []) => {
     
     // Clear the main container (we will rebuild grid + tables)
     const mainContainer = document.getElementById("prowlarr-stats");
-    mainContainer.innerHTML = '<div class="stats-grid"></div><div id="prowlarr-stats-tables"></div>';
+    mainContainer.replaceChildren();
+    const gridDiv = document.createElement('div');
+    gridDiv.className = 'stats-grid';
+    const tablesDiv = document.createElement('div');
+    tablesDiv.id = 'prowlarr-stats-tables';
+    mainContainer.appendChild(gridDiv);
+    mainContainer.appendChild(tablesDiv);
     
-    const grid = mainContainer.querySelector(".stats-grid");
-    const tablesContainer = mainContainer.querySelector("#prowlarr-stats-tables");
+    const grid = gridDiv;
+    const tablesContainer = tablesDiv;
 
     // 1. Basic Counts from Indexer List
     let total = indexers.length;
@@ -445,7 +466,7 @@ const renderStats = (stats, indexers = []) => {
         const tbody = document.createElement("tbody");
         
         const renderBody = () => {
-            tbody.innerHTML = "";
+            tbody.replaceChildren();
             rows.forEach(row => {
                 const tr = document.createElement("tr");
                 row.forEach(cell => {
@@ -638,7 +659,11 @@ async function initProwlarrSearch(url, apiKey) {
         }
         
         if (categories.length > 0) {
-             categorySelect.innerHTML = '<option value="">All Categories</option>';
+             categorySelect.replaceChildren();
+             const defaultOpt = document.createElement('option');
+             defaultOpt.value = '';
+             defaultOpt.textContent = 'All Categories';
+             categorySelect.appendChild(defaultOpt);
              categories.sort((a,b) => (a.name || "").localeCompare(b.name || ""));
              categories.forEach(cat => {
                  const opt = document.createElement("option");
@@ -658,16 +683,20 @@ async function initProwlarrSearch(url, apiKey) {
                  const parsed = JSON.parse(cachedIndexers);
                  const indexers = parsed.indexers || [];
                  if (indexers.length > 0) {
-                     indexerOptions.innerHTML = '';
+                     indexerOptions.replaceChildren();
                      
-                     // "All" Option
+                     // "All" Option - built with DOM API
                      const allDiv = document.createElement("div");
                      allDiv.className = "dropdown-item";
-                     // Removed id and for attribute to prevent double-toggling
-                     allDiv.innerHTML = `<input type="checkbox" checked> <label>All Indexers</label>`;
+                     const allCheckbox = document.createElement('input');
+                     allCheckbox.type = 'checkbox';
+                     allCheckbox.checked = true;
+                     const allLabel = document.createElement('label');
+                     allLabel.textContent = 'All Indexers';
+                     allDiv.appendChild(allCheckbox);
+                     allDiv.appendChild(document.createTextNode(' '));
+                     allDiv.appendChild(allLabel);
                      indexerOptions.appendChild(allDiv);
-                     
-                     const allCheckbox = allDiv.querySelector("input");
                      
                      indexers.sort((a,b) => a.name.localeCompare(b.name));
                      
@@ -815,7 +844,7 @@ async function initProwlarrSearch(url, apiKey) {
             
             // Clear Results
             const resultsContainer = document.getElementById("prowlarr-search-results");
-            if (resultsContainer) resultsContainer.innerHTML = "";
+            if (resultsContainer) resultsContainer.replaceChildren();
             
             // Clear LocalStorage State
             localStorage.removeItem(STORAGE_KEY_STATE);
@@ -879,7 +908,12 @@ async function executeSearch(url, apiKey, saveCallback) {
         }
     }
 
-    container.innerHTML = '<div class="loading-spinner" style="padding: 20px; text-align: center; color: var(--text-secondary);">Searching...</div>';
+    container.replaceChildren();
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading-spinner';
+    loadingDiv.style.cssText = 'padding: 20px; text-align: center; color: var(--text-secondary);';
+    loadingDiv.textContent = 'Searching...';
+    container.appendChild(loadingDiv);
     
     try {
         // Define Checkbox inside this scope
@@ -899,7 +933,12 @@ async function executeSearch(url, apiKey, saveCallback) {
 
         renderSearchResults(results);
     } catch (e) {
-        container.innerHTML = `<div class="error-state" style="padding: 20px; text-align: center; color: #e74c3c;">Search failed: ${e.message}</div>`;
+        container.replaceChildren();
+        const errDiv = document.createElement('div');
+        errDiv.className = 'error-state';
+        errDiv.style.cssText = 'padding: 20px; text-align: center; color: #e74c3c;';
+        errDiv.textContent = `Search failed: ${e.message}`;
+        container.appendChild(errDiv);
     }
 }
 
@@ -907,10 +946,14 @@ function renderSearchResults(results) {
     const container = document.getElementById("prowlarr-search-results");
     if (!container) return;
     
-    container.innerHTML = "";
+    container.replaceChildren();
     
     if (!Array.isArray(results) || results.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="padding: 20px; text-align: center; color: var(--text-secondary);">No results found.</div>';
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'empty-state';
+        emptyDiv.style.cssText = 'padding: 20px; text-align: center; color: var(--text-secondary);';
+        emptyDiv.textContent = 'No results found.';
+        container.appendChild(emptyDiv);
         return;
     }
 
