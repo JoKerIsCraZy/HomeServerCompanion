@@ -16,10 +16,6 @@
   color: #f44336;
 }
 
-.status-dot.running {
-  background: #4caf50 !important;
-  box-shadow: 0 0 5px #4caf50;
-}
 
 /* Docker & VM Styles */
 .docker-card,
@@ -386,9 +382,7 @@ body.dark-mode .unraid-card {
   transition: all 0.2s;
 }
 
-.unraid-card:hover .card-actions,
-.mobile-view .card-actions {
-  /* Always show on touch if needed, or stick to hover */
+.unraid-card:hover .card-actions {
   opacity: 1;
   transform: translateY(0);
 }
@@ -551,40 +545,7 @@ body.dark-mode .unraid-card {
   ) !important;
 }
 
-/* Icons for Stat Labels - Compact */
-.stat-label::before {
-  display: inline-block;
-  margin-right: 4px;
-  font-size: 11px;
-  opacity: 0.6;
-}
-.stat-label:contains("ARRAY")::before {
-  content: "📊";
-}
-.stat-label:contains("SPACE")::before {
-  content: "💾";
-}
-.stat-label:contains("DOCKER")::before {
-  content: "🐳";
-}
-.stat-label:contains("VIRTUAL")::before {
-  content: "🖥️";
-}
-.stat-label:contains("PARITY")::before {
-  content: "🔍";
-}
-.stat-label:contains("DISK HEALTH")::before {
-  content: "⚕️";
-}
-.stat-label:contains("CPU")::before {
-  content: "⚡";
-}
-.stat-label:contains("RAM")::before {
-  content: "🧠";
-}
-.stat-label:contains("UPTIME")::before {
-  content: "⏱️";
-}
+
 
 /* Compact Stat Values - White Text */
 .stat-value {

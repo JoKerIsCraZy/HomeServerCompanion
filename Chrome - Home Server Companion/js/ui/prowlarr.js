@@ -674,7 +674,16 @@ async function initProwlarrSearch(url, apiKey) {
                      indexers.forEach(idx => {
                          const div = document.createElement("div");
                          div.className = "dropdown-item";
-                         div.innerHTML = `<input type="checkbox" value="${idx.id}" class="indexer-checkbox"> <label>${idx.name}</label>`;
+                         // XSS FIX: Use DOM API instead of innerHTML
+                         const checkbox = document.createElement('input');
+                         checkbox.type = 'checkbox';
+                         checkbox.value = idx.id;
+                         checkbox.className = 'indexer-checkbox';
+                         const label = document.createElement('label');
+                         label.textContent = idx.name;
+                         div.appendChild(checkbox);
+                         div.appendChild(document.createTextNode(' '));
+                         div.appendChild(label);
                          div.onclick = (e) => {
                              if (e.target.tagName !== 'INPUT') {
                                  const cb = div.querySelector('input');
@@ -918,13 +927,19 @@ function renderSearchResults(results) {
         
         if (res.infoUrl || (res.guid && res.guid.startsWith("http"))) {
             const link = res.infoUrl || res.guid;
-            // Use innerHTML to inject anchor
-            titleEl.innerHTML = `<a href="${link}" target="_blank" style="color: inherit; text-decoration: none; transition: color 0.2s;">${res.title}</a>`;
             
-            const a = titleEl.querySelector("a");
+            // XSS FIX: Use DOM API instead of innerHTML
+            const a = document.createElement('a');
+            a.href = link;
+            a.target = '_blank';
+            a.style.cssText = 'color: inherit; text-decoration: none; transition: color 0.2s;';
+            a.textContent = res.title; // Safe: textContent escapes HTML
+            
             a.onmouseover = () => a.style.color = "var(--accent-prowlarr)";
             a.onmouseout = () => a.style.color = "inherit";
-            // Remove previous onclick if any (from template cloning it shouldn't have one but good to be clean)
+            
+            titleEl.textContent = ''; // Clear existing
+            titleEl.appendChild(a);
             titleEl.onclick = null;
             titleEl.style.cursor = "default"; // Let the anchor handle it
         } else {

@@ -42,12 +42,33 @@ export async function initOverseerr(url, key, state) {
         filterSelect.dataset.listenerAttached = "true";
     }
 
+    // Setup Trending Filter Listener
+    const trendingFilterSelect = document.getElementById('overseerr-trending-filter');
+    if (trendingFilterSelect) {
+        // Load saved preference
+        if (state.configs.overseerrTrendingFilter) {
+            trendingFilterSelect.value = state.configs.overseerrTrendingFilter;
+        }
+    }
+
+    if (trendingFilterSelect && !trendingFilterSelect.dataset.listenerAttached) {
+        trendingFilterSelect.addEventListener('change', () => {
+            const newVal = trendingFilterSelect.value;
+            state.configs.overseerrTrendingFilter = newVal;
+            chrome.storage.sync.set({ overseerrTrendingFilter: newVal });
+            // Reload trending with new filter (keep same pages)
+            loadTrending(url, key, newVal);
+        });
+        trendingFilterSelect.dataset.listenerAttached = "true";
+    }
+
     // Setup Tab Listeners for auto-reload
     const trendingBtn = document.querySelector('.sub-tab-btn[data-target="overseerr-trending-tab"]');
     if (trendingBtn && !trendingBtn.dataset.listenerAttached) {
          trendingBtn.addEventListener('click', () => {
              // Reload trending with new random pages
-             loadTrending(url, key);
+             const trendingFilter = document.getElementById('overseerr-trending-filter')?.value || 'both';
+             loadTrending(url, key, trendingFilter);
          });
          trendingBtn.dataset.listenerAttached = "true";
     }
@@ -60,7 +81,8 @@ export async function initOverseerr(url, key, state) {
 
     // If Trending is visible, load trending
     if (trendingTab && !trendingTab.classList.contains('hidden')) {
-        await loadTrending(url, key);
+        const trendingFilter = document.getElementById('overseerr-trending-filter')?.value || 'both';
+        await loadTrending(url, key, trendingFilter);
     } 
     // If Search is visible, do nothing (wait for user search?)
     else if (searchTab && !searchTab.classList.contains('hidden')) {
@@ -75,7 +97,7 @@ export async function initOverseerr(url, key, state) {
     }
 }
 
-export async function loadTrending(url, key) {
+export async function loadTrending(url, key, typeFilter = 'both') {
     const container = document.getElementById('overseerr-trending-results');
     if (!container) return;
     
@@ -112,7 +134,7 @@ export async function loadTrending(url, key) {
             }
         }
 
-        renderTrendingTab(uniqueResults, url, key);
+        renderTrendingTab(uniqueResults, url, key, typeFilter);
     } catch (e) {
         console.error(e);
         container.replaceChildren();
@@ -123,7 +145,7 @@ export async function loadTrending(url, key) {
     }
 }
 
-function renderTrendingTab(results, url, key) {
+function renderTrendingTab(results, url, key, typeFilter = 'both') {
     const container = document.getElementById('overseerr-trending-results');
     if (!container) return;
     container.replaceChildren();
@@ -146,8 +168,22 @@ function renderTrendingTab(results, url, key) {
 
     const tmpl = document.getElementById('overseerr-trending-card');
 
-    // Filter results logic remains same
-    const filteredResults = results.filter(item => {
+    // Filter by type first (movie/tv/both)
+    let typeFilteredResults = results;
+    if (typeFilter === 'movie') {
+        typeFilteredResults = results.filter(item => {
+            const rawMediaType = item.mediaType || item.media_type;
+            return rawMediaType === 'movie';
+        });
+    } else if (typeFilter === 'tv') {
+        typeFilteredResults = results.filter(item => {
+            const rawMediaType = item.mediaType || item.media_type;
+            return rawMediaType === 'tv';
+        });
+    }
+
+    // Filter out already requested/available items
+    const filteredResults = typeFilteredResults.filter(item => {
         if (!item.mediaInfo) return true; 
         const s = item.mediaInfo.status;
         if (s === 2 || s === 3 || s === 4 || s === 5) return false;

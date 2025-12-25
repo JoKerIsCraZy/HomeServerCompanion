@@ -356,6 +356,53 @@
 
           <!-- Trending Tab -->
           <div id="overseerr-trending-tab" class="overseerr-tab-content hidden">
+            <div class="trending-filter-bar" style="
+              display: flex;
+              justify-content: flex-end;
+              align-items: center;
+              margin-bottom: 12px;
+              padding: 0 10px;
+            ">
+              <div class="trending-filter-wrapper" style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: rgba(171, 71, 188, 0.1);
+                padding: 6px 12px;
+                border-radius: 20px;
+                border: 1px solid rgba(171, 71, 188, 0.3);
+              ">
+                <span style="
+                  font-size: 12px;
+                  color: #AB47BC;
+                  font-weight: 600;
+                ">🎬 Filter:</span>
+                <select
+                  id="overseerr-trending-filter"
+                  style="
+                    padding: 4px 24px 4px 8px;
+                    border-radius: 8px;
+                    border: none;
+                    background: #7E57C2;
+                    color: #fff;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    outline: none;
+                    appearance: none;
+                    -webkit-appearance: none;
+                    background-image: url('data:image/svg+xml;utf8,%3Csvg fill%3D%22white%22 height%3D%2224%22 viewBox%3D%220 0 24 24%22 width%3D%2224%22 xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath d%3D%22M7 10l5 5 5-5z%22%2F%3E%3C%2Fsvg%3E');
+                    background-repeat: no-repeat;
+                    background-position: right 4px center;
+                    background-size: 16px;
+                  "
+                >
+                  <option value="both" style="background: #2d2d2d; color: #fff;">Both</option>
+                  <option value="movie" style="background: #2d2d2d; color: #fff;">Movies</option>
+                  <option value="tv" style="background: #2d2d2d; color: #fff;">Series</option>
+                </select>
+              </div>
+            </div>
             <div
               id="overseerr-trending-results"
               style="

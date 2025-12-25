@@ -1,5 +1,4 @@
 import {
-  checkUnraidStatus,
   getSystemData,
   controlContainer,
   getVms,
@@ -579,31 +578,68 @@ function renderUnraidStorage(data) {
              if (group.type === 'pool') iconChar = '⚡'; 
 
              if (!card) {
-                 // CREATE NEW
+                 // CREATE NEW - XSS FIX: Use DOM API instead of innerHTML
                  card = document.createElement('div');
                  card.className = 'storage-card';
                  card.id = diskId;
                  
-                 card.innerHTML = `
-                    <div class="disk-header">
-                        <div class="disk-info">
-                            <span class="disk-icon ${isSpinning ? 'spinning-icon' : 'sleeping-icon'}">${iconChar}</span>
-                            <span class="disk-name">${disk.name}</span>
-                            <span class="disk-temp ${tempClass}" style="display:none">0°C</span>
-                        </div>
-                    </div>
-                    
-                    <div class="disk-usage-section">
-                        <div class="disk-pct">0%</div>
-                        <div class="disk-bar-bg">
-                            <div class="disk-bar-fill" style="width: 0%"></div>
-                        </div>
-                        <div class="disk-stats">
-                            <span class="disk-used">0 B / 0 B</span>
-                            <span class="disk-free">0 B Free</span>
-                        </div>
-                    </div>
-                 `;
+                 // Build card structure with DOM API
+                 const diskHeader = document.createElement('div');
+                 diskHeader.className = 'disk-header';
+                 
+                 const diskInfo = document.createElement('div');
+                 diskInfo.className = 'disk-info';
+                 
+                 const diskIcon = document.createElement('span');
+                 diskIcon.className = `disk-icon ${isSpinning ? 'spinning-icon' : 'sleeping-icon'}`;
+                 diskIcon.textContent = iconChar;
+                 
+                 const diskNameEl = document.createElement('span');
+                 diskNameEl.className = 'disk-name';
+                 diskNameEl.textContent = disk.name; // Safe: escapes HTML
+                 
+                 const diskTempEl = document.createElement('span');
+                 diskTempEl.className = `disk-temp ${tempClass}`;
+                 diskTempEl.style.display = 'none';
+                 diskTempEl.textContent = '0°C';
+                 
+                 diskInfo.appendChild(diskIcon);
+                 diskInfo.appendChild(diskNameEl);
+                 diskInfo.appendChild(diskTempEl);
+                 diskHeader.appendChild(diskInfo);
+                 
+                 const usageSection = document.createElement('div');
+                 usageSection.className = 'disk-usage-section';
+                 
+                 const pctEl = document.createElement('div');
+                 pctEl.className = 'disk-pct';
+                 pctEl.textContent = '0%';
+                 
+                 const barBg = document.createElement('div');
+                 barBg.className = 'disk-bar-bg';
+                 const barFill = document.createElement('div');
+                 barFill.className = 'disk-bar-fill';
+                 barFill.style.width = '0%';
+                 barBg.appendChild(barFill);
+                 
+                 const statsDiv = document.createElement('div');
+                 statsDiv.className = 'disk-stats';
+                 const usedSpan = document.createElement('span');
+                 usedSpan.className = 'disk-used';
+                 usedSpan.textContent = '0 B / 0 B';
+                 const freeSpan = document.createElement('span');
+                 freeSpan.className = 'disk-free';
+                 freeSpan.textContent = '0 B Free';
+                 statsDiv.appendChild(usedSpan);
+                 statsDiv.appendChild(freeSpan);
+                 
+                 usageSection.appendChild(pctEl);
+                 usageSection.appendChild(barBg);
+                 usageSection.appendChild(statsDiv);
+                 
+                 card.appendChild(diskHeader);
+                 card.appendChild(usageSection);
+                 
                  grid.appendChild(card);
              }
 
