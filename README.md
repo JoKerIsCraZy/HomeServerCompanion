@@ -4,7 +4,7 @@
 
 # Home Server Companion
 
-[![Version](https://img.shields.io/badge/version-3.2-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
+[![Version](https://img.shields.io/badge/version-3.3-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/blob/master/LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
 
@@ -29,6 +29,13 @@
 
 A comprehensive dashboard for your self-hosted services:
 
+- **⚙️ Unraid**:
+  - **System Dashboard**: Real-time CPU ring chart, RAM usage bar, and uptime tracking.
+  - **Quick Stats**: Array status and storage space overview.
+  - **Storage Breakdown**: Detailed disk usage for Array, Cache/Pools, and Boot drives.
+  - **Docker Management**: Start, Stop, Restart containers with status indicators and search/sort.
+  - **VM Management**: Control virtual machines with start/stop and VNC access.
+  - **WebUI Access**: Quick links to container and VM interfaces.
 - **📦 SABnzbd**:
   - Monitor real-time download queue with speed and time remaining.
   - **Timed Pause**: Pause downloads for 15min, 30min, 1h, 2h, 6h, or indefinitely.
@@ -70,13 +77,11 @@ A comprehensive dashboard for your self-hosted services:
   - **Search**: Search across all indexers with category and indexer filtering, persistent search state option.
   - **Quick Access**: Direct links to indexer configuration and Prowlarr dashboard.
   - **Favicon Display**: Visual indexer identification with automatic favicon loading.
-- **⚙️ Unraid**:
-  - **System Dashboard**: Real-time CPU ring chart, RAM usage bar, and uptime tracking.
-  - **Quick Stats**: Array status and storage space overview.
-  - **Storage Breakdown**: Detailed disk usage for Array, Cache/Pools, and Boot drives.
-  - **Docker Management**: Start, Stop, Restart containers with status indicators and search/sort.
-  - **VM Management**: Control virtual machines with start/stop and VNC access.
-  - **WebUI Access**: Quick links to container and VM interfaces.
+- **🧙 Wizarr**:
+  - **Invitation Dashboard**: List all active and used invitations with real-time status.
+  - **Create Invitations**: Create new invites with specific servers, libraries, expiration time, and duration.
+  - **Quick Copy**: One-click copy for invite links.
+  - **Management**: Delete unused or expired invitations directly.
 - **🌈 General**:
   - **Global Search**: Press `Enter` to search movies/TV shows across your services (via Overseerr) from anywhere in the app.
   - **Context Menu Search**: Highlight text on any webpage, right-click, and select "Search in Home Server Companion" to instantly search for media.
@@ -145,6 +150,13 @@ A comprehensive dashboard for your self-hosted services:
   <img src="images/prowlarr_stats.png" alt="Prowlarr Stats" width="45%">
 </div>
 
+### Wizarr
+
+<div align="center">
+  <img src="images/wizarr.png" alt="Wizarr" width="45%">
+  <img src="images/wizarr_invite.png" alt="Wizarr Invites" width="45%">
+</div>
+
 ## 🚀 Installation
 
 **Home Server Companion** is officially available on the **Chrome Web Store**!
@@ -176,14 +188,15 @@ Once installed, you need to connect your services.
 | Service         | Setting        | Description                                                                            |
 | :-------------- | :------------- | :------------------------------------------------------------------------------------- |
 | **General**     | Service Order  | Drag and drop to reorder the sidebar. The top item opens by default.                   |
+| **Unraid**      | URL            | IP Address or Hostname (e.g., `http://192.168.1.10`).                                  |
+|                 | API Key        | Required for advanced control. Generate via "Management Access" settings if available. |
 | **SABnzbd**     | URL & API Key  | Found in Config -> General / API.                                                      |
 | **Sonarr**      | URL & API Key  | Found in Settings -> General.                                                          |
 | **Radarr**      | URL & API Key  | Found in Settings -> General.                                                          |
 | **Tautulli**    | URL & API Key  | Found in Settings -> Web Interface.                                                    |
 | **Overseerr**   | URL & API Key  | Found in Settings -> General.                                                          |
 | **Prowlarr**    | URL & API Key  | Found in Settings -> General.                                                          |
-| **Unraid**      | URL            | IP Address or Hostname (e.g., `http://192.168.1.10`).                                  |
-|                 | API Key        | Required for advanced control. Generate via "Management Access" settings if available. |
+| **Wizarr**      | URL & API Key  | Found in Settings -> General / API.                                                    |
 
 > **Note**: Ensure your URLs include the protocol (`http://` or `https://`) and port if non-standard (e.g., `:8080`).
 

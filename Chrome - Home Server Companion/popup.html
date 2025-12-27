@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="css/services/overseerr.css" />
     <link rel="stylesheet" href="css/services/unraid.css" />
     <link rel="stylesheet" href="css/services/prowlarr.css" />
+    <link rel="stylesheet" href="css/services/wizarr.css" />
   </head>
   <body class="dark-mode">
     <div class="app-container">
@@ -39,6 +40,9 @@
         </div>
         <div class="nav-item" data-target="prowlarr" title="Prowlarr">
           <img src="icons/prowlarr.png" class="nav-icon" alt="Prowlarr" />
+        </div>
+        <div class="nav-item" data-target="wizarr" title="Wizarr">
+          <img src="icons/wizarr.png" class="nav-icon" alt="Wizarr" />
         </div>
         <div class="spacer"></div>
         <div class="nav-item" id="fullscreen-btn" title="Open as Dashboard">
@@ -730,6 +734,104 @@
               id="prowlarr-search-results"
               class="prowlarr-results-list"
             ></div>
+          </div>
+        </div>
+
+        <!-- Wizarr View -->
+        <div id="wizarr-view" class="view hidden">
+          <div id="wizarr-content">
+            <!-- Header with Create Button -->
+            <div class="wizarr-header">
+              <div class="wizarr-header-left">
+                <select id="wizarr-server-select" class="wizarr-server-dropdown">
+                  <option value="">Loading...</option>
+                </select>
+              </div>
+              <button id="wizarr-open-modal-btn" class="wizarr-add-btn">
+                <span>+</span> New Invite
+              </button>
+            </div>
+
+            <!-- Invitations List -->
+            <div class="wizarr-invites-section">
+              <div class="wizarr-invites-header">
+                <h3>📋 Invitations</h3>
+                <span id="wizarr-invites-count" class="wizarr-invites-count">0</span>
+              </div>
+              <div id="wizarr-invites-list" class="wizarr-invites-list">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Overlay -->
+          <div id="wizarr-modal" class="wizarr-modal hidden">
+            <div class="wizarr-modal-backdrop"></div>
+            <div class="wizarr-modal-content">
+              <div class="wizarr-modal-header">
+                <h3>Create Invitation</h3>
+                <button id="wizarr-modal-close" class="wizarr-modal-close">&times;</button>
+              </div>
+              <form id="wizarr-create-form" class="wizarr-modal-body">
+                <!-- Invite Code -->
+                <div class="wizarr-form-section">
+                  <label for="wizarr-invite-code">Invite Code <span class="wizarr-optional">(Optional)</span></label>
+                  <input type="text" id="wizarr-invite-code" placeholder="e.g. XMFGEJIKNQ" />
+                </div>
+
+                <!-- Expiration Duration -->
+                <div class="wizarr-form-section">
+                  <label for="wizarr-expires">Expiration</label>
+                  <select id="wizarr-expires" class="wizarr-select">
+                    <option value="">Never</option>
+                    <option value="1">1 Day</option>
+                    <option value="7">1 Week</option>
+                    <option value="30">1 Month</option>
+                    <option value="90">3 Months</option>
+                    <option value="365">1 Year</option>
+                  </select>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="wizarr-form-section wizarr-section-box">
+                  <h4>Invitation Settings</h4>
+                  
+                  <label class="wizarr-toggle-row">
+                    <span>Unlimited Uses</span>
+                    <div class="wizarr-toggle">
+                      <input type="checkbox" id="wizarr-unlimited" />
+                      <span class="wizarr-toggle-track"></span>
+                    </div>
+                  </label>
+
+                  <div class="wizarr-input-row">
+                    <label for="wizarr-duration">Duration <span class="wizarr-optional">(in days)</span></label>
+                    <input type="number" id="wizarr-duration" placeholder="Unlimited" min="1" />
+                  </div>
+                </div>
+
+                <!-- Libraries Section -->
+                <div class="wizarr-form-section wizarr-section-box">
+                  <h4>Select Libraries</h4>
+                  <div class="wizarr-quick-presets">
+                    <button type="button" class="wizarr-preset-btn" data-preset="all">All</button>
+                    <button type="button" class="wizarr-preset-btn" data-preset="movies-series">Movies & Series</button>
+                    <button type="button" class="wizarr-preset-btn" data-preset="none">None</button>
+                  </div>
+                  <div id="wizarr-libraries-list" class="wizarr-libraries-list">
+                    <div class="wizarr-loading">Loading...</div>
+                  </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="wizarr-modal-footer">
+                  <button type="button" id="wizarr-cancel-btn" class="wizarr-btn-secondary">Cancel</button>
+                  <button type="submit" id="wizarr-create-btn" class="wizarr-btn-primary">
+                    Create Invitation
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </main>

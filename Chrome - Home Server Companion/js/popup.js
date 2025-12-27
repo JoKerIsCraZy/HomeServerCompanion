@@ -5,8 +5,13 @@ import { initTautulli } from "./ui/tautulli.js";
 import { initOverseerr } from "./ui/overseerr.js";
 import { initUnraid } from "./ui/unraid.js";
 import { initProwlarr } from "./ui/prowlarr.js";
+import { initWizarr } from "./ui/wizarr.js";
+import { checkAndShowChangelog } from "./utils.js";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Check for updates first
+  await checkAndShowChangelog();
+
   // Fullscreen Mode Detection - check if opened as standalone window
   if (new URLSearchParams(window.location.search).get('fullscreen') === 'true') {
     document.body.classList.add('fullscreen-mode');
@@ -52,6 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "tautulli",
       "overseerr",
       "prowlarr",
+      "wizarr",
     ];
     if (items.serviceOrder && Array.isArray(items.serviceOrder)) {
       order = items.serviceOrder;
@@ -627,7 +633,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const url = state.configs[`${service}Url`];
     const key = state.configs[`${service}Key`];
 
-    if (service !== "unraid" && (!url || !key)) {
+    if (service !== "unraid" && service !== "wizarr" && (!url || !key)) {
       showError(`Please configure ${service} in settings.`);
       return;
     }
@@ -658,6 +664,9 @@ document.addEventListener("DOMContentLoaded", () => {
           break;
         case "prowlarr": 
           await initProwlarr(url, key, state);
+          break;
+        case "wizarr":
+          await initWizarr(url || '', key || '', state);
           break;
       }
     } catch (error) {

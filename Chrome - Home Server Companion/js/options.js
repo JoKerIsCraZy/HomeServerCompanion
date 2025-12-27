@@ -1,4 +1,4 @@
-const services = ['unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'prowlarr'];
+const services = ['unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'prowlarr', 'wizarr'];
 
 // --- UI Navigation ---
 // --- UI Navigation ---
@@ -340,6 +340,9 @@ const testConnection = async (service) => {
         case 'prowlarr':
             testUrl = `${url}/api/v1/health?apikey=${apiKey}`;
             break;
+        case 'wizarr':
+            testUrl = `${url}/api/status`;
+            break;
     }
 
     showStatus(service, 'Testing...', 'success');
@@ -366,6 +369,13 @@ const testConnection = async (service) => {
         if (service === 'overseerr') {
              options.headers = {
                  'X-Api-Key': apiKey
+             };
+        }
+
+        if (service === 'wizarr') {
+             options.headers = {
+                 'X-API-Key': apiKey,
+                 'accept': 'application/json'
              };
         }
 

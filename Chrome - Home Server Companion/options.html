@@ -322,6 +322,8 @@
         margin-bottom: 20px;
         padding-bottom: 20px;
         border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+        gap: 10px;
       }
 
       .sub-tabs {
@@ -330,8 +332,9 @@
         background: #f0f0f0;
         padding: 5px;
         border-radius: 12px;
-        gap: 5px;
+        gap: 3px;
         z-index: 1;
+        flex-wrap: wrap;
       }
 
       body.dark-mode .sub-tabs {
@@ -359,7 +362,7 @@
         background: transparent !important;
         color: #666;
         border: none;
-        padding: 8px 16px;
+        padding: 8px 12px;
         border-radius: 8px;
         cursor: pointer;
         font-weight: 600;
@@ -447,6 +450,7 @@
 
             <button class="tab-btn" data-target="overseerr">Overseerr</button>
             <button class="tab-btn" data-target="prowlarr">Prowlarr</button>
+            <button class="tab-btn" data-target="wizarr">Wizarr</button>
           </div>
 
           <div class="header-links">
@@ -854,6 +858,55 @@
             </button>
           </div>
           <div id="statusProwlarr" class="status"></div>
+        </div>
+
+        <!-- Wizarr Section -->
+        <div id="wizarr" class="section">
+          <h2>Wizarr Settings</h2>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; cursor: pointer">
+              <input
+                type="checkbox"
+                id="wizarrEnabled"
+                style="width: auto; margin-right: 10px"
+              />
+              Enable Wizarr
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="wizarrUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="wizarrProtocol" style="width: auto">
+                <option value="http://">http://</option>
+                <option value="https://">https://</option>
+              </select>
+              <input
+                type="text"
+                id="wizarrUrl"
+                placeholder="localhost:5690"
+                style="flex: 1"
+              />
+            </div>
+            <div class="help-text">
+              Your Wizarr server URL (e.g., wizarr.example.com)
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="wizarrKey">API Key</label>
+            <input type="password" id="wizarrKey" />
+            <div class="help-text">
+              Get your API key from Wizarr Settings → API
+            </div>
+          </div>
+          <div class="actions">
+            <button id="saveWizarr" class="btn-primary">
+              Save Wizarr
+            </button>
+            <button id="testWizarr" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusWizarr" class="status"></div>
         </div>
 
       </div>

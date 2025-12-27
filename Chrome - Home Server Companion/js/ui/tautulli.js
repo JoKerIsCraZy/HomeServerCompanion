@@ -1,4 +1,5 @@
 import * as Tautulli from "../../services/tautulli.js";
+import { showNotification, showPromptModal } from "../utils.js";
 
 /**
  * Initializes the Tautulli service view.
@@ -189,12 +190,16 @@ function renderTautulliActivity(sessions, url, key, state) {
           // Terminate
           const terminateLogic = async (e) => {
             e.stopPropagation();
-            const reason = prompt(
-              `Kill stream for user "${session.user || session.username}"?\nEnter a reason (optional):`,
-              "Terminated via Chrome Extension"
+            const reason = await showPromptModal(
+              'Kill Stream',
+              `Kill stream for user "${session.user || session.username}"?`, // Removed newline helper text for cleaner modal
+              "Terminated via Home Server Companion",
+              '#e5a00d' // Tautulli Orange
             );
+            
             if (reason !== null) {
               await Tautulli.terminateSession(url, key, session.session_id, reason);
+              showNotification('Stream terminated', '#e5a00d');
               setTimeout(() => initTautulli(url, key, state), 1000);
             }
           };

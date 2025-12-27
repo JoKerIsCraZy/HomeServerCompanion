@@ -280,3 +280,33 @@ body.dark-mode .overseerr-card {
 #overseerr-search-btn svg {
   fill: white;
 }
+
+/* Status Classes for JS replacement */
+.status-text-pending {
+    color: #ffc107;
+    background: rgba(255, 193, 7, 0.2);
+    border: 1px solid rgba(255, 193, 7, 0.4);
+}
+.status-text-approved {
+    color: #2196f3;
+    background: rgba(33, 150, 243, 0.2);
+    border: 1px solid rgba(33, 150, 243, 0.4);
+}
+.status-text-declined {
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.2);
+    border: 1px solid rgba(244, 67, 54, 0.4);
+}
+.status-text-available {
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid rgba(76, 175, 80, 0.4);
+}
+.status-text-partially {
+    color: #4caf50; 
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid rgba(76, 175, 80, 0.4);
+}
+.status-text-processing {
+    /* Keeping default or specific if needed, usually fallback to approved blue or similar in existing logic */
+}

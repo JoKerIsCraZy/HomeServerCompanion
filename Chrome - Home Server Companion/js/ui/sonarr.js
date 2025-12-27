@@ -1,5 +1,6 @@
 import * as Sonarr from "../../services/sonarr.js";
 import { formatSize } from "../../services/utils.js";
+import { showNotification, showConfirmModal } from "../utils.js";
 
 /**
  * Initializes the Sonarr service view.
@@ -345,18 +346,27 @@ function renderSonarrQueue(records, state) {
               // Actions
               btnRemove.onclick = async (ev) => {
                   ev.stopPropagation();
-                  if(!confirm("Remove from queue?")) return;
+                  const confirmed = await showConfirmModal(
+                      'Remove from Queue',
+                      'Remove from queue?',
+                      'Remove',
+                      '#2196f3' // Sonarr Blue
+                  );
+                  
+                  if(!confirmed) return;
+
                   try {
                       await Sonarr.deleteQueueItem(state.configs.sonarrUrl, state.configs.sonarrKey, item.id, true, false);
                       delBtn.style.display = 'block';
                       itemEl.remove();
                       optionsDiv.remove();
+                      showNotification('Item removed from queue', '#2196f3');
                   } catch(e) { 
                       if (e.message.includes('404')) {
-                          alert("Item not found (404). check settings.");
+                          showNotification("Item not found (404)", 'error');
                           itemEl.remove();
                       } else {
-                          alert("Error removing item: " + e.message); 
+                          showNotification("Error: " + e.message, 'error'); 
                       }
                   }
                   // Auto-refresh after 3 seconds
@@ -365,17 +375,26 @@ function renderSonarrQueue(records, state) {
 
               btnBlock.onclick = async (ev) => {
                   ev.stopPropagation();
-                  if(!confirm("Remove, Blocklist release and Search for new one?")) return;
+                  const confirmed = await showConfirmModal(
+                      'Remove & Blocklist',
+                      'Remove, Blocklist release and Search for new one?',
+                      'Blocklist',
+                      '#f44336' // Red for destructive block action
+                  );
+
+                  if(!confirmed) return;
+
                   try {
                     await Sonarr.deleteQueueItem(state.configs.sonarrUrl, state.configs.sonarrKey, item.id, true, true);
                     delBtn.style.display = 'block';
                     optionsDiv.remove();
+                    showNotification('Item blocked and searching for new release', '#f44336');
                   } catch(e) { 
                       if (e.message.includes('404')) {
-                          alert("Item not found (404). check settings.");
+                          showNotification("Item not found (404)", 'error');
                           itemEl.remove();
                       } else {
-                          alert("Error blocking item: " + e.message); 
+                          showNotification("Error: " + e.message, 'error'); 
                       }
                   }
                   // Auto-refresh after 3 seconds

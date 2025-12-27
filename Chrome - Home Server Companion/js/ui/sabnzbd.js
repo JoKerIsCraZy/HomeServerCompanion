@@ -1,4 +1,5 @@
 import * as Sabnzbd from "../../services/sabnzbd.js";
+import { showNotification, showConfirmModal } from "../utils.js";
 
 // Helper to update glider position
 function updateSabGlider(container, activeBtn, glider) {
@@ -136,16 +137,25 @@ function renderSabnzbdQueue(queue, state, url, key) {
         div.onmouseenter = () => { div.querySelector('.delete-btn').style.visibility = 'visible'; };
         div.onmouseleave = () => { div.querySelector('.delete-btn').style.visibility = 'hidden'; };
 
-        // Delete Action
-        // delBtn is already available in this scope
-        delBtn.onclick = async (e) => {
-            e.stopPropagation();
-            if (confirm(`Remove "${item.filename}" from queue?`)) {
-                delBtn.textContent = "⏳";
-                await Sabnzbd.deleteQueueItem(url, key, item.nzo_id);
-                div.remove();
-            }
-        };
+      // Delete Action
+      // delBtn is already available in this scope
+      delBtn.onclick = async (e) => {
+          e.stopPropagation();
+          const confirmed = await showConfirmModal(
+              'Remove from Queue',
+              `Remove "${item.filename}" from queue?`,
+              'Remove',
+              '#ffc107' // SABnzbd yellow
+          );
+          
+          if (confirmed) {
+              delBtn.textContent = "⏳";
+              await Sabnzbd.deleteQueueItem(url, key, item.nzo_id);
+              div.remove();
+              showNotification(`Removed "${item.filename}"`, '#ffc107');
+          }
+      };
+
 
         container.appendChild(div);
     }
@@ -248,10 +258,18 @@ function renderSabnzbdHistory(history, state, url, key) {
       // delBtn is already defined above
       delBtn.onclick = async (e) => {
           e.stopPropagation();
-          if (confirm(`Remove "${item.name}" from history?`)) {
+          const confirmed = await showConfirmModal(
+              'Remove from History',
+              `Remove "${item.name}" from history?`,
+              'Remove',
+              '#ffc107' // SABnzbd yellow
+          );
+
+          if (confirmed) {
                delBtn.textContent = "⏳";
                await Sabnzbd.deleteHistoryItem(url, key, item.nzo_id);
                div.remove();
+               showNotification(`Removed "${item.name}"`, '#ffc107');
           }
       };
 
@@ -397,6 +415,54 @@ export async function initSabnzbd(url, key, state) {
             // Fetch History
             const historyData = await Sabnzbd.getSabnzbdHistory(url, key);
             renderSabnzbdHistory(historyData.slots || [], state, url, key);
+
+            // --- Tab Badges ---
+            const view = document.getElementById("sabnzbd-view");
+            if (view) {
+                // Queue Badge
+                const queueBtn = view.querySelector('.tab-btn[data-tab="queue"]');
+                if (queueBtn) {
+                     let qBadge = queueBtn.querySelector('.tab-badge');
+                     if (!qBadge) {
+                         qBadge = document.createElement('span');
+                         qBadge.className = 'tab-badge hidden';
+                         // Style
+                         qBadge.style.background = '#ffc107'; 
+                         qBadge.style.color = '#000'; // Black text on yellow
+                         queueBtn.appendChild(qBadge);
+                     }
+                     
+                     const qCount = queue.noofslots || (queue.slots ? queue.slots.length : 0);
+                     if (qCount > 0) {
+                         qBadge.textContent = qCount;
+                         qBadge.classList.remove('hidden');
+                     } else {
+                         qBadge.classList.add('hidden');
+                     }
+                }
+
+                // History Badge
+                const histBtn = view.querySelector('.tab-btn[data-tab="history"]');
+                if (histBtn) {
+                     let hBadge = histBtn.querySelector('.tab-badge');
+                     if (!hBadge) {
+                         hBadge = document.createElement('span');
+                         hBadge.className = 'tab-badge hidden';
+                         // Style
+                         hBadge.style.background = '#ffc107'; 
+                         hBadge.style.color = '#000'; // Black text on yellow
+                         histBtn.appendChild(hBadge);
+                     }
+                     
+                     const hCount = historyData.noofslots || (historyData.slots ? historyData.slots.length : 0);
+                     if (hCount > 0) {
+                         hBadge.textContent = hCount;
+                         hBadge.classList.remove('hidden');
+                     } else {
+                         hBadge.classList.add('hidden');
+                     }
+                }
+            }
 
         } catch(e) { console.error(e); }
     };

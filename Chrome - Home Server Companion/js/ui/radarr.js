@@ -1,5 +1,6 @@
 import * as Radarr from "../../services/radarr.js";
 import { formatSize } from "../../services/utils.js";
+import { showNotification, showConfirmModal } from "../utils.js";
 
 /**
  * Initializes the Radarr service view.
@@ -374,7 +375,15 @@ function renderRadarrQueue(records, state) {
               // Actions
               btnRemove.onclick = async (ev) => {
                   ev.stopPropagation();
-                  if(!confirm("Remove from queue?")) return;
+                  const confirmed = await showConfirmModal(
+                      'Remove from Queue',
+                      'Remove from queue?',
+                      'Remove',
+                      '#ffc107' // Radarr Gold
+                  );
+
+                  if(!confirmed) return;
+
                   try {
                       await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, false);
                       // In a real app we'd remove the element or reload. For now, hide/reload via UI refresh loop usually happens or user triggers it.
@@ -383,12 +392,13 @@ function renderRadarrQueue(records, state) {
                       // The refresh interval will clean it up. We can just hide the buttons.
                       delBtn.style.display = 'block';
                       optionsDiv.remove();
+                      showNotification('Item removed from queue', '#ffc107');
                   } catch(e) { 
                       if (e.message.includes('404')) {
-                          alert("Item not found (404). It may have been removed or the Radarr URL/Port is incorrect.");
+                          showNotification("Item not found (404)", 'error');
                           itemEl.remove(); // Optimistically remove using element reference
                       } else {
-                          alert("Error removing item: " + e.message); 
+                          showNotification("Error: " + e.message, 'error'); 
                       }
                   }
                   // Auto-refresh after 3 seconds
@@ -397,17 +407,26 @@ function renderRadarrQueue(records, state) {
 
               btnBlock.onclick = async (ev) => {
                   ev.stopPropagation();
-                  if(!confirm("Remove, Blocklist release and Search for new one?")) return;
+                  const confirmed = await showConfirmModal(
+                      'Remove & Blocklist',
+                      'Remove, Blocklist release and Search for new one?',
+                      'Blocklist',
+                      '#f44336' // Red for destructive block action
+                  );
+
+                  if(!confirmed) return;
+
                   try {
                     await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, true);
                     delBtn.style.display = 'block';
                     optionsDiv.remove();
+                    showNotification('Item blocked and searching for new release', '#f44336');
                   } catch(e) { 
                       if (e.message.includes('404')) {
-                          alert("Item not found (404). check settings or web UI.");
+                          showNotification("Item not found (404)", 'error');
                           itemEl.remove();
                       } else {
-                          alert("Error blocking item: " + e.message); 
+                          showNotification("Error: " + e.message, 'error'); 
                       }
                   }
                   // Auto-refresh after 3 seconds

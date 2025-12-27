@@ -29,8 +29,8 @@
 
 .tab-badge {
     position: absolute;
-    top: 0;
-    right: -8px;
+    top: 1px;
+    right: 1px;
     background: #ff9800;
     color: #fff;
     font-size: 9px;
@@ -463,4 +463,163 @@ body.dark-mode .calendar-left {
 /* Force transparency on active buttons so glider shows through */
 .tab-btn.active, .sub-tab-btn.active {
     background-color: transparent !important;
+}
+
+/* --- Global Notification System --- */
+#global-notification-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none; /* Allow clicking through container */
+}
+
+.global-notification {
+    padding: 12px 20px;
+    color: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    pointer-events: auto; /* Enable clicks on notifications */
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.global-notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.global-notification.success { background: #22c55e; }
+.global-notification.error { background: #ef4444; }
+.global-notification.info { background: #2196f3; }
+
+/* --- Custom Modal System --- */
+.custom-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.custom-modal-backdrop.show {
+    opacity: 1;
+}
+
+.custom-modal {
+    background: var(--card-bg); /* Use theme variable */
+    color: var(--text-primary);
+    width: 90%;
+    max-width: 350px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    transform: scale(0.95);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .custom-modal {
+    background: #1e1e1e;
+    border-color: #333;
+}
+
+.custom-modal-backdrop.show .custom-modal {
+    transform: scale(1);
+}
+
+.custom-modal-header {
+    padding: 15px 20px;
+    font-size: 16px;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.custom-modal-body {
+    padding: 20px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.custom-modal-footer {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.modal-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.modal-input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-primary);
+    box-sizing: border-box;
+    font-size: 14px;
+    outline: none;
+}
+
+.modal-input:focus {
+    border-color: var(--text-primary);
+}
+
+.modal-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+}
+
+.modal-btn:active {
+    transform: scale(0.95);
+}
+
+.modal-btn.cancel {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.modal-btn.confirm {
+    color: white;
+    /* Background color is set inline by JS based on service */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.modal-btn.confirm:hover {
+    filter: brightness(1.1);
 }

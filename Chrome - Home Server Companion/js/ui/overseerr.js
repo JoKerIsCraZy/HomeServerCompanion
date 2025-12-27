@@ -1,4 +1,5 @@
 import * as Overseerr from "../../services/overseerr.js";
+import { showNotification, showConfirmModal } from "../utils.js";
 
 /**
  * Initializes the Overseerr service view.
@@ -112,8 +113,6 @@ export async function loadTrending(url, key, typeFilter = 'both') {
         // RANDOMIZE: Start page between 1 and 10 to show "new" stuff each time
         const startPage = Math.floor(Math.random() * 10) + 1;
         
-
-
         const promises = [
             Overseerr.getTrending(url, key, startPage),
             Overseerr.getTrending(url, key, startPage + 1),
@@ -288,6 +287,7 @@ function renderTrendingTab(results, url, key, typeFilter = 'both') {
                 
                 btn.textContent = "✔ Requested";
                 btn.style.background = "#4caf50";
+                showNotification('Request sent successfully!', 'success');
                 
                 // Disable button permanently after success
                 btn.disabled = true; 
@@ -296,7 +296,7 @@ function renderTrendingTab(results, url, key, typeFilter = 'both') {
                 console.error(e);
                 btn.textContent = "❌ Failed";
                 btn.title = e.message;
-                alert("Request failed: " + e.message);
+                showNotification(`Request failed: ${e.message}`, 'error');
                 btn.disabled = false;
                 setTimeout(() => { btn.textContent = "Request"; }, 2000);
             }
@@ -445,10 +445,7 @@ function renderOverseerrSearch(results, url, key) {
                 statusText = "Available";
                 // Create span safely
                 const span = document.createElement('span');
-                span.className = 'request-status';
-                span.style.color = '#4caf50';
-                span.style.borderColor = '#4caf50';
-                span.style.background = 'rgba(76,175,80,0.1)';
+                span.className = 'request-status status-text-available';
                 span.textContent = statusText;
                 statusDiv.appendChild(span);
 
@@ -456,10 +453,7 @@ function renderOverseerrSearch(results, url, key) {
             } else if (item.mediaInfo.status === 4) {
                 statusText = "Partially Available";
                 const span = document.createElement('span');
-                span.className = 'request-status';
-                span.style.color = '#4caf50';
-                span.style.borderColor = '#4caf50';
-                span.style.background = 'rgba(76,175,80,0.1)';
+                span.className = 'request-status status-text-partially';
                 span.textContent = statusText;
                 statusDiv.appendChild(span);
                 
@@ -468,7 +462,7 @@ function renderOverseerrSearch(results, url, key) {
             } else if (item.mediaInfo.status === 2 || item.mediaInfo.status === 3) {
                  statusText = "Requested";
                  const span = document.createElement('span');
-                 span.className = 'request-status';
+                 span.className = 'request-status status-text-pending'; // Reusing pending style for requested
                  span.textContent = statusText;
                  statusDiv.appendChild(span);
                  
@@ -489,11 +483,12 @@ function renderOverseerrSearch(results, url, key) {
                     });
                     btn.textContent = "✔";
                     btn.title = "Requested";
+                    showNotification('Requested successfully!', 'success');
                 } catch (e) {
                     console.error(e);
                     btn.textContent = "❌";
                     btn.title = "Failed: " + e.message;
-                    alert("Failed to request: " + e.message + "\nCheck Overseerr defaults.");
+                    showNotification("Failed to request: " + e.message, 'error');
                 }
             };
         }
@@ -633,47 +628,40 @@ function renderHydratedRequests(requests, url, key) {
 
         // Request Status / Type
         let statusText = "Pending Approval";
-        let statusColor = "#ffc107"; // Yellow
-        let statusBg = "rgba(255, 193, 7, 0.2)";
-        let statusBorder = "rgba(255, 193, 7, 0.4)";
+        let statusClass = "status-text-pending"; // Default
 
         // Request Status: 1=Pending, 2=Approved, 3=Declined
         if (req.status === 1) {
             statusText = "Pending Approval";
+            statusClass = "status-text-pending";
         } else if (req.status === 2) {
             statusText = "Approved";
-            statusColor = "#2196f3"; // Blue
-            statusBg = "rgba(33, 150, 243, 0.2)";
-            statusBorder = "rgba(33, 150, 243, 0.4)";
+            statusClass = "status-text-approved";
 
             // Check Media Status if Approved
             if (media) {
                 if (media.status === 3) {
                     statusText = "Processing";
+                    statusClass = "status-text-processing";
                 } else if (media.status === 4) {
                     statusText = "Partially Available";
-                    statusColor = "#4caf50"; 
-                    statusBg = "rgba(76, 175, 80, 0.2)";
-                    statusBorder = "rgba(76, 175, 80, 0.4)";
+                    statusClass = "status-text-partially";
                 } else if (media.status === 5) {
                     statusText = "Available";
-                    statusColor = "#4caf50"; // Green
-                    statusBg = "rgba(76, 175, 80, 0.2)";
-                    statusBorder = "rgba(76, 175, 80, 0.4)";
+                    statusClass = "status-text-available";
                 }
             }
         } else if (req.status === 3) {
             statusText = "Declined";
-            statusColor = "#f44336"; // Red
-            statusBg = "rgba(244, 67, 54, 0.2)";
-            statusBorder = "rgba(244, 67, 54, 0.4)";
+            statusClass = "status-text-declined";
         }
         
         const statusEl = clone.querySelector('.request-status');
         statusEl.textContent = statusText;
-        statusEl.style.color = statusColor;
-        statusEl.style.background = statusBg;
-        statusEl.style.borderColor = statusBorder;
+        // Apply class instead of inline styles
+        statusEl.className = `request-status ${statusClass}`;
+        // Clear old inline styles from previous logic if any (clone is fresh but good practice)
+        statusEl.style = ""; 
 
         // Actions - Only show if Pending (1)
         const actionsDiv = clone.querySelector('.overseerr-actions');
@@ -689,6 +677,7 @@ function renderHydratedRequests(requests, url, key) {
                   const success = await Overseerr.approveRequest(url, key, req.id);
                   if (success) {
                       loadRequests(url, key, document.getElementById('overseerr-filter')?.value || 'pending');
+                      showNotification(`Request "${title}" approved`, 'success');
                   }
                };
             }
@@ -696,10 +685,19 @@ function renderHydratedRequests(requests, url, key) {
             if (declineBtn) {
                 declineBtn.onclick = async () => {
                     declineBtn.disabled = true;
-                    if (confirm(`Decline request for ${title}?`)) {
+                    // Custom Modal
+                    const confirmed = await showConfirmModal(
+                        'Decline Request',
+                        `Decline request for ${title}?`,
+                        'Decline',
+                        '#f44336'
+                    );
+                    
+                    if (confirmed) {
                         const success = await Overseerr.declineRequest(url, key, req.id);
                         if (success) {
                              loadRequests(url, key, document.getElementById('overseerr-filter')?.value || 'pending');
+                             showNotification(`Request "${title}" declined`, '#f44336'); // Red for declined
                         }
                     } else {
                         declineBtn.disabled = false;
