@@ -1,5 +1,5 @@
 import * as Tautulli from "../../services/tautulli.js";
-import { showNotification, showPromptModal } from "../utils.js";
+import { showNotification, showPromptModal, showIpInfoModal } from "../utils.js";
 
 /**
  * Initializes the Tautulli service view.
@@ -123,17 +123,32 @@ function renderTautulliActivity(sessions, url, key, state) {
               });
           }
 
-          // Posters
-          if (session.art) {
-            const backdropUrl = `${url}/pms_image_proxy?img=${session.art}&width=800&opacity=100&background=000000&apikey=${key}`;
-            cardWrapper.querySelector(".tautulli-backdrop").style.backgroundImage = `url('${backdropUrl}')`;
-          }
-          const posterImg = session.grandparent_thumb || session.thumb;
+          // Posters - Load BOTH images in parallel for faster display
+          const backdropEl = cardWrapper.querySelector(".tautulli-backdrop");
           const posterEl = cardWrapper.querySelector(".poster-img");
-          if (posterImg) {
-            const posterUrl = `${url}/pms_image_proxy?img=${posterImg}&width=300&apikey=${key}`;
-            posterEl.src = posterUrl;
-          } else {
+          const posterImg = session.grandparent_thumb || session.thumb;
+          
+          // Build URLs first
+          const backdropUrl = session.art 
+            ? `${url}/pms_image_proxy?img=${session.art}&width=400&opacity=100&background=000000&apikey=${key}` 
+            : null;
+          const posterUrl = posterImg 
+            ? `${url}/pms_image_proxy?img=${posterImg}&width=150&apikey=${key}` 
+            : null;
+          
+          // Start BOTH image loads simultaneously
+          if (backdropUrl && backdropEl) {
+            const bgImg = new Image();
+            bgImg.src = backdropUrl; // Start loading immediately
+            bgImg.onload = () => {
+              backdropEl.style.backgroundImage = `url('${backdropUrl}')`;
+            };
+          }
+          
+          if (posterUrl && posterEl) {
+            posterEl.decoding = 'async';
+            posterEl.src = posterUrl; // Start loading immediately (parallel with backdrop)
+          } else if (posterEl) {
             cardWrapper.querySelector(".tautulli-poster").style.display = "none";
           }
           
@@ -272,7 +287,27 @@ function renderTautulliActivity(sessions, url, key, state) {
           secureIcon.title = 'Insecure Connection';
           secureIcon.style.color = '#f44336';
       }
-      cardWrapperRef.querySelector('.val-ip').textContent = session.ip_address;
+      const valIp = cardWrapperRef.querySelector('.val-ip');
+      valIp.textContent = session.ip_address;
+      
+      // Helper to check if IP is private/LAN
+      const isPrivateIp = (ip) => {
+          if (!ip) return true;
+          // Check for private IP ranges: 10.x.x.x, 192.168.x.x, 172.16-31.x.x, 127.x.x.x
+          return /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|127\.)/.test(ip);
+      };
+      
+      // Make IP clickable for IP lookup (only for external IPs, only once)
+      if (session.ip_address && !isPrivateIp(session.ip_address) && !valIp.dataset.listenerAttached) {
+          valIp.style.cursor = 'pointer';
+          valIp.style.textDecoration = 'underline';
+          valIp.title = 'Click to view IP information';
+          valIp.addEventListener('click', (e) => {
+              e.stopPropagation();
+              showIpInfoModal(session.ip_address);
+          });
+          valIp.dataset.listenerAttached = 'true';
+      }
       
       // Check Expansion State (keep in sync)
       const detailsDiv = cardWrapperRef.querySelector('.tautulli-details');

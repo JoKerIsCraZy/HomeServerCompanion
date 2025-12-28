@@ -214,29 +214,17 @@ function renderUnraidSystem(data, url, key, state) {
         
         dashGrid.appendChild(ramCard);
 
-        // --- Uptime Card ---
-        const uptimeCard = mkDiv('unraid-card full-width-card');
-        const uptimeFlex = document.createElement('div');
-        uptimeFlex.style.cssText = "display:flex; align-items:center; gap:10px;";
-        
-        const clockIcon = document.createElement('span');
-        clockIcon.style.fontSize = '20px';
-        clockIcon.textContent = '⏱';
-        
-        const uptimeInfo = document.createElement('div');
-        const uptimeLabel = mkDiv('stat-label', 'UPTIME');
-        uptimeLabel.style.textAlign = 'left';
+        // --- Uptime Card (next to RAM) ---
+        const uptimeCard = mkDiv('unraid-card system-stat-card');
+        uptimeCard.appendChild(mkDiv('stat-label', 'UPTIME'));
         
         const uptimeVal = mkDiv('stat-value', '--');
-        uptimeVal.style.fontSize = '16px';
+        uptimeVal.style.fontSize = '18px';
         uptimeVal.id = 'dash-uptime';
+        uptimeCard.appendChild(uptimeVal);
         
-        uptimeInfo.appendChild(uptimeLabel);
-        uptimeInfo.appendChild(uptimeVal);
-        
-        uptimeFlex.appendChild(clockIcon);
-        uptimeFlex.appendChild(uptimeInfo);
-        uptimeCard.appendChild(uptimeFlex);
+        const uptimeIcon = mkDiv('stat-sub', '⏱ System Uptime');
+        uptimeCard.appendChild(uptimeIcon);
         
         dashGrid.appendChild(uptimeCard);
 
