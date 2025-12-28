@@ -29,5 +29,14 @@ This is the original Chrome version of the Home Server Companion extension.
 - **Wizarr Integration**: Create and manage invites directly from the extension.
 - **Tautulli Enhancements**: IP Geolocation lookup, country flags, and performance optimizations.
 - **Service Enhancements**:
-  - **SABnzbd**: Live badges for file counts in Queue and History.
+  - **Sonarr & Radarr**:
+    - **Live Badges**: Real-time count of items in Queue and History (for SABnzbd/Sonarr/Radarr).
+    - **Manual Import**: Resolve "Manual Import Needed" warnings directly from the extension. Select specific files, qualities, and languages via an interactive dialog.
+    - **Queue Management**: Remove items, blocklist releases, and view detailed progress/status.
+    - **Missing Content**: Dedicated tab to view and search for missing episodes or movies.
+  - **Tautulli**:
+    - **IP Geolocation**: Click on any IP address in "Active Streams" to view detailed info (Country, City, ISP, ASN) and an interactive map.
+    - **Stream Management**: Terminate active streams directly from the popup.
+    - **Activity Links**: Click titles/posters to jump directly to the media page.
+  - **SABnzbd**: Live badges for file counts.
 - **Security**: Reinforced Content Security Policy (CSP) and safer DOM handling.

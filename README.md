@@ -45,6 +45,7 @@ A comprehensive dashboard for your self-hosted services:
   - **Calendar**: View upcoming episodes with air times and release info.
   - **Queue**: Track active downloads with warnings for stuck items.
   - **History**: See recently imported episodes grouped by series and season.
+  - **Missing**: View and search for missing episodes directly from the extension.
   - **Queue Management**: Delete items with options to remove from client or blocklist & search for alternatives.
   - **Manual Import**: Advanced import dialog with full quality and language selection for problematic downloads.
   - **Badge Notifications**: Visual alerts for queue issues requiring attention.
@@ -52,11 +53,13 @@ A comprehensive dashboard for your self-hosted services:
   - **Calendar**: View upcoming movie releases (Digital, Physical, Cinema).
   - **Queue**: Monitor active downloads with issue detection.
   - **History**: Browse recently imported movies with poster art.
+  - **Missing**: View and search for missing movies.
   - **Queue Management**: Remove downloads or blocklist releases and trigger automatic re-search.
   - **Manual Import**: Enhanced import workflow matching Sonarr, with parallel loading and full quality/language control.
   - **Badge Notifications**: Alerts for download warnings and errors.
 - **📊 Tautulli**:
-  - View active Plex streams with rich metadata and poster art.
+  - **Active Streams**: View active Plex streams with rich metadata and poster art.
+  - **IP Geolocation**: Click IP addresses to view detailed location info (Country, City, ISP, Map).
   - **Kill Stream**: Terminate active streams directly from the popup.
   - **Activity Links**: Click titles or posters to open the media directly in your PMS or Tautulli.
   - **Detailed Stats**: User info, playback quality, bandwidth, stream decision (Direct Play/Transcode).
@@ -93,6 +96,12 @@ A comprehensive dashboard for your self-hosted services:
 
 ## 📸 Screenshots
 
+### Dashboard
+
+<div align="center">
+  <img src="images/dashboard.png" alt="Dashboard" width="45%">
+</div>
+
 ### Unraid
 
 <div align="center">
@@ -113,6 +122,7 @@ A comprehensive dashboard for your self-hosted services:
 
 <div align="center">
   <img src="images/sonarr_calendar.png" alt="Sonarr Calendar" width="45%">
+  <img src="images/sonarr_missing.png" alt="Sonarr Missing" width="45%">
   <img src="images/sonarr_recent.png" alt="Sonarr Recent" width="45%">
   <h2>1:1 same design as radarr so same pictures :P</h2>
     <img src="images/radarr_queue.png" alt="Radarr Queue" width="45%">
@@ -123,6 +133,7 @@ A comprehensive dashboard for your self-hosted services:
 
 <div align="center">
   <img src="images/radarr_calendar.png" alt="Radarr Calendar" width="45%">
+  <img src="images/radarr_missing.png" alt="Radarr Missing" width="45%">
   <img src="images/radarr_recent.png" alt="Radarr Recent" width="45%">
   <img src="images/radarr_queue.png" alt="Radarr Queue" width="45%">
   <img src="images/radarr_manual_import.png" alt="Radarr Manual Import" width="45%">
