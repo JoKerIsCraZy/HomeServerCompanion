@@ -449,6 +449,7 @@
             <button class="tab-btn" data-target="sonarr">Sonarr</button>
             <button class="tab-btn" data-target="radarr">Radarr</button>
             <button class="tab-btn" data-target="tautulli">Tautulli</button>
+            <button class="tab-btn" data-target="plex">Plex</button>
 
             <button class="tab-btn" data-target="overseerr">Overseerr</button>
             <button class="tab-btn" data-target="prowlarr">Prowlarr</button>
@@ -777,6 +778,58 @@
             </button>
           </div>
           <div id="statusTautulli" class="status"></div>
+        </div>
+
+        <!-- Plex Section -->
+        <div id="plex" class="section">
+          <h2>Plex Redirect Settings</h2>
+          <div class="form-group">
+            <label for="plexRedirectMode">Redirect Mode</label>
+            <select id="plexRedirectMode" style="width: 100%">
+              <option value="web">Plex Web (Browser) - Default</option>
+              <option value="app">Plex Windows App (plex://)</option>
+            </select>
+            <div class="help-text">
+              Choose how Plex links should open. "Web" opens in browser, "App" opens in the Plex desktop app.
+            </div>
+          </div>
+
+          <div id="plexAppSettings" style="display: none;">
+            <div class="form-group">
+              <label for="plexUrl">Plex Server URL</label>
+              <div class="input-group" style="display: flex">
+                <select id="plexProtocol" style="width: auto">
+                  <option value="http://">http://</option>
+                  <option value="https://">https://</option>
+                </select>
+                <input
+                  type="text"
+                  id="plexUrl"
+                  placeholder="192.168.1.100:32400"
+                  style="flex: 1"
+                />
+              </div>
+              <div class="help-text">
+                Your local Plex Media Server address (e.g., 192.168.1.100:32400)
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="plexToken">X-Plex-Token</label>
+              <input type="password" id="plexToken" />
+              <div class="help-text">
+                Find your token: Open Plex Web, press F12, go to Console, type: 
+                <code>localStorage.getItem('myPlexAccessToken')</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="savePlex" class="btn-primary">Save Plex Settings</button>
+            <button id="testPlex" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusPlex" class="status"></div>
         </div>
 
         <!-- Overseerr Section -->

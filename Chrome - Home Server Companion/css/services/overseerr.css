@@ -203,12 +203,28 @@ body.dark-mode .overseerr-card {
   background: #f44336;
   border-color: #f44336;
 }
-.request-btn {
-  background: #2196f3;
-  border-color: #2196f3;
-  width: auto;
-  padding: 0 10px;
+/* Specificity boost to override .overseerr-actions .action-btn */
+.overseerr-actions .request-btn {
+  background: linear-gradient(135deg, #AB47BC, #7E57C2);
+  border: none;
+  width: auto !important; /* Force auto width */
+  min-width: 80px;
+  height: auto;
+  padding: 6px 12px;
   border-radius: 14px;
+  color: white;
+  transition: all 0.2s;
+  display: flex; /* Restore flex */
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 12px;
+  box-shadow: 0 2px 5px rgba(126, 87, 194, 0.3);
+}
+.overseerr-actions .request-btn:hover {
+  background: linear-gradient(135deg, #ba68c8, #9575cd);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(126, 87, 194, 0.4);
 }
 
 /* Search Styles */

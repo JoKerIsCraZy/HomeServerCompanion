@@ -550,6 +550,11 @@ async function initProwlarrSearch(url, apiKey) {
     const categorySelect = document.getElementById("prowlarr-search-category");
     const indexerTrigger = document.getElementById("indexer-dropdown-trigger");
     const indexerOptions = document.getElementById("indexer-dropdown-options");
+    const keepSearchCheckbox = document.getElementById("prowlarr-keep-search");
+    const clearBtn = document.getElementById("prowlarr-search-clear");
+    
+    const STORAGE_KEY_STATE = "prowlarr_search_state";
+    const SEARCH_ENABLED_KEY = "prowlarr_keep_search_enabled";
 
     // Close dropdown when clicking outside
     document.addEventListener("click", (e) => {
@@ -562,12 +567,15 @@ async function initProwlarrSearch(url, apiKey) {
         indexerTrigger.onclick = () => indexerOptions.classList.toggle("hidden");
     }
 
-    // Keep Last Search Logic variables
-    const keepSearchCheckbox = document.getElementById("prowlarr-keep-search");
-    const STORAGE_KEY_STATE = "prowlarr_search_state";
-    const SEARCH_ENABLED_KEY = "prowlarr_keep_search_enabled";
+    // --- Helper Functions in Scope ---
 
-    // Helper to save state (Defined early for listeners)
+    const updateClearBtn = () => {
+        if (!clearBtn) return;
+        const hasInput = searchInput && searchInput.value.trim() !== "";
+        const hasResults = document.getElementById("prowlarr-search-results").children.length > 0;
+        clearBtn.style.display = (hasInput || hasResults) ? "flex" : "none";
+    };
+
     const saveSearchState = (resultsOverride = null) => {
         if (!keepSearchCheckbox || !keepSearchCheckbox.checked) return;
         
@@ -575,9 +583,18 @@ async function initProwlarrSearch(url, apiKey) {
         const currentCategory = categorySelect ? categorySelect.value : "";
         let currentIndexerIds = null;
         
-        if (document.getElementById("idx-all") && !document.getElementById("idx-all").checked) {
-             const checked = Array.from(document.querySelectorAll("#indexer-dropdown-options .indexer-checkbox:checked"));
-             if (checked.length > 0) currentIndexerIds = checked.map(cb => cb.value);
+        // Handle "All" checkbox logic for state saving
+        // Note: The "All" checkbox ID is dynamically generated in populateProwlarrIndexers, 
+        // so we check if ANY specific indexer is unchecked or if we just grab checked ones.
+        // Actually simpler: just grab checked specific indexers.
+        if (indexerOptions) {
+             const checked = Array.from(indexerOptions.querySelectorAll(".indexer-checkbox:checked"));
+             if (checked.length > 0) {
+                 // Check if "All" is active (meaning no specific filter). 
+                 // But wait, our UI logic is: if All is checked, specific ones are NOT checked.
+                 // So if specific ones ARE checked, then All is NOT checked.
+                 currentIndexerIds = checked.map(cb => cb.value);
+             }
         }
 
         // Check if we can preserve existing results
@@ -606,14 +623,14 @@ async function initProwlarrSearch(url, apiKey) {
         localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(state));
     };
 
-    // Restore Checkbox State Immediately & Reliably
+    // --- Restore State Logic ---
+    
+    // 1. Checkbox State
     if (keepSearchCheckbox) {
-        // Load checkbox state preference
         const keepEnabled = localStorage.getItem(SEARCH_ENABLED_KEY) === "true";
         keepSearchCheckbox.checked = keepEnabled;
 
         keepSearchCheckbox.onchange = () => {
-             // Force boolean conversion for storage
              const isChecked = keepSearchCheckbox.checked;
              localStorage.setItem(SEARCH_ENABLED_KEY, String(isChecked));
              
@@ -625,175 +642,124 @@ async function initProwlarrSearch(url, apiKey) {
         };
     }
     
-    // Toggle Checkbox Visibility based on Tab
+    // 2. Restore Search Data (if enabled)
+    if (keepSearchCheckbox && keepSearchCheckbox.checked) {
+         setTimeout(() => {
+            const savedStateStr = localStorage.getItem(STORAGE_KEY_STATE);
+            if (savedStateStr) {
+                try {
+                    const savedState = JSON.parse(savedStateStr);
+                    
+                    // Restore Inputs
+                    if (savedState.query && searchInput) searchInput.value = savedState.query;
+                    if (savedState.category && categorySelect) categorySelect.value = savedState.category;
+                    
+                    if (savedState.indexerIds && indexerOptions) {
+                        const checkboxes = indexerOptions.querySelectorAll(".indexer-checkbox");
+                        let hasChecked = false;
+                        checkboxes.forEach(cb => {
+                            if (savedState.indexerIds.includes(cb.value)) {
+                                cb.checked = true;
+                                hasChecked = true;
+                            } else {
+                                cb.checked = false;
+                            }
+                        });
+                        
+                        // Handle "All" checkbox if it exists (it's created dynamically)
+                        // This is tricky because populate might happen later or async?
+                        // Actually populate happens below synchronously-ish (await inside if called properly, but here handled via export)
+                        const allCb = indexerOptions.querySelector("input[type='checkbox']:not(.indexer-checkbox)"); // heuristic
+                        if (allCb) {
+                            allCb.checked = !hasChecked;
+                        }
+
+                        if (indexerTrigger) {
+                             const count = savedState.indexerIds.length;
+                             if (count === 0) indexerTrigger.textContent = "All Indexers";
+                             else indexerTrigger.textContent = count === 1 ? "1 Indexer" : `${count} Indexers`;
+                             // Ideally find name if 1, but this is okay for restore
+                        }
+                    }
+                    
+                    // Restore Results
+                    if (savedState.results && Array.isArray(savedState.results) && savedState.results.length > 0) {
+                        renderSearchResults(savedState.results);
+                        updateClearBtn();
+                    } else if (savedState.query) {
+                        // Fallback to fresh search if results missing
+                        setTimeout(() => executeSearch(url, apiKey, saveSearchState), 200);
+                    }
+                    
+                } catch (e) { console.warn("Failed to restore search state", e); }
+            }
+         }, 500);
+    }
+    
+    // --- Clear Button Logic ---
+    if (clearBtn) {
+        clearBtn.onclick = () => {
+            if (searchInput) {
+                searchInput.value = "";
+                searchInput.focus();
+            }
+            const resultsContainer = document.getElementById("prowlarr-search-results");
+            if (resultsContainer) resultsContainer.replaceChildren();
+            
+            localStorage.removeItem(STORAGE_KEY_STATE);
+            updateClearBtn();
+        };
+    }
+
+    // --- Event Listeners ---
+    if (searchInput) {
+        searchInput.addEventListener("input", () => {
+            saveSearchState();
+            updateClearBtn();
+        });
+    }
+    if (categorySelect) categorySelect.addEventListener("change", saveSearchState);
+    if (indexerOptions) {
+        indexerOptions.addEventListener("change", saveSearchState);
+    }
+    
+    if (searchBtn) {
+        searchBtn.onclick = async () => {
+            await executeSearch(url, apiKey, saveSearchState);
+        };
+    }
+    
+    // Toggle Search Checkbox Visibility based on Tab
     const toggleSearchCheckbox = () => {
         const searchTabBtn = document.querySelector('#prowlarr-view .tab-btn[data-tab="search"]');
         const checkboxContainer = document.querySelector('.keep-search-container');
         if (searchTabBtn && checkboxContainer) {
-            if (searchTabBtn.classList.contains("active")) {
-                checkboxContainer.style.display = "flex";
-            } else {
-                checkboxContainer.style.display = "none";
-            }
+            checkboxContainer.style.display = searchTabBtn.classList.contains("active") ? "flex" : "none";
         }
     };
     
-    // Initial check (force visible if active)
+    // Initial & Listeners for Tab
     requestAnimationFrame(toggleSearchCheckbox);
-
-    // Listen to tab clicks
     const tabBtns = document.querySelectorAll('#prowlarr-view .tab-btn');
     tabBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-             // Use setTimeout to allow class update
-            setTimeout(toggleSearchCheckbox, 50); 
-        });
+        btn.addEventListener("click", () => setTimeout(toggleSearchCheckbox, 50));
     });
 
-    // Populate Categories (Cache for 1 day)
+    // Populate Filters
     if (categorySelect) {
-        let categories = [];
-        const CACHE_KEY = "prowlarr_categories";
-        const cached = localStorage.getItem(CACHE_KEY);
-        
-        if (cached) {
-            try {
-                const parsed = JSON.parse(cached);
-                if (Date.now() - parsed.timestamp < 86400000) categories = parsed.data;
-            } catch(e) {}
-        }
-        
-        if (categories.length === 0) {
-            try {
-                categories = await Prowlarr.getProwlarrCategories(url, apiKey);
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    timestamp: Date.now(),
-                    data: categories
-                }));
-            } catch (e) {
-                console.warn("Failed to fetch categories", e);
-            }
-        }
-        
-        if (categories.length > 0) {
-             categorySelect.replaceChildren();
-             const defaultOpt = document.createElement('option');
-             defaultOpt.value = '';
-             defaultOpt.textContent = 'All Categories';
-             categorySelect.appendChild(defaultOpt);
-             categories.sort((a,b) => (a.name || "").localeCompare(b.name || ""));
-             categories.forEach(cat => {
-                 const opt = document.createElement("option");
-                 opt.value = cat.id;
-                 opt.textContent = cat.name;
-                 categorySelect.appendChild(opt);
-             });
-        }
+        populateProwlarrCategories(url, apiKey, categorySelect);
     }
-    
-    // Populate Indexers (from main Prowlarr cache)
     if (indexerOptions) {
-        const CACHE_KEY_INDEXERS = "prowlarr_cache";
-        const cachedIndexers = localStorage.getItem(CACHE_KEY_INDEXERS);
-        if (cachedIndexers) {
-             try {
-                 const parsed = JSON.parse(cachedIndexers);
-                 const indexers = parsed.indexers || [];
-                 if (indexers.length > 0) {
-                     indexerOptions.replaceChildren();
-                     
-                     // "All" Option - built with DOM API
-                     const allDiv = document.createElement("div");
-                     allDiv.className = "dropdown-item";
-                     const allCheckbox = document.createElement('input');
-                     allCheckbox.type = 'checkbox';
-                     allCheckbox.checked = true;
-                     const allLabel = document.createElement('label');
-                     allLabel.textContent = 'All Indexers';
-                     allDiv.appendChild(allCheckbox);
-                     allDiv.appendChild(document.createTextNode(' '));
-                     allDiv.appendChild(allLabel);
-                     indexerOptions.appendChild(allDiv);
-                     
-                     indexers.sort((a,b) => a.name.localeCompare(b.name));
-                     
-                     indexers.forEach(idx => {
-                         const div = document.createElement("div");
-                         div.className = "dropdown-item";
-                         // XSS FIX: Use DOM API instead of innerHTML
-                         const checkbox = document.createElement('input');
-                         checkbox.type = 'checkbox';
-                         checkbox.value = idx.id;
-                         checkbox.className = 'indexer-checkbox';
-                         const label = document.createElement('label');
-                         label.textContent = idx.name;
-                         div.appendChild(checkbox);
-                         div.appendChild(document.createTextNode(' '));
-                         div.appendChild(label);
-                         div.onclick = (e) => {
-                             if (e.target.tagName !== 'INPUT') {
-                                 const cb = div.querySelector('input');
-                                 cb.checked = !cb.checked;
-                                 // manually trigger change event if needed, or just call update logic
-                                 updateIndexerSelection();
-                             } else {
-                                 updateIndexerSelection();
-                             }
-                         };
-                         indexerOptions.appendChild(div);
-                     });
-                     
-                     allDiv.onclick = (e) => {
-                         if (e.target.tagName !== 'INPUT') {
-                             allCheckbox.checked = !allCheckbox.checked;
-                         }
-                         
-                         const otherCbs = indexerOptions.querySelectorAll(".indexer-checkbox");
-                         if (allCheckbox.checked) {
-                              otherCbs.forEach(cb => cb.checked = false);
-                         }
-                         updateIndexerTriggerText();
-                     };
-                     
-                     // Add event listener to individual checkboxes to uncheck "All"
-                     const otherCbs = indexerOptions.querySelectorAll(".indexer-checkbox");
-                     otherCbs.forEach(cb => {
-                         cb.addEventListener("change", () => {
-                             if (cb.checked) allCheckbox.checked = false;
-                             updateIndexerSelection();
-                         });
-                     });
-                     
-                     function updateIndexerSelection() {
-                         const checked = Array.from(indexerOptions.querySelectorAll(".indexer-checkbox:checked"));
-                         if (checked.length === 0) {
-                             allCheckbox.checked = true;
-                         } else if (allCheckbox.checked && checked.length > 0) {
-                              // If specific selected, uncheck All (already handled by event)
-                              allCheckbox.checked = false; 
-                         }
-                         updateIndexerTriggerText();
-                     }
-                     
-                     function updateIndexerTriggerText() {
-                         const checked = Array.from(indexerOptions.querySelectorAll(".indexer-checkbox:checked"));
-                         if (allCheckbox.checked || checked.length === 0) {
-                             indexerTrigger.textContent = "All Indexers";
-                         } else if (checked.length === 1) {
-                             // Find name
-                             const name = checked[0].parentElement.querySelector("label").textContent;
-                             indexerTrigger.textContent = name;
-                         } else {
-                             indexerTrigger.textContent = `${checked.length} Indexers`;
-                         }
-                     }
-                 }
-             } catch (e) { console.warn("Indexers cache parse error", e); }
-        }
+        populateProwlarrIndexers(url, apiKey, indexerOptions, indexerTrigger);
     }
+
     
     // Restore Search Data if enabled and data exists (Post-load)
-    if (keepSearchCheckbox && keepSearchCheckbox.checked) {
+    // Re-select elements just in case, or rely on closure if valid.
+    // The error suggests keepSearchCheckbox is not in scope or undefined.
+    // Use optional chaining or re-query to be safe.
+    const keepSearchCheckboxRef = document.getElementById("prowlarr-keep-search");
+    if (keepSearchCheckboxRef && keepSearchCheckboxRef.checked) {
          // We do this check again here because Indexers/Categories might have just finished populating
          // Wait a moment for DOM to accept values
          setTimeout(() => {
@@ -840,16 +806,7 @@ async function initProwlarrSearch(url, apiKey) {
          }, 500); // 500ms delay to ensure categories/indexers populated
     }
     
-    // Clear Button Logic
-    const clearBtn = document.getElementById("prowlarr-search-clear");
-    
-    const updateClearBtn = () => {
-        if (!clearBtn) return;
-        const hasInput = searchInput && searchInput.value.trim() !== "";
-        const hasResults = document.getElementById("prowlarr-search-results").children.length > 0;
-        // Show if input exists OR if we have results (meaning a search was done)
-        clearBtn.style.display = (hasInput || hasResults) ? "flex" : "none";
-    };
+    // Clear Button Logic (Already initialized above)
 
     if (clearBtn) {
         clearBtn.onclick = () => {
@@ -959,8 +916,8 @@ async function executeSearch(url, apiKey, saveCallback) {
     }
 }
 
-function renderSearchResults(results) {
-    const container = document.getElementById("prowlarr-search-results");
+export function renderSearchResults(results, customContainer = null) {
+    const container = customContainer || document.getElementById("prowlarr-search-results");
     if (!container) return;
     
     container.replaceChildren();
@@ -1088,3 +1045,146 @@ const formatAge = (dateStr) => {
     return days + "d";
 };
 
+
+export async function populateProwlarrCategories(url, apiKey, categorySelect) {
+    let categories = [];
+    const CACHE_KEY = "prowlarr_categories";
+    const cached = localStorage.getItem(CACHE_KEY);
+    
+    if (cached) {
+        try {
+            const parsed = JSON.parse(cached);
+            if (Date.now() - parsed.timestamp < 86400000) categories = parsed.data;
+        } catch(e) {}
+    }
+    
+    
+    if (categories.length === 0) {
+        // Force refresh if cache yielded nothing or was empty
+         localStorage.removeItem(CACHE_KEY);
+         
+        try {
+            categories = await Prowlarr.getProwlarrCategories(url, apiKey);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: categories
+            }));
+        } catch (e) {
+            console.warn("Failed to fetch categories", e);
+        }
+    }
+    
+    if (categories.length > 0) {
+        categorySelect.replaceChildren();
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'All Categories';
+        categorySelect.appendChild(defaultOpt);
+        categories.sort((a,b) => (a.name || "").localeCompare(b.name || ""));
+        categories.forEach(cat => {
+            const opt = document.createElement("option");
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            categorySelect.appendChild(opt);
+        });
+    }
+}
+
+export function populateProwlarrIndexers(url, apiKey, indexerOptions, indexerTrigger = null) {
+    const CACHE_KEY_INDEXERS = "prowlarr_cache";
+    const cachedIndexers = localStorage.getItem(CACHE_KEY_INDEXERS);
+    if (cachedIndexers) {
+            try {
+                const parsed = JSON.parse(cachedIndexers);
+                const indexers = parsed.indexers || [];
+                if (indexers.length > 0) {
+                    indexerOptions.replaceChildren();
+                    
+                    // "All" Option - built with DOM API
+                    const allDiv = document.createElement("div");
+                    allDiv.className = "dropdown-item";
+                    const allCheckbox = document.createElement('input');
+                    allCheckbox.type = 'checkbox';
+                    allCheckbox.checked = true;
+                    allCheckbox.id = 'idx-all-' + Math.random().toString(36).substr(2, 9); // Unique ID if multiple instances?
+                    // Actually, let's keep it simple for now, scoping is handled by container
+                    
+                    const allLabel = document.createElement('label');
+                    allLabel.textContent = 'All Indexers';
+                    allDiv.appendChild(allCheckbox);
+                    allDiv.appendChild(document.createTextNode(' '));
+                    allDiv.appendChild(allLabel);
+                    indexerOptions.appendChild(allDiv);
+                    
+                    indexers.sort((a,b) => a.name.localeCompare(b.name));
+                    
+                    indexers.forEach(idx => {
+                        const div = document.createElement("div");
+                        div.className = "dropdown-item";
+                        // XSS FIX: Use DOM API instead of innerHTML
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = idx.id;
+                        checkbox.className = 'indexer-checkbox';
+                        const label = document.createElement('label');
+                        label.textContent = idx.name;
+                        div.appendChild(checkbox);
+                        div.appendChild(document.createTextNode(' '));
+                        div.appendChild(label);
+                        div.onclick = (e) => {
+                            if (e.target.tagName !== 'INPUT') {
+                                const cb = div.querySelector('input');
+                                cb.checked = !cb.checked;
+                                updateIndexerSelection();
+                            } else {
+                                updateIndexerSelection();
+                            }
+                        };
+                        indexerOptions.appendChild(div);
+                    });
+                    
+                    const updateIndexerSelection = () => {
+                        const checked = Array.from(indexerOptions.querySelectorAll(".indexer-checkbox:checked"));
+                        if (checked.length === 0) {
+                            allCheckbox.checked = true;
+                        } else if (allCheckbox.checked && checked.length > 0) {
+                            allCheckbox.checked = false; 
+                        }
+                        if (indexerTrigger) updateIndexerTriggerText();
+                    };
+
+                    allDiv.onclick = (e) => {
+                        if (e.target.tagName !== 'INPUT') {
+                            allCheckbox.checked = !allCheckbox.checked;
+                        }
+                        
+                        const otherCbs = indexerOptions.querySelectorAll(".indexer-checkbox");
+                        if (allCheckbox.checked) {
+                                otherCbs.forEach(cb => cb.checked = false);
+                        }
+                        if (indexerTrigger) updateIndexerTriggerText();
+                    };
+                    
+                    const otherCbs = indexerOptions.querySelectorAll(".indexer-checkbox");
+                    otherCbs.forEach(cb => {
+                        cb.addEventListener("change", () => {
+                            if (cb.checked) allCheckbox.checked = false;
+                            updateIndexerSelection();
+                        });
+                    });
+                    
+                    function updateIndexerTriggerText() {
+                        const checked = Array.from(indexerOptions.querySelectorAll(".indexer-checkbox:checked"));
+                        if (allCheckbox.checked || checked.length === 0) {
+                            indexerTrigger.textContent = "All Indexers";
+                        } else if (checked.length === 1) {
+                            const name = checked[0].parentElement.querySelector("label").textContent;
+                            indexerTrigger.textContent = name;
+                        } else {
+                            indexerTrigger.textContent = `${checked.length} Indexers`;
+                        }
+                    }
+                }
+            } catch (e) { console.warn("Indexers cache parse error", e); }
+    }
+}

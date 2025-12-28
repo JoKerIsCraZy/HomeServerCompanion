@@ -21,22 +21,19 @@ This is the original Chrome version of the Home Server Companion extension.
 
 - This version uses Manifest V3.
 
-### New in v3.4
+### New in v3.5
 
-- **Dashboard & UI**: Brand new Dashboard view for a quick overview and a completely refactored, tab-based Settings page.
+- **Ctrl+S Shortcut**: Press `Ctrl+S` anywhere to instantly open the Unified Search with focus ready for typing
+- **Fullscreen Mode Overhaul**: Comprehensive redesign for fullscreen/tab mode
+  - Larger sidebar with bigger icons (80px width, 36px icons)
+  - Grid layouts for all services (SABnzbd, Sonarr, Radarr, Tautulli, Unraid, Prowlarr, Overseerr, Wizarr)
+  - Responsive breakpoints for different screen sizes
+- **Service-Specific Fullscreen Improvements**:
+  - **Prowlarr**: Larger indexer cards (350px min), bigger text, enhanced search elements
+  - **Search Modal**: Wider modal (800px), larger inputs and results
+  - **Unraid**: Larger system stats, CPU ring (80px), storage elements enhanced
+  - **Wizarr**: 2-column layout, larger invitations, wider modal (600px)
 - **Unified Search**: Centralized search bar (Omnibox) to quickly find content across services.
-- **Performance**: Significant improvements in API query handling and load times.
-- **Wizarr Integration**: Create and manage invites directly from the extension.
-- **Tautulli Enhancements**: IP Geolocation lookup, country flags, and performance optimizations.
-- **Service Enhancements**:
-  - **Sonarr & Radarr**:
-    - **Live Badges**: Real-time count of items in Queue and History (for SABnzbd/Sonarr/Radarr).
-    - **Manual Import**: Resolve "Manual Import Needed" warnings directly from the extension. Select specific files, qualities, and languages via an interactive dialog.
-    - **Queue Management**: Remove items, blocklist releases, and view detailed progress/status.
-    - **Missing Content**: Dedicated tab to view and search for missing episodes or movies.
-  - **Tautulli**:
-    - **IP Geolocation**: Click on any IP address in "Active Streams" to view detailed info (Country, City, ISP, ASN) and an interactive map.
-    - **Stream Management**: Terminate active streams directly from the popup.
-    - **Activity Links**: Click titles/posters to jump directly to the media page.
-  - **SABnzbd**: Live badges for file counts.
-- **Security**: Reinforced Content Security Policy (CSP) and safer DOM handling.
+- **Code Quality**: Network timeout wrapper, XSS fix, shared HTTP utility, CSS consolidation
+- **Accessibility**: Added ARIA labels throughout the extension
+- **Performance**: Targeted DOM updates, staggered refresh intervals, badge error handling

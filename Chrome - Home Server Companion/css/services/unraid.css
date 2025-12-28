@@ -455,9 +455,47 @@ body.dark-mode .unraid-card {
 }
 
 .unraid-card.row-layout:hover .card-actions,
-.unraid-card.row-layout:focus-within .card-actions {
+.unraid-card.row-layout:focus-within .card-actions,
+.unraid-card.row-layout.loading .card-actions {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* Loading state - keep buttons visible */
+.unraid-card.loading .card-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Loading Button Spinner Animation */
+.action-btn.btn-loading {
+  position: relative;
+  pointer-events: none;
+  color: transparent !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.action-btn.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: btnSpinner 0.6s linear infinite;
+}
+
+@keyframes btnSpinner {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 
 /* Sort Select */

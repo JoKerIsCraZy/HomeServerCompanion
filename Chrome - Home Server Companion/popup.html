@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/layout.css" />
     <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/tabs.css" />
     <link rel="stylesheet" href="css/services/dashboard.css" />
     <link rel="stylesheet" href="css/services/search.css" />
     <link rel="stylesheet" href="css/services/sabnzbd.css" />
@@ -13,44 +14,44 @@
     <link rel="stylesheet" href="css/services/radarr.css" />
     <link rel="stylesheet" href="css/services/tautulli.css" />
     <link rel="stylesheet" href="css/services/overseerr.css" />
-    <link rel="stylesheet" href="css/services/overseerr.css" />
     <link rel="stylesheet" href="css/services/unraid.css" />
     <link rel="stylesheet" href="css/services/prowlarr.css" />
     <link rel="stylesheet" href="css/services/wizarr.css" />
+    <link rel="stylesheet" href="css/fullscreen.css" />
   </head>
   <body class="dark-mode">
     <div class="app-container">
       <!-- Sidebar -->
-      <nav class="sidebar">
-        <div class="nav-item active" data-target="dashboard" title="Dashboard">
-          <img src="icons/icon48.png" class="nav-icon" alt="Dashboard" />
+      <nav class="sidebar" aria-label="Service navigation">
+        <div class="nav-item active" data-target="dashboard" title="Dashboard" role="button" tabindex="0" aria-label="Dashboard">
+          <img src="icons/icon48.png" class="nav-icon" alt="" aria-hidden="true" />
         </div>
-        <div class="nav-item" data-target="sabnzbd" title="SABnzbd">
-          <img src="icons/sabnzbd.png" class="nav-icon" alt="SABnzbd" />
+        <div class="nav-item" data-target="sabnzbd" title="SABnzbd" role="button" tabindex="0" aria-label="SABnzbd">
+          <img src="icons/sabnzbd.png" class="nav-icon" alt="" aria-hidden="true" />
         </div>
-        <div class="nav-item" data-target="sonarr" title="Sonarr">
-          <img src="icons/sonarr.png" class="nav-icon" alt="Sonarr" />
+        <div class="nav-item" data-target="sonarr" title="Sonarr" role="button" tabindex="0" aria-label="Sonarr">
+          <img src="icons/sonarr.png" class="nav-icon" alt="" aria-hidden="true" />
         </div>
-        <div class="nav-item" data-target="radarr" title="Radarr">
-          <img src="icons/radarr.png" class="nav-icon" alt="Radarr" />
+        <div class="nav-item" data-target="radarr" title="Radarr" role="button" tabindex="0" aria-label="Radarr">
+          <img src="icons/radarr.png" class="nav-icon" alt="" aria-hidden="true" />
         </div>
-        <div class="nav-item" data-target="tautulli" title="Tautulli">
-          <img src="icons/tautulli.png" class="nav-icon" alt="Tautulli" />
+        <div class="nav-item" data-target="tautulli" title="Tautulli" role="button" tabindex="0" aria-label="Tautulli">
+          <img src="icons/tautulli.png" class="nav-icon" alt="" aria-hidden="true" />
         </div>
-        <div class="nav-item" data-target="overseerr" title="Overseerr">
-          <img src="icons/overseerr.png" alt="Overseerr" class="nav-icon" />
+        <div class="nav-item" data-target="overseerr" title="Overseerr" role="button" tabindex="0" aria-label="Overseerr">
+          <img src="icons/overseerr.png" alt="" aria-hidden="true" class="nav-icon" />
         </div>
-        <div class="nav-item" data-target="unraid" title="Unraid">
-          <img src="icons/unraid.png" class="nav-icon" alt="Unraid" />
+        <div class="nav-item" data-target="unraid" title="Unraid" role="button" tabindex="0" aria-label="Unraid">
+          <img src="icons/unraid.png" class="nav-icon" alt="" aria-hidden="true" />
         </div>
-        <div class="nav-item" data-target="prowlarr" title="Prowlarr">
-          <img src="icons/prowlarr.png" class="nav-icon" alt="Prowlarr" />
+        <div class="nav-item" data-target="prowlarr" title="Prowlarr" role="button" tabindex="0" aria-label="Prowlarr">
+          <img src="icons/prowlarr.png" class="nav-icon" alt="" aria-hidden="true" />
         </div>
-        <div class="nav-item" data-target="wizarr" title="Wizarr">
-          <img src="icons/wizarr.png" class="nav-icon" alt="Wizarr" />
+        <div class="nav-item" data-target="wizarr" title="Wizarr" role="button" tabindex="0" aria-label="Wizarr">
+          <img src="icons/wizarr.png" class="nav-icon" alt="" aria-hidden="true" />
         </div>
-        <div class="spacer"></div>
-        <div class="nav-item" id="fullscreen-btn" title="Open as Dashboard">
+        <div class="spacer" aria-hidden="true"></div>
+        <div class="nav-item" id="fullscreen-btn" title="Open as Dashboard" role="button" tabindex="0" aria-label="Open as fullscreen dashboard">
           <svg
             width="24"
             height="24"
@@ -67,13 +68,13 @@
             <line x1="3" y1="21" x2="10" y2="14"></line>
           </svg>
         </div>
-        <div class="nav-item settings-btn" id="settings-btn" title="Settings">
-          <div class="icon-placeholder settings-icon">⚙️</div>
+        <div class="nav-item settings-btn" id="settings-btn" title="Settings" role="button" tabindex="0" aria-label="Open settings">
+          <div class="icon-placeholder settings-icon" aria-hidden="true">⚙️</div>
         </div>
       </nav>
 
       <!-- Main Content -->
-      <main class="content-area">
+      <main class="content-area" role="main">
         <!-- Header -->
         <header id="main-header" style="position: relative">
           <h1 id="page-title">SABnzbd</h1>
@@ -1377,18 +1378,6 @@
             <button
               class="action-btn request-btn"
               title="Request"
-              style="
-                width: auto;
-                padding: 0 12px;
-                border-radius: 14px;
-                background: #2196f3;
-                color: white;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 4px;
-                font-size: 12px;
-              "
             >
               Request
             </button>

@@ -280,6 +280,79 @@
   transition: transform 0.1s;
 }
 
+/* Unified Search Override for Prowlarr */
+#unified-search-results .prowlarr-result-item {
+    margin-right: 0;
+    width: 100%;
+    box-sizing: border-box;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+#unified-prowlarr-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 0 16px; /* Match .search-header padding for alignment */
+}
+
+#unified-prowlarr-filters.hidden {
+    display: none;
+}
+
+#unified-prowlarr-category {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 8px;
+    outline: none;
+    cursor: pointer;
+    flex: 1; /* Share space */
+    max-width: 200px;
+}
+
+#unified-prowlarr-indexer-dropdown {
+    flex: 1;
+    max-width: 250px;
+}
+
+
+/* Parent container needs to handle flex correctly */
+#unified-search-results .prowlarr-result-item > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Vertical center alignment */
+    gap: 10px;
+    width: 100%;
+}
+
+/* Left side (Title + Meta) needs to shrink to make room for button */
+#unified-search-results .prowlarr-result-item > div > div:first-child {
+    flex: 1;
+    min-width: 0; /* Crucial for text-overflow to work in flex child */
+    padding-right: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Center text block vertically too if needed */
+}
+
+/* Button Container styling to ensure centering */
+#unified-search-results .prowlarr-result-item > div > div:last-child {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+/* The actual title element */
+#unified-search-results .prowlarr-result-item .result-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    width: 100%;
+    margin-bottom: 4px;
+}
 
 /* Custom Multi-Select Dropdown */
 .custom-dropdown {

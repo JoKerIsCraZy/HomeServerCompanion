@@ -1,4 +1,4 @@
-const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'prowlarr', 'wizarr'];
+const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'plex', 'overseerr', 'prowlarr', 'wizarr'];
 
 // --- UI Navigation ---
 // --- UI Navigation ---
@@ -125,6 +125,32 @@ const loadOptions = () => {
                 }
             }
         });
+
+        // Load Plex Redirect Mode
+        const plexRedirectModeEl = document.getElementById('plexRedirectMode');
+        const plexAppSettingsEl = document.getElementById('plexAppSettings');
+        const plexTokenEl = document.getElementById('plexToken');
+        
+        if (plexRedirectModeEl) {
+            plexRedirectModeEl.value = items.plexRedirectMode || 'web';
+            
+            // Toggle app settings visibility
+            if (plexAppSettingsEl) {
+                plexAppSettingsEl.style.display = plexRedirectModeEl.value === 'app' ? 'block' : 'none';
+            }
+            
+            // Add change listener for toggle
+            plexRedirectModeEl.addEventListener('change', () => {
+                if (plexAppSettingsEl) {
+                    plexAppSettingsEl.style.display = plexRedirectModeEl.value === 'app' ? 'block' : 'none';
+                }
+            });
+        }
+
+        // Load Plex Token separately (not standard key)
+        if (plexTokenEl && items.plexToken) {
+            plexTokenEl.value = items.plexToken;
+        }
     });
 };
 
@@ -390,6 +416,11 @@ const testConnection = async (service) => {
         case 'wizarr':
             testUrl = `${url}/api/status`;
             break;
+        case 'plex':
+            // Plex uses X-Plex-Token in query param
+            const plexToken = document.getElementById('plexToken')?.value || '';
+            testUrl = `${url}/?X-Plex-Token=${plexToken}`;
+            break;
     }
 
     showStatus(service, 'Testing...', 'success');
@@ -480,9 +511,68 @@ services.forEach(service => {
     const saveBtn = document.getElementById(`save${service.charAt(0).toUpperCase() + service.slice(1)}`);
     const testBtn = document.getElementById(`test${service.charAt(0).toUpperCase() + service.slice(1)}`);
 
-    if (saveBtn) saveBtn.addEventListener('click', () => saveService(service));
+    if (saveBtn) {
+        if (service === 'plex') {
+            // Special save handler for Plex
+            saveBtn.addEventListener('click', () => savePlexSettings());
+        } else {
+            saveBtn.addEventListener('click', () => saveService(service));
+        }
+    }
     if (testBtn) testBtn.addEventListener('click', () => testConnection(service));
 });
+
+// Special Plex save function
+const savePlexSettings = () => {
+    const plexRedirectMode = document.getElementById('plexRedirectMode')?.value || 'web';
+    const plexProtocol = document.getElementById('plexProtocol')?.value || 'http://';
+    const plexUrl = document.getElementById('plexUrl')?.value.trim().replace(/\/$/, '') || '';
+    const plexToken = document.getElementById('plexToken')?.value.trim() || '';
+    
+    const data = {
+        plexRedirectMode: plexRedirectMode
+    };
+    
+    // Only require URL/Token if app mode is selected
+    if (plexRedirectMode === 'app') {
+        if (!plexUrl) {
+            showStatus('Plex', 'Plex Server URL required for App mode!', 'error');
+            return;
+        }
+        if (!plexToken) {
+            showStatus('Plex', 'Plex Token required for App mode!', 'error');
+            return;
+        }
+        
+        // Clean and validate URL
+        const cleanUrl = plexUrl.replace(/^https?:\/\//, '');
+        const fullUrl = plexProtocol + cleanUrl;
+        
+        try {
+            const urlObj = new URL(fullUrl);
+            data.plexUrl = fullUrl;
+            data.plexToken = plexToken;
+            
+            // Request permission for Plex server
+            chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, (granted) => {
+                if (granted || true) { // Save even if permission denied
+                    chrome.storage.sync.set(data, () => {
+                        showStatus('Plex', 'Settings saved!', 'success');
+                    });
+                }
+            });
+            return;
+        } catch (e) {
+            showStatus('Plex', 'Invalid URL format!', 'error');
+            return;
+        }
+    }
+    
+    // Web mode - just save the mode
+    chrome.storage.sync.set(data, () => {
+        showStatus('Plex', 'Settings saved!', 'success');
+    });
+};
 
 // --- General / Reordering Logic ---
 window.currentOrder = [...services]; // Default attached to window for easy access in listener

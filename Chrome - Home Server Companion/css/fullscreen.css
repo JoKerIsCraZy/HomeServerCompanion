@@ -1,0 +1,958 @@
+/**
+ * Fullscreen Dashboard Mode Styles
+ * Transforms the popup into a full website experience
+ */
+
+/* ============================================
+   BASE FULLSCREEN LAYOUT
+   ============================================ */
+body.fullscreen-mode {
+  width: 100%;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+}
+
+body.fullscreen-mode .app-container {
+  height: 100vh;
+}
+
+/* ============================================
+   EXPANDED SIDEBAR
+   ============================================ */
+body.fullscreen-mode .sidebar {
+  width: 80px;
+  padding-top: 30px;
+}
+
+body.fullscreen-mode .nav-item {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+}
+
+body.fullscreen-mode .nav-icon {
+  width: 36px;
+  height: 36px;
+}
+
+body.fullscreen-mode .nav-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  min-width: 22px;
+  top: -6px;
+  right: -6px;
+}
+
+body.fullscreen-mode .settings-btn {
+  margin-bottom: 30px;
+}
+
+body.fullscreen-mode .settings-icon {
+  font-size: 24px;
+}
+
+/* Hide fullscreen button in fullscreen mode */
+body.fullscreen-mode #fullscreen-btn {
+  display: none;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+body.fullscreen-mode #main-header {
+  padding: 20px 40px;
+}
+
+body.fullscreen-mode #main-header h1 {
+  font-size: 26px;
+}
+
+/* ============================================
+   CONTENT AREA
+   ============================================ */
+body.fullscreen-mode .content-area {
+  display: flex;
+  flex-direction: column;
+}
+
+body.fullscreen-mode .view {
+  padding: 30px 50px;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ============================================
+   CARDS - GRID LAYOUT
+   ============================================ */
+body.fullscreen-mode .card {
+  padding: 20px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+}
+
+body.fullscreen-mode .card-header {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+body.fullscreen-mode .card-footer,
+body.fullscreen-mode .card-details {
+  font-size: 14px;
+}
+
+body.fullscreen-mode .filename {
+  font-size: 15px;
+}
+
+/* SABnzbd Queue Grid */
+body.fullscreen-mode #sab-queue,
+body.fullscreen-mode #sab-history {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 16px;
+}
+
+body.fullscreen-mode #sab-queue .card,
+body.fullscreen-mode #sab-history .card {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   PROGRESS BARS
+   ============================================ */
+body.fullscreen-mode .progress-bar {
+  height: 8px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+/* ============================================
+   TABS
+   ============================================ */
+body.fullscreen-mode .tabs {
+  padding: 8px;
+  border-radius: 16px;
+  gap: 8px;
+}
+
+body.fullscreen-mode .tabs .tab-btn {
+  padding: 12px 28px;
+  font-size: 15px;
+  border-radius: 12px;
+}
+
+body.fullscreen-mode .tab-glider {
+  top: 8px;
+  left: 8px;
+  height: calc(100% - 16px);
+  border-radius: 12px;
+}
+
+body.fullscreen-mode .sub-tabs {
+  padding: 8px;
+  border-radius: 16px;
+  gap: 8px;
+}
+
+body.fullscreen-mode .sub-tabs .sub-tab-btn {
+  padding: 12px 24px;
+  font-size: 14px;
+  border-radius: 12px;
+}
+
+/* ============================================
+   CALENDAR ITEMS (Sonarr/Radarr)
+   ============================================ */
+body.fullscreen-mode .date-header {
+  font-size: 16px;
+  padding-left: 8px;
+  border-left-width: 4px;
+  margin-bottom: 12px;
+}
+
+body.fullscreen-mode .date-group {
+  margin-bottom: 30px;
+}
+
+/* Calendar grid layout - override inline styles from JS */
+body.fullscreen-mode .date-group > div[style*="grid"] {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+  gap: 16px !important;
+  padding: 10px !important;
+}
+
+body.fullscreen-mode .calendar-item {
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+body.fullscreen-mode .calendar-item:first-of-type,
+body.fullscreen-mode .calendar-item:last-child {
+  border-radius: 12px;
+}
+
+body.fullscreen-mode .calendar-left {
+  width: 70px;
+  margin-right: 20px;
+  padding-right: 15px;
+}
+
+body.fullscreen-mode .cal-time {
+  font-size: 16px;
+}
+
+body.fullscreen-mode .cal-ampm {
+  font-size: 11px;
+}
+
+body.fullscreen-mode .cal-title {
+  font-size: 17px;
+}
+
+body.fullscreen-mode .cal-meta {
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+body.fullscreen-mode .cal-status-line {
+  width: 5px;
+  height: 40px;
+  margin-left: 15px;
+}
+
+/* ============================================
+   STATUS BADGES
+   ============================================ */
+body.fullscreen-mode .status-badge {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+body.fullscreen-mode .status-bubble {
+  font-size: 14px;
+  padding: 6px 14px;
+  border-radius: 14px;
+}
+
+body.fullscreen-mode .status-pill {
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+body.fullscreen-mode .action-btn {
+  width: 50px;
+  height: 50px;
+  font-size: 22px;
+}
+
+body.fullscreen-mode .control-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  border-radius: 6px;
+}
+
+body.fullscreen-mode .split-btn-main,
+body.fullscreen-mode .split-btn-arrow {
+  padding: 10px 14px;
+  font-size: 16px;
+}
+
+/* ============================================
+   MODALS
+   ============================================ */
+body.fullscreen-mode .custom-modal {
+  max-width: 500px;
+  border-radius: 16px;
+}
+
+body.fullscreen-mode .custom-modal-header {
+  padding: 20px 24px;
+  font-size: 18px;
+}
+
+body.fullscreen-mode .custom-modal-body {
+  padding: 24px;
+  font-size: 15px;
+}
+
+body.fullscreen-mode .custom-modal-footer {
+  padding: 20px 24px;
+  gap: 12px;
+}
+
+body.fullscreen-mode .modal-btn {
+  padding: 12px 24px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+body.fullscreen-mode .modal-input {
+  padding: 14px;
+  font-size: 15px;
+  border-radius: 8px;
+}
+
+/* ============================================
+   NOTIFICATIONS
+   ============================================ */
+body.fullscreen-mode #global-notification-container {
+  bottom: 30px;
+  right: 30px;
+  gap: 12px;
+}
+
+body.fullscreen-mode .global-notification {
+  padding: 16px 24px;
+  font-size: 14px;
+  border-radius: 12px;
+  min-width: 250px;
+  max-width: 400px;
+}
+
+/* ============================================
+   SEARCH/OMNIBOX
+   ============================================ */
+body.fullscreen-mode #omnibox-container {
+  min-width: 500px;
+}
+
+body.fullscreen-mode #omnibox-input {
+  font-size: 16px;
+  padding: 14px 24px;
+}
+
+body.fullscreen-mode .search-modal {
+  width: 800px;
+  max-width: 90%;
+}
+
+body.fullscreen-mode .search-modal input {
+  font-size: 20px;
+  padding: 18px 24px;
+}
+
+body.fullscreen-mode .search-results {
+  max-height: 600px;
+  padding: 16px;
+}
+
+body.fullscreen-mode .search-result-item {
+  padding: 18px 24px;
+  font-size: 16px;
+  gap: 20px;
+}
+
+body.fullscreen-mode .result-poster {
+  width: 70px;
+  height: 105px;
+}
+
+body.fullscreen-mode .result-title {
+  font-size: 18px;
+}
+
+body.fullscreen-mode .result-overview {
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+body.fullscreen-mode .result-type {
+  font-size: 12px;
+}
+
+body.fullscreen-mode .result-actions .action-btn,
+body.fullscreen-mode .search-result-item .action-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+/* Unified Search - Prowlarr filters alignment (match search header padding) */
+body.fullscreen-mode #unified-prowlarr-filters {
+  justify-content: flex-start;
+  padding: 0 16px;
+  margin-top: 10px;
+}
+
+body.fullscreen-mode #unified-prowlarr-category,
+body.fullscreen-mode #unified-prowlarr-indexer-dropdown {
+  font-size: 14px;
+  height: 44px;
+}
+
+body.fullscreen-mode #unified-prowlarr-category {
+  padding: 10px 14px;
+}
+
+body.fullscreen-mode #unified-prowlarr-indexer-dropdown .dropdown-trigger {
+  font-size: 14px;
+  padding: 10px 14px;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+/* ============================================
+   TAUTULLI
+   ============================================ */
+body.fullscreen-mode #tautulli-activity {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+body.fullscreen-mode #tautulli-activity .card {
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 0;
+}
+
+body.fullscreen-mode .tautulli-session-title {
+  font-size: 18px;
+}
+
+body.fullscreen-mode .tautulli-session-meta {
+  font-size: 14px;
+}
+
+/* ============================================
+   UNRAID
+   ============================================ */
+body.fullscreen-mode .unraid-list-title {
+  font-size: 20px;
+}
+
+body.fullscreen-mode .unraid-list-header-stack {
+  margin-bottom: 15px;
+}
+
+/* Unraid grid layout for VMs and Containers */
+body.fullscreen-mode #unraid-vms-list,
+body.fullscreen-mode #unraid-docker-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* System Dashboard Cards - Larger */
+body.fullscreen-mode .unraid-dashboard-grid {
+  gap: 20px !important;
+}
+
+body.fullscreen-mode .unraid-card {
+  padding: 20px !important;
+  border-radius: 14px !important;
+}
+
+body.fullscreen-mode .stat-value {
+  font-size: 28px !important;
+}
+
+body.fullscreen-mode .stat-label {
+  font-size: 13px !important;
+  margin-bottom: 8px !important;
+}
+
+body.fullscreen-mode .stat-sub {
+  font-size: 12px !important;
+}
+
+body.fullscreen-mode .cpu-ring-container {
+  width: 80px !important;
+  height: 80px !important;
+}
+
+body.fullscreen-mode .cpu-text-center {
+  font-size: 16px !important;
+}
+
+body.fullscreen-mode .ram-bar-container {
+  height: 10px !important;
+}
+
+body.fullscreen-mode .ram-bar-fill {
+  height: 10px !important;
+}
+
+/* Section Headers */
+body.fullscreen-mode .unraid-section-wrapper h3 {
+  font-size: 14px !important;
+  margin-bottom: 15px !important;
+}
+
+/* Full Width Cards */
+body.fullscreen-mode .full-width-card {
+  padding: 16px 24px !important;
+}
+
+body.fullscreen-mode .full-width-card .stat-label {
+  font-size: 12px !important;
+}
+
+body.fullscreen-mode .full-width-card .stat-value {
+  font-size: 22px !important;
+}
+
+/* Storage Tab - Larger */
+body.fullscreen-mode .storage-card {
+  padding: 16px 20px !important;
+  gap: 12px !important;
+}
+
+body.fullscreen-mode .disk-name {
+  font-size: 16px !important;
+}
+
+body.fullscreen-mode .disk-temp {
+  font-size: 12px !important;
+  padding: 3px 8px !important;
+}
+
+body.fullscreen-mode .disk-bar-bg {
+  height: 10px !important;
+}
+
+body.fullscreen-mode .disk-stats {
+  font-size: 13px !important;
+  margin-top: 8px !important;
+}
+
+body.fullscreen-mode .disk-pct {
+  font-size: 13px !important;
+}
+
+body.fullscreen-mode .storage-group-title {
+  font-size: 16px !important;
+}
+
+/* Docker/VM Cards */
+body.fullscreen-mode .docker-card,
+body.fullscreen-mode .vm-card {
+  padding: 16px !important;
+  min-height: 130px !important;
+}
+
+body.fullscreen-mode .card-title {
+  font-size: 15px !important;
+}
+
+body.fullscreen-mode .card-icon {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+body.fullscreen-mode .card-meta {
+  font-size: 13px !important;
+}
+
+body.fullscreen-mode #unraid-view .action-btn {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 14px !important;
+}
+
+/* ============================================
+   PROWLARR
+   ============================================ */
+body.fullscreen-mode #prowlarr-indexers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+body.fullscreen-mode #prowlarr-search-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+body.fullscreen-mode .indexer-item {
+  padding: 18px 20px !important;
+  border-radius: 12px !important;
+  margin-bottom: 0 !important;
+}
+
+body.fullscreen-mode .indexer-name {
+  font-size: 17px !important;
+}
+
+body.fullscreen-mode .indexer-status-badge {
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+}
+
+body.fullscreen-mode .indexer-item .card-details {
+  font-size: 13px !important;
+  gap: 15px !important;
+}
+
+body.fullscreen-mode .indexer-priority {
+  font-size: 12px !important;
+  padding: 3px 8px !important;
+}
+
+body.fullscreen-mode .indexer-vip-timer {
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+}
+
+/* Prowlarr Statistics */
+body.fullscreen-mode .stats-grid {
+  gap: 20px !important;
+}
+
+body.fullscreen-mode .stat-card {
+  padding: 24px !important;
+  border-radius: 14px !important;
+}
+
+body.fullscreen-mode #prowlarr-view .stat-value {
+  font-size: 40px !important;
+}
+
+body.fullscreen-mode #prowlarr-view .stat-label {
+  font-size: 14px !important;
+}
+
+body.fullscreen-mode .stats-table-wrapper {
+  padding: 20px !important;
+  border-radius: 14px !important;
+}
+
+body.fullscreen-mode .stats-table {
+  font-size: 14px !important;
+}
+
+body.fullscreen-mode .stats-table th {
+  font-size: 13px !important;
+  padding: 14px !important;
+}
+
+body.fullscreen-mode .stats-table td {
+  padding: 14px !important;
+}
+
+/* Prowlarr Search */
+body.fullscreen-mode #prowlarr-search .search-bar {
+  padding: 16px !important;
+  border-radius: 14px !important;
+  gap: 15px !important;
+}
+
+/* Filter row - align right so it lines up with search input */
+body.fullscreen-mode #prowlarr-search .search-bar > div:first-child {
+  justify-content: flex-end !important;
+}
+
+body.fullscreen-mode #prowlarr-search input {
+  font-size: 16px !important;
+}
+
+body.fullscreen-mode #prowlarr-search button {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 10px !important;
+}
+
+body.fullscreen-mode .prowlarr-result-item {
+  padding: 16px 20px !important;
+  border-radius: 12px !important;
+}
+
+body.fullscreen-mode .dropdown-trigger {
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+}
+
+body.fullscreen-mode .dropdown-options {
+  border-radius: 12px !important;
+}
+
+body.fullscreen-mode .dropdown-item {
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+}
+
+/* ============================================
+   OVERSEERR
+   ============================================ */
+body.fullscreen-mode #overseerr-requests,
+body.fullscreen-mode #overseerr-trending-results,
+body.fullscreen-mode #overseerr-search-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+body.fullscreen-mode #overseerr-requests .card,
+body.fullscreen-mode #overseerr-trending-results .card,
+body.fullscreen-mode #overseerr-search-results .card {
+  padding: 0;
+  border-radius: 12px;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+/* ============================================
+   WIZARR
+   ============================================ */
+body.fullscreen-mode #wizarr-view.active {
+  gap: 30px !important;
+}
+
+body.fullscreen-mode #wizarr-content {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+body.fullscreen-mode #wizarr-content > div {
+  padding: 20px;
+  border-radius: 14px;
+}
+
+/* Header */
+body.fullscreen-mode .wizarr-header {
+  padding: 18px 24px !important;
+  border-radius: 14px !important;
+}
+
+body.fullscreen-mode .wizarr-server-dropdown {
+  padding: 12px 18px !important;
+  font-size: 15px !important;
+  min-width: 200px !important;
+}
+
+body.fullscreen-mode .wizarr-add-btn {
+  padding: 12px 24px !important;
+  font-size: 15px !important;
+  border-radius: 10px !important;
+}
+
+/* Invitations Section */
+body.fullscreen-mode .wizarr-invites-section {
+  border-radius: 14px !important;
+}
+
+body.fullscreen-mode .wizarr-invites-header {
+  padding: 18px 24px !important;
+}
+
+body.fullscreen-mode .wizarr-invites-header h3 {
+  font-size: 17px !important;
+}
+
+body.fullscreen-mode .wizarr-invites-count {
+  font-size: 14px !important;
+  padding: 5px 14px !important;
+}
+
+body.fullscreen-mode .wizarr-invites-list {
+  max-height: 500px !important;
+}
+
+body.fullscreen-mode .wizarr-invite-item {
+  padding: 16px 24px !important;
+}
+
+body.fullscreen-mode .wizarr-invite-code {
+  font-size: 16px !important;
+}
+
+body.fullscreen-mode .wizarr-invite-expiry {
+  font-size: 13px !important;
+}
+
+body.fullscreen-mode .wizarr-status-badge {
+  font-size: 12px !important;
+  padding: 5px 12px !important;
+}
+
+body.fullscreen-mode .wizarr-invite-actions button {
+  padding: 10px 16px !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+}
+
+/* Modal - Wider */
+body.fullscreen-mode .wizarr-modal-content {
+  max-width: 600px !important;
+  border-radius: 20px !important;
+}
+
+body.fullscreen-mode .wizarr-modal-header {
+  padding: 20px 28px !important;
+}
+
+body.fullscreen-mode .wizarr-modal-header h3 {
+  font-size: 20px !important;
+}
+
+body.fullscreen-mode .wizarr-modal-body {
+  padding: 28px !important;
+  gap: 24px !important;
+}
+
+body.fullscreen-mode .wizarr-form-section > label {
+  font-size: 14px !important;
+}
+
+body.fullscreen-mode .wizarr-form-section input[type="text"],
+body.fullscreen-mode .wizarr-form-section input[type="number"],
+body.fullscreen-mode .wizarr-select {
+  padding: 16px 18px !important;
+  font-size: 16px !important;
+  border-radius: 10px !important;
+}
+
+body.fullscreen-mode .wizarr-section-box {
+  padding: 20px !important;
+  border-radius: 14px !important;
+}
+
+body.fullscreen-mode .wizarr-section-box h4 {
+  font-size: 15px !important;
+  margin-bottom: 16px !important;
+}
+
+body.fullscreen-mode .wizarr-toggle-row span {
+  font-size: 16px !important;
+}
+
+body.fullscreen-mode .wizarr-preset-btn {
+  padding: 10px 18px !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+}
+
+body.fullscreen-mode .wizarr-library-item {
+  padding: 14px 16px !important;
+}
+
+body.fullscreen-mode .wizarr-library-item span {
+  font-size: 15px !important;
+}
+
+body.fullscreen-mode .wizarr-modal-footer {
+  padding-top: 20px !important;
+  gap: 16px !important;
+}
+
+body.fullscreen-mode .wizarr-btn-primary,
+body.fullscreen-mode .wizarr-btn-secondary {
+  padding: 14px 28px !important;
+  font-size: 15px !important;
+  border-radius: 10px !important;
+}
+
+/* ============================================
+   DASHBOARD
+   ============================================ */
+body.fullscreen-mode #dashboard-view .dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+body.fullscreen-mode .dashboard-card {
+  padding: 24px;
+  border-radius: 16px;
+}
+
+body.fullscreen-mode .dashboard-card-title {
+  font-size: 18px;
+}
+
+body.fullscreen-mode .dashboard-card-value {
+  font-size: 32px;
+}
+
+/* ============================================
+   SCROLLBAR (Larger in fullscreen)
+   ============================================ */
+body.fullscreen-mode ::-webkit-scrollbar {
+  width: 10px;
+}
+
+body.fullscreen-mode ::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+@media (max-width: 1200px) {
+  body.fullscreen-mode .view {
+    padding: 25px 35px;
+  }
+
+  body.fullscreen-mode #sab-queue,
+  body.fullscreen-mode #sab-history,
+  body.fullscreen-mode .date-group > div[style*="grid"],
+  body.fullscreen-mode #tautulli-activity,
+  body.fullscreen-mode #unraid-vms-list,
+  body.fullscreen-mode #unraid-docker-list,
+  body.fullscreen-mode #prowlarr-indexers,
+  body.fullscreen-mode #prowlarr-search-results,
+  body.fullscreen-mode #overseerr-requests,
+  body.fullscreen-mode #overseerr-trending-results,
+  body.fullscreen-mode #overseerr-search-results,
+  body.fullscreen-mode #wizarr-content {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  body.fullscreen-mode .view {
+    padding: 20px 25px;
+  }
+
+  body.fullscreen-mode #sab-queue,
+  body.fullscreen-mode #sab-history,
+  body.fullscreen-mode .date-group > div[style*="grid"],
+  body.fullscreen-mode #tautulli-activity,
+  body.fullscreen-mode #unraid-vms-list,
+  body.fullscreen-mode #unraid-docker-list,
+  body.fullscreen-mode #prowlarr-indexers,
+  body.fullscreen-mode #prowlarr-search-results,
+  body.fullscreen-mode #overseerr-requests,
+  body.fullscreen-mode #overseerr-trending-results,
+  body.fullscreen-mode #overseerr-search-results,
+  body.fullscreen-mode #wizarr-content,
+  body.fullscreen-mode #dashboard-view .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.fullscreen-mode .sidebar {
+    width: 70px;
+  }
+
+  body.fullscreen-mode .nav-item {
+    width: 48px;
+    height: 48px;
+  }
+
+  body.fullscreen-mode .nav-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Smaller search modal on mobile */
+  body.fullscreen-mode .search-modal {
+    width: 95% !important;
+  }
+
+  /* Wizarr modal on mobile */
+  body.fullscreen-mode .wizarr-modal-content {
+    max-width: 95% !important;
+  }
+}

@@ -196,12 +196,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       { id: "tautulli", module: "./ui/tautulli.js", badgeFn: "updateTautulliBadge" },
     ];
 
-    services.forEach(svc => {
+    // Track consecutive failures per service (for error indication)
+    const failureCounts = {};
+    const MAX_FAILURES_BEFORE_WARNING = 3;
+
+    // Stagger interval offset to prevent all services updating simultaneously
+    const STAGGER_OFFSET = 1000; // 1 second between each service
+
+    services.forEach((svc, index) => {
         if (
             state.configs[`${svc.id}Enabled`] !== false &&
             state.configs[`${svc.id}Url`] &&
             state.configs[`${svc.id}Key`]
         ) {
+            failureCounts[svc.id] = 0;
+
             const updateFn = async () => {
                 // SKIP if this is the active service (already being polled by main loop)
                 if (state.activeService === svc.id) return;
@@ -214,13 +223,33 @@ document.addEventListener("DOMContentLoaded", async () => {
                             state.configs[`${svc.id}Key`]
                         );
                     }
+                    // Reset failure count on success
+                    failureCounts[svc.id] = 0;
+                    // Remove error indicator if present
+                    const navItem = document.querySelector(`.nav-item[data-target="${svc.id}"]`);
+                    if (navItem) navItem.classList.remove('badge-error');
                 } catch (e) {
-                   // Silent fail for badges
+                    failureCounts[svc.id]++;
+
+                    // Log error occasionally (not every time to avoid spam)
+                    if (failureCounts[svc.id] === 1 || failureCounts[svc.id] % 10 === 0) {
+                        console.warn(`[Badge] ${svc.id} update failed (${failureCounts[svc.id]}x):`, e.message);
+                    }
+
+                    // Add visual indicator after multiple failures
+                    if (failureCounts[svc.id] >= MAX_FAILURES_BEFORE_WARNING) {
+                        const navItem = document.querySelector(`.nav-item[data-target="${svc.id}"]`);
+                        if (navItem) navItem.classList.add('badge-error');
+                    }
                 }
             };
-            
-            updateFn(); // Initial call
-            state.badgeIntervals[svc.id] = setInterval(updateFn, interval);
+
+            // Staggered initial call and interval to prevent simultaneous updates
+            const staggerDelay = index * STAGGER_OFFSET;
+            setTimeout(() => {
+                updateFn(); // Initial call (staggered)
+                state.badgeIntervals[svc.id] = setInterval(updateFn, interval);
+            }, staggerDelay);
         }
     });
   }
@@ -239,8 +268,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // --- Navigation ---
   function initNavigation() {
-    navItems.forEach((item) => {
-      item.addEventListener("click", () => {
+    // Shared navigation handler
+    const handleNavigation = (item) => {
         // Clear any auto-refresh intervals
         if (state.refreshInterval) {
           clearInterval(state.refreshInterval);
@@ -282,6 +311,18 @@ document.addEventListener("DOMContentLoaded", async () => {
                  updateGlider(activeBtn);
              }
         }, 50);
+    };
+
+    // Bind click and keyboard events for accessibility
+    navItems.forEach((item) => {
+      item.addEventListener("click", () => handleNavigation(item));
+
+      // Keyboard support: Enter and Space activate navigation
+      item.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleNavigation(item);
+        }
       });
     });
 
@@ -315,12 +356,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function closeOmnibox() {
-        omniboxContainer.classList.add("hidden");
-        pageTitle.style.display = "block";
+        // Don't hide the omnibox - just clear the input and blur
         omniboxInput.value = "";
+        omniboxInput.blur();
     }
 
     if (omniboxInput) {
+        // Auto-switch to Unified Search Overlay when typing Prowlarr syntax "n:" or "n;"
+        omniboxInput.addEventListener("input", (e) => {
+            const query = omniboxInput.value;
+            if (/^n[;:]/i.test(query)) {
+                import("./ui/searchUI.js").then((module) => {
+                    module.initSearchUI(state);
+                    module.openSearch();
+                    
+                    const searchInput = document.getElementById('unified-search-input');
+                    if (searchInput) {
+                        searchInput.value = query;
+                        searchInput.focus();
+                        // Trigger input handler in searchUI to show filters
+                        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    closeOmnibox();
+                });
+            }
+        });
+
         omniboxInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
                 const query = omniboxInput.value.trim();
@@ -334,7 +395,21 @@ document.addEventListener("DOMContentLoaded", async () => {
                     const searchInput = document.getElementById('unified-search-input');
                     if (searchInput && query) {
                         searchInput.value = query;
-                        searchInput.dispatchEvent(new Event('input')); // Trigger search
+                        
+                        // Check if it is a Prowlarr query which requires Enter
+                        if (/^n[;:]/i.test(query)) {
+                            // Dispatch Enter Keydown to force trigger
+                            searchInput.dispatchEvent(new KeyboardEvent('keydown', {
+                                key: 'Enter',
+                                code: 'Enter',
+                                keyCode: 13,
+                                which: 13,
+                                bubbles: true
+                            }));
+                        } else {
+                            // Standard Input Trigger
+                            searchInput.dispatchEvent(new Event('input', { bubbles: true })); 
+                        }
                     }
                 });
                 
@@ -343,6 +418,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
+    // --- Global Ctrl+S Shortcut for Unified Search ---
+    document.addEventListener("keydown", (e) => {
+        // Ctrl+S to open Unified Search
+        if (e.ctrlKey && e.key === "s") {
+            e.preventDefault(); // Prevent browser save dialog
+            
+            import("./ui/searchUI.js").then((module) => {
+                module.initSearchUI(state);
+                module.openSearch();
+                
+                // Focus search input for immediate typing
+                setTimeout(() => {
+                    const searchInput = document.getElementById('unified-search-input');
+                    if (searchInput) searchInput.focus();
+                }, 50);
+            });
+        }
+    });
 
 
     // --- Overseerr Search Listener (Global) ---

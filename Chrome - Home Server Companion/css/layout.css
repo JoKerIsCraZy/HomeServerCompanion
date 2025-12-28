@@ -39,6 +39,40 @@
   transform: scale(1.05);
 }
 
+/* Focus indicator for keyboard navigation */
+.nav-item:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+.nav-item:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Error indicator for failed badge updates */
+.nav-item.badge-error {
+  opacity: 0.4;
+}
+
+.nav-item.badge-error::after {
+  content: '!';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  background: #f44336;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
 .nav-icon {
   width: 28px;
   height: 28px;

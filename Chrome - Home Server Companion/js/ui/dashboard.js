@@ -97,21 +97,18 @@ async function renderServiceGrid(container, state, isUpdate = false) {
 
     // Define services and their specific check functions
     const services = [
-        { 
-            id: 'unraid', 
-            name: 'Unraid', 
+        {
+            id: 'unraid',
+            name: 'Unraid',
             icon: 'unraid.png',
             check: async (url, key) => {
                 const data = await Unraid.getSystemData(url, key);
-                // metrics: cpu, ram
+                // metrics: cpu, ram - XSS FIX: Return structured object instead of HTML
                 const cpu = Math.round(data.cpu || 0);
                 const ram = Math.round(data.ram || 0);
-                return { 
-                    status: 'online', 
-                    metric: `<div style="font-size: 16px; display: flex; flex-direction: column; gap: 2px;">
-                                <div>${cpu}% <span style="font-size: 10px; opacity: 0.7;">CPU</span></div>
-                                <div>${ram}% <span style="font-size: 10px; opacity: 0.7;">RAM</span></div>
-                             </div>`, 
+                return {
+                    status: 'online',
+                    metric: { cpu, ram }, // Structured object for safe DOM rendering
                     label: '' // Label is now integrated
                 };
             }
@@ -302,12 +299,43 @@ function updateCard(id, status, metric, label) {
     const dot = document.getElementById(`status-${id}`);
     const metricEl = document.getElementById(`metric-${id}`);
     const labelEl = document.getElementById(`label-${id}`);
-    
+
     if (dot) {
         dot.className = `status-dot ${status}`;
         if (status === 'online') dot.classList.add('pulse');
     }
-    if (metricEl) metricEl.innerHTML = metric;
+    if (metricEl) {
+        // XSS FIX: Use DOM API instead of innerHTML
+        metricEl.textContent = '';
+        if (typeof metric === 'object' && metric !== null) {
+            // Structured metric (e.g., Unraid with cpu/ram)
+            if (metric.cpu !== undefined && metric.ram !== undefined) {
+                const container = document.createElement('div');
+                container.style.cssText = 'font-size: 16px; display: flex; flex-direction: column; gap: 2px;';
+
+                const cpuDiv = document.createElement('div');
+                cpuDiv.textContent = metric.cpu + '% ';
+                const cpuLabel = document.createElement('span');
+                cpuLabel.style.cssText = 'font-size: 10px; opacity: 0.7;';
+                cpuLabel.textContent = 'CPU';
+                cpuDiv.appendChild(cpuLabel);
+
+                const ramDiv = document.createElement('div');
+                ramDiv.textContent = metric.ram + '% ';
+                const ramLabel = document.createElement('span');
+                ramLabel.style.cssText = 'font-size: 10px; opacity: 0.7;';
+                ramLabel.textContent = 'RAM';
+                ramDiv.appendChild(ramLabel);
+
+                container.appendChild(cpuDiv);
+                container.appendChild(ramDiv);
+                metricEl.appendChild(container);
+            }
+        } else {
+            // Simple metric (number or string)
+            metricEl.textContent = metric;
+        }
+    }
     if (labelEl) labelEl.textContent = label;
 }
 

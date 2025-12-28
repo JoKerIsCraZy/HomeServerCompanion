@@ -1,0 +1,155 @@
+/**
+ * Shared Modern Tab Styles with Glider Animation
+ * Used by: Sonarr, Radarr, Prowlarr, SABnzbd
+ */
+
+/* Base Modern Tabs Container */
+.tabs {
+    position: relative;
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    border-radius: 12px;
+    gap: 5px;
+    z-index: 1;
+}
+
+/* Glider Base - Animated background */
+.tab-glider {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    height: calc(100% - 10px);
+    border-radius: 8px;
+    z-index: 0;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    width: 0;
+    pointer-events: none;
+}
+
+/* Tab Button Base */
+.tabs .tab-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 20px;
+    margin: 0;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 13px;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.tabs .tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.tabs .tab-btn.active {
+    background: transparent;
+    font-weight: 700;
+}
+
+/* Service-Specific Glider Colors */
+
+/* Sonarr - Blue */
+#sonarr-view .tab-glider {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    box-shadow: 0 2px 5px rgba(33, 150, 243, 0.3);
+}
+#sonarr-view .tab-btn.active {
+    color: #fff;
+}
+
+/* Radarr - Yellow/Orange */
+#radarr-view .tab-glider {
+    background: linear-gradient(135deg, #FFC107, #FFB300);
+    box-shadow: 0 2px 5px rgba(255, 193, 7, 0.3);
+}
+#radarr-view .tab-btn.active {
+    color: #000;
+}
+
+/* Prowlarr - Orange */
+#prowlarr-view .tab-glider {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    box-shadow: 0 2px 5px rgba(255, 152, 0, 0.3);
+}
+#prowlarr-view .tab-btn.active {
+    color: #fff;
+}
+
+/* SABnzbd - Green */
+#sabnzbd-view .tab-glider {
+    background: linear-gradient(135deg, #4caf50, #388e3c);
+    box-shadow: 0 2px 5px rgba(76, 175, 80, 0.3);
+}
+#sabnzbd-view .tab-btn.active {
+    color: #fff;
+}
+
+/* Sub-tabs with Glider (Unraid, Overseerr) */
+.sub-tabs {
+    position: relative;
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    border-radius: 12px;
+    gap: 5px;
+}
+
+.sub-tabs .tab-glider {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    height: calc(100% - 10px);
+    border-radius: 8px;
+    z-index: 0;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    width: 0;
+    pointer-events: none;
+}
+
+.sub-tabs .sub-tab-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 16px;
+    margin: 0;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 13px;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.sub-tabs .sub-tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.sub-tabs .sub-tab-btn.active {
+    background: transparent;
+    font-weight: 600;
+}
+
+/* Unraid - Orange */
+#unraid-view .sub-tabs .tab-glider {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    box-shadow: 0 2px 5px rgba(255, 152, 0, 0.3);
+}
+#unraid-view .sub-tab-btn.active {
+    color: #fff;
+}
+
+/* Overseerr - Purple */
+#overseerr-view .sub-tabs .tab-glider {
+    background: linear-gradient(135deg, #ab47bc, #9c27b0);
+    box-shadow: 0 2px 5px rgba(171, 71, 188, 0.3);
+}
+#overseerr-view .sub-tab-btn.active {
+    color: #fff;
+}

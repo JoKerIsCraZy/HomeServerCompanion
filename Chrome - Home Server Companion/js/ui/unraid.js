@@ -4,6 +4,7 @@ import {
   getVms,
   controlVm
 } from "../../services/unraid.js";
+import { showNotification } from "../utils.js";
 
 /**
  * Initializes the Unraid service view.
@@ -842,18 +843,54 @@ function updateDockerCard(card, container, url, key) {
     
     startBtn.onclick = async (e) => {
          e.stopPropagation();
+         card.classList.add('loading');
+         startBtn.classList.add('btn-loading');
          dot.className = 'status-dot paused'; 
-         await controlContainer(url, key, container.id, 'start');
+         try {
+             await controlContainer(url, key, container.id, 'start');
+             showNotification(`Container "${container.name}" started`, 'success');
+         } catch (err) {
+             showNotification(`Failed to start "${container.name}": ${err.message}`, 'error');
+             dot.className = 'status-dot stopped';
+         } finally {
+             card.classList.remove('loading');
+             startBtn.classList.remove('btn-loading');
+             startBtn.blur();
+         }
     };
     stopBtn.onclick = async (e) => {
          e.stopPropagation();
+         card.classList.add('loading');
+         stopBtn.classList.add('btn-loading');
          dot.className = 'status-dot paused';
-         await controlContainer(url, key, container.id, 'stop');
+         try {
+             await controlContainer(url, key, container.id, 'stop');
+             showNotification(`Container "${container.name}" stopped`, 'success');
+         } catch (err) {
+             showNotification(`Failed to stop "${container.name}": ${err.message}`, 'error');
+             dot.className = 'status-dot started';
+         } finally {
+             card.classList.remove('loading');
+             stopBtn.classList.remove('btn-loading');
+             stopBtn.blur();
+         }
     };
     restartBtn.onclick = async (e) => {
          e.stopPropagation();
+         card.classList.add('loading');
+         restartBtn.classList.add('btn-loading');
          dot.className = 'status-dot paused';
-         await controlContainer(url, key, container.id, 'restart');
+         try {
+             await controlContainer(url, key, container.id, 'restart');
+             showNotification(`Container "${container.name}" restarted`, 'success');
+         } catch (err) {
+             showNotification(`Failed to restart "${container.name}": ${err.message}`, 'error');
+             dot.className = 'status-dot started';
+         } finally {
+             card.classList.remove('loading');
+             restartBtn.classList.remove('btn-loading');
+             restartBtn.blur();
+         }
     };
     webBtn.onclick = (e) => {
          e.stopPropagation();
@@ -930,8 +967,40 @@ async function renderUnraidVms(url, key) {
                 webBtn.style.display = 'none';
             }
 
-            startBtn.onclick = () => controlVm(url, key, vm.id, 'start');
-            stopBtn.onclick = () => controlVm(url, key, vm.id, 'stop');
+            startBtn.onclick = async (e) => {
+                e.stopPropagation();
+                card.classList.add('loading');
+                startBtn.classList.add('btn-loading');
+                dot.className = 'status-dot paused';
+                try {
+                    await controlVm(url, key, vm.id, 'start');
+                    showNotification(`VM "${vm.name}" started`, 'success');
+                } catch (err) {
+                    showNotification(`Failed to start "${vm.name}": ${err.message}`, 'error');
+                    dot.className = 'status-dot stopped';
+                } finally {
+                    card.classList.remove('loading');
+                    startBtn.classList.remove('btn-loading');
+                    startBtn.blur();
+                }
+            };
+            stopBtn.onclick = async (e) => {
+                e.stopPropagation();
+                card.classList.add('loading');
+                stopBtn.classList.add('btn-loading');
+                dot.className = 'status-dot paused';
+                try {
+                    await controlVm(url, key, vm.id, 'stop');
+                    showNotification(`VM "${vm.name}" stopped`, 'success');
+                } catch (err) {
+                    showNotification(`Failed to stop "${vm.name}": ${err.message}`, 'error');
+                    dot.className = 'status-dot started';
+                } finally {
+                    card.classList.remove('loading');
+                    stopBtn.classList.remove('btn-loading');
+                    stopBtn.blur();
+                }
+            };
             
             list.appendChild(card);
         });

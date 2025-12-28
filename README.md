@@ -1,240 +1,375 @@
 <div align="center">
-  <img src="images/logo.png" alt="Logo" width="256">
-</div>
+  <img src="images/logo.png" alt="Logo" width="256">
 
 # Home Server Companion
 
-[![Version](https://img.shields.io/badge/version-3.4-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
+**Your Home Server, One Click Away**
+
+[![Version](https://img.shields.io/badge/version-3.5-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/blob/master/LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
 
 [![Available on Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Now-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
-[![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/legakiehaacgpdkmlebkjcijaiegoeld?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
-[![Browser Support](https://img.shields.io/badge/Supports-Chrome-critical?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
-[![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange?style=for-the-badge)](https://developer.chrome.com/docs/extensions/mv3/)
-[![Built With](https://img.shields.io/badge/Built%20With-JavaScript-F7DF1E?logo=javascript&logoColor=black&style=for-the-badge)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
----
+  <br/>
 
 [![GitHub Stars](https://img.shields.io/github/stars/JoKerIsCraZy/HomeServerCompanion?style=flat&logo=github)](https://github.com/JoKerIsCraZy/HomeServerCompanion/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/JoKerIsCraZy/HomeServerCompanion?style=flat&logo=github)](https://github.com/JoKerIsCraZy/HomeServerCompanion/network/members)
 [![Open Issues](https://img.shields.io/github/issues/JoKerIsCraZy/HomeServerCompanion)](https://github.com/JoKerIsCraZy/HomeServerCompanion/issues)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
 
----
-
-**Home Server Companion** is a powerful, modern Chrome Extension designed to bring your home server directly to your browser's toolbar. Manage downloads, monitor streams, check requests, and control your server status with a sleek, unified interface.
-
-## ✨ Features
-
-A comprehensive dashboard for your self-hosted services:
-
-- **⚙️ Unraid**:
-  - **System Dashboard**: Real-time CPU ring chart, RAM usage bar, and uptime tracking.
-  - **Quick Stats**: Array status and storage space overview.
-  - **Storage Breakdown**: Detailed disk usage for Array, Cache/Pools, and Boot drives.
-  - **Docker Management**: Start, Stop, Restart containers with status indicators and search/sort.
-  - **VM Management**: Control virtual machines with start/stop and VNC access.
-  - **WebUI Access**: Quick links to container and VM interfaces.
-- **📦 SABnzbd**:
-  - Monitor real-time download queue with speed and time remaining.
-  - **Timed Pause**: Pause downloads for 15min, 30min, 1h, 2h, 6h, or indefinitely.
-  - Pause/Resume the entire queue or delete individual items.
-  - View detailed download history with status indicators.
-- **📺 Sonarr**:
-  - **Calendar**: View upcoming episodes with air times and release info.
-  - **Queue**: Track active downloads with warnings for stuck items.
-  - **History**: See recently imported episodes grouped by series and season.
-  - **Missing**: View and search for missing episodes directly from the extension.
-  - **Queue Management**: Delete items with options to remove from client or blocklist & search for alternatives.
-  - **Manual Import**: Advanced import dialog with full quality and language selection for problematic downloads.
-  - **Badge Notifications**: Visual alerts for queue issues requiring attention.
-- **🎬 Radarr**:
-  - **Calendar**: View upcoming movie releases (Digital, Physical, Cinema).
-  - **Queue**: Monitor active downloads with issue detection.
-  - **History**: Browse recently imported movies with poster art.
-  - **Missing**: View and search for missing movies.
-  - **Queue Management**: Remove downloads or blocklist releases and trigger automatic re-search.
-  - **Manual Import**: Enhanced import workflow matching Sonarr, with parallel loading and full quality/language control.
-  - **Badge Notifications**: Alerts for download warnings and errors.
-- **📊 Tautulli**:
-  - **Active Streams**: View active Plex streams with rich metadata and poster art.
-  - **IP Geolocation**: Click IP addresses to view detailed location info (Country, City, ISP, Map).
-  - **Kill Stream**: Terminate active streams directly from the popup.
-  - **Activity Links**: Click titles or posters to open the media directly in your PMS or Tautulli.
-  - **Detailed Stats**: User info, playback quality, bandwidth, stream decision (Direct Play/Transcode).
-  - **Expandable Details**: View full stream, player, and user information.
-- **✍️ Overseerr**:
-  - **Browse Requests**: View and filter requests by status (Pending, Approved, Processing, Available).
-  - **Search**: Search TMDB for movies and TV shows to request.
-  - **Trending**: Discover trending content with random rotation on each view and **type filter** (Movies, TV, or Both).
-  - **Request Media**: One-click requests for movies and full TV seasons.
-  - **Approve/Decline**: Manage pending requests directly from the extension.
-  - **Smart Caching**: Instant load times with hydrated request data.
-- **🔍 Prowlarr**:
-  - **Indexer Overview**: Monitor all configured indexers with real-time status.
-  - **Status Indicators**: Visual badges showing enabled, disabled, or temporarily unavailable (failure) states.
-  - **Failure Recovery**: Automatic countdown timers showing when failed indexers retry.
-  - **VIP Timer**: Track VIP expiration dates for indexers that require subscriptions.
-  - **Statistics Dashboard**: View indexer performance metrics, query counts, and grab statistics with sortable tables.
-  - **Search**: Search across all indexers with category and indexer filtering, persistent search state option.
-  - **Quick Access**: Direct links to indexer configuration and Prowlarr dashboard.
-  - **Favicon Display**: Visual indexer identification with automatic favicon loading.
-- **🧙 Wizarr**:
-  - **Invitation Dashboard**: List all active and used invitations with real-time status.
-  - **Create Invitations**: Create new invites with specific servers, libraries, expiration time, and duration.
-  - **Quick Copy**: One-click copy for invite links.
-  - **Management**: Delete unused or expired invitations directly.
-- **🌈 General**:
-  - **Global Search**: Press `Enter` to search movies/TV shows across your services (via Overseerr) from anywhere in the app.
-  - **Context Menu Search**: Highlight text on any webpage, right-click, and select "Search in Home Server Companion" to instantly search for media.
-  - **Dark Mode**: A sleek, high-contrast dark theme designed for night-time visibility.
-  - **Customizable Order**: Reorder services in the sidebar to fit your workflow.
-  - **Direct Links**: One-click access to all your service Web UIs and specific pages.
-  - **Badge Notifications**: Visual alerts on sidebar icons for queues or issues requiring attention.
-  - **Persistent State**: Remembers your last viewed service and tabs across sessions.
-
-## 📸 Screenshots
-
-### Dashboard
-
-<div align="center">
-  <img src="images/dashboard.png" alt="Dashboard" width="45%">
 </div>
 
-### Unraid
+---
 
+## ⚡ Quick Start
+
+```
+1. Install from Chrome Web Store
+2. Right-click extension icon -> Options -> Add your service URLs & API keys
+3. Click the icon and start managing your server!
+```
+
+<div align="center">
+
+|      Shortcut      | Action                               |
+| :----------------: | :----------------------------------- |
+|      `Ctrl+S`      | Open Unified Search                  |
+|      `Enter`       | Search Movies & TV Shows (Overseerr) |
+|        `n:`        | Search NZBs directly via Prowlarr    |
+| `Right-click text` | Context menu search                  |
+
+</div>
+
+---
+
+## 🔍 Unified Search - The Power Feature
+
+The **Unified Search Bar** is your command center. Click the search bar or press `Enter` anywhere to instantly search across your services.
+
+### Search Syntax
+
+|  Prefix  | What it does                     | Example            |
+| :------: | :------------------------------- | :----------------- |
+| _(none)_ | Search Movies & TV via Overseerr | `Breaking Bad`     |
+|   `n:`   | Search NZBs via Prowlarr         | `n:ubuntu iso`     |
+|   `n;`   | Same as `n:` (alternative)       | `n;latest release` |
+
+### 🔥 Prowlarr NZB Search (`n:`)
+
+Search **all your indexers at once** directly from the extension!
+
+- **Category Filter** - Filter by Movies, TV, Audio, Games, etc.
+- **Indexer Filter** - Select specific indexers or search all
+- **One-Click Grab** - Download NZBs directly from the extension
+- **Size & Seeders** - See file details before downloading
+
+```
+n:Movie Name 2024      -> Search all indexers for "Movie Name 2024"
+n:ubuntu server        -> Find Linux ISOs across your indexers
+```
+
+---
+
+## ✨ Feature Highlights
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 🖥️ Fullscreen Mode
+
+Open in a new tab for a **full dashboard experience**:
+
+- Larger cards and grid layouts
+- Responsive design for any screen
+- Perfect for dedicated monitoring
+
+</td>
+<td width="50%" valign="top">
+
+### 🔔 Live Badges
+
+Real-time notifications on sidebar icons:
+
+- Queue item counts
+- Download warnings
+- Issues requiring attention
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🌐 Context Menu Search
+
+Highlight any text on the web, right-click:
+
+> "Search in Home Server Companion"
+
+Instantly search for movies or TV shows!
+
+</td>
+<td width="50%" valign="top">
+
+### 🎨 Dark Theme
+
+Beautiful high-contrast dark UI:
+
+- Easy on the eyes
+- Perfect for night use
+- Service-specific accent colors
+
+</td>
+</tr>
+</table>
+
+---
+
+## 📦 Supported Services
+
+<details>
+<summary><b>⚙️ Unraid</b> - Complete Server Management</summary>
+
+- **System Dashboard** - Real-time CPU ring, RAM bar, uptime
+- **Storage Overview** - Array, Cache, Pools, Boot drives
+- **Docker Management** - Start/Stop/Restart with search & sort
+- **VM Control** - Manage VMs with VNC access
+- **Quick Links** - Direct access to WebUIs
+
+</details>
+
+<details>
+<summary><b>⬇️ SABnzbd</b> - Download Management</summary>
+
+- **Live Queue** - Speed, ETA, progress bars
+- **Timed Pause** - 15min, 30min, 1h, 2h, 6h, or indefinite
+- **History** - Completed downloads with status
+- **Queue Control** - Pause, resume, delete items
+
+</details>
+
+<details>
+<summary><b>📺 Sonarr</b> - TV Show Management</summary>
+
+- **Calendar** - Upcoming episodes with air times
+- **Queue** - Active downloads with warnings
+- **History** - Recently imported, grouped by series
+- **Missing** - Find and search for missing episodes
+- **Manual Import** - Advanced quality/language selection
+- **Badge Alerts** - Visual queue issue notifications
+
+</details>
+
+<details>
+<summary><b>🎥 Radarr</b> - Movie Management</summary>
+
+- **Calendar** - Upcoming releases (Digital, Physical, Cinema)
+- **Queue** - Monitor downloads with issue detection
+- **History** - Recently imported with poster art
+- **Missing** - Search for missing movies
+- **Manual Import** - Full quality/language control
+- **Badge Alerts** - Download warning notifications
+
+</details>
+
+<details>
+<summary><b>📊 Tautulli</b> - Plex Monitoring</summary>
+
+- **Active Streams** - Rich metadata with posters
+- **IP Geolocation** - Click IPs for location info & maps
+- **Kill Stream** - Terminate streams directly
+- **Activity Links** - Jump to media in Plex/Tautulli
+- **Stream Details** - Quality, bandwidth, transcode info
+
+</details>
+
+<details>
+<summary><b>✏️ Overseerr</b> - Media Requests</summary>
+
+- **Browse Requests** - Filter by status
+- **TMDB Search** - Find movies & TV shows
+- **Trending** - Discover with type filter
+- **One-Click Request** - Movies & full TV seasons
+- **Approve/Decline** - Manage pending requests
+- **Smart Caching** - Instant load times
+
+</details>
+
+<details>
+<summary><b>🔎 Prowlarr</b> - Indexer Management</summary>
+
+- **Indexer Overview** - Real-time status monitoring
+- **VIP Timer** - Track subscription expirations
+- **Statistics** - Performance metrics & query stats
+- **Direct Search** - Search all indexers with filters
+- **Favicon Display** - Visual indexer identification
+
+</details>
+
+<details>
+<summary><b>🧙 Wizarr</b> - Plex Invitations</summary>
+
+- **Invitation Dashboard** - Active & used invites
+- **Create Invites** - Server, libraries, expiration
+- **Quick Copy** - One-click invite link copy
+- **Management** - Delete unused invitations
+
+</details>
+
+---
+
+## 📷 Screenshots
+
+<details open>
+<summary><b>Dashboard</b></summary>
+<div align="center">
+  <img src="images/dashboard.png" alt="Dashboard" width="60%">
+</div>
+</details>
+
+<details>
+<summary><b>Unraid</b></summary>
 <div align="center">
   <img src="images/unraid_dashboard.png" alt="Unraid Dashboard" width="45%">
   <img src="images/unraid_storage.png" alt="Unraid Storage" width="45%">
   <img src="images/unraid_docker.png" alt="Unraid Docker" width="45%">
   <img src="images/unraid_vms.png" alt="Unraid VMs" width="45%">
 </div>
+</details>
 
-### SABnzbd
-
+<details>
+<summary><b>SABnzbd</b></summary>
 <div align="center">
   <img src="images/sabnzbd_queue.png" alt="SABnzbd Queue" width="45%">
   <img src="images/sabnzbd_history.png" alt="SABnzbd History" width="45%">
 </div>
+</details>
 
-### Sonarr
-
+<details>
+<summary><b>Sonarr & Radarr</b></summary>
 <div align="center">
   <img src="images/sonarr_calendar.png" alt="Sonarr Calendar" width="45%">
-  <img src="images/sonarr_missing.png" alt="Sonarr Missing" width="45%">
-  <img src="images/sonarr_recent.png" alt="Sonarr Recent" width="45%">
-  <h2>1:1 same design as radarr so same pictures :P</h2>
-    <img src="images/radarr_queue.png" alt="Radarr Queue" width="45%">
-  <img src="images/radarr_manual_import.png" alt="Radarr Manual Import" width="45%">
-</div>
-
-### Radarr
-
-<div align="center">
   <img src="images/radarr_calendar.png" alt="Radarr Calendar" width="45%">
-  <img src="images/radarr_missing.png" alt="Radarr Missing" width="45%">
-  <img src="images/radarr_recent.png" alt="Radarr Recent" width="45%">
-  <img src="images/radarr_queue.png" alt="Radarr Queue" width="45%">
-  <img src="images/radarr_manual_import.png" alt="Radarr Manual Import" width="45%">
+  <img src="images/radarr_queue.png" alt="Queue" width="45%">
+  <img src="images/radarr_manual_import.png" alt="Manual Import" width="45%">
+  <img src="images/sonarr_missing.png" alt="Missing" width="45%">
+  <img src="images/radarr_missing.png" alt="Missing" width="45%">
 </div>
+</details>
 
-### Tautulli
-
+<details>
+<summary><b>Tautulli</b></summary>
 <div align="center">
-  <img src="images/tautulli_activity.png" alt="Tautulli Activity" width="45%">
+  <img src="images/tautulli_activity.png" alt="Tautulli Activity" width="60%">
 </div>
+</details>
 
-### Overseerr
-
+<details>
+<summary><b>Overseerr</b></summary>
 <div align="center">
   <img src="images/overseerr_requests.png" alt="Overseerr Requests" width="45%">
   <img src="images/overseerr_search.png" alt="Overseerr Search" width="45%">
   <img src="images/overseerr_trending.png" alt="Overseerr Trending" width="45%">
 </div>
+</details>
 
-### Prowlarr
-
+<details>
+<summary><b>Prowlarr</b></summary>
 <div align="center">
   <img src="images/prowlarr_indexer.png" alt="Prowlarr Indexer" width="45%">
   <img src="images/prowlarr_search.png" alt="Prowlarr Search" width="45%">
   <img src="images/prowlarr_stats.png" alt="Prowlarr Stats" width="45%">
 </div>
+</details>
 
-### Wizarr
-
+<details>
+<summary><b>Wizarr</b></summary>
 <div align="center">
   <img src="images/wizarr.png" alt="Wizarr" width="45%">
   <img src="images/wizarr_invite.png" alt="Wizarr Invites" width="45%">
 </div>
-
-## 🚀 Installation
-
-**Home Server Companion** is officially available on the **Chrome Web Store**!
-
-### Option 1: Install via the Chrome Web Store (Recommended)
-
-1.  Visit the extension page on the **Chrome Web Store**:
-    - [https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
-2.  Click **Add to Chrome** and confirm the installation.
-3.  The **Home Server Companion** icon will appear in your toolbar. Pin it for easy access!
-
-### Option 2: Manual Installation (For Developers)
-
-If you wish to test the latest development version or contribute changes:
-
-1.  **Download** the latest release or clone this repository to a folder on your computer.
-2.  Open Google Chrome and navigate to `chrome://extensions`.
-3.  Enable **Developer mode** by toggling the switch in the top-right corner.
-4.  Click the **Load unpacked** button that appears.
-5.  Select the **root folder** of this project (the folder containing `manifest.json`).
-
-## ⚙️ Configuration
-
-Once installed, you need to connect your services.
-
-1.  Right-click the extension icon and select **Options**.
-2.  Navigate through the tabs to configure each service you use.
-
-| Service         | Setting        | Description                                                                            |
-| :-------------- | :------------- | :------------------------------------------------------------------------------------- |
-| **General**     | Service Order  | Drag and drop to reorder the sidebar. The top item opens by default.                   |
-| **Unraid**      | URL            | IP Address or Hostname (e.g., `http://192.168.1.10`).                                  |
-|                 | API Key        | Required for advanced control. Generate via "Management Access" settings if available. |
-| **SABnzbd**     | URL & API Key  | Found in Config -> General / API.                                                      |
-| **Sonarr**      | URL & API Key  | Found in Settings -> General.                                                          |
-| **Radarr**      | URL & API Key  | Found in Settings -> General.                                                          |
-| **Tautulli**    | URL & API Key  | Found in Settings -> Web Interface.                                                    |
-| **Overseerr**   | URL & API Key  | Found in Settings -> General.                                                          |
-| **Prowlarr**    | URL & API Key  | Found in Settings -> General.                                                          |
-| **Wizarr**      | URL & API Key  | Found in Settings -> General / API.                                                    |
-
-> **Note**: Ensure your URLs include the protocol (`http://` or `https://`) and port if non-standard (e.g., `:8080`).
-
-## 🛠️ Usage
-
-- **Click** the extension icon to open the dashboard.
-- **Sidebar**: Switch between services.
-- **Sub-tabs**: Within services like Sonarr/Radarr (Calendar/Queue) or Unraid (Stats/Docker), use the top tabs to switch views.
-- **Settings**: Click the gear icon to return to the configuration page.
-
-## Permissions & Privacy
-
-We value your privacy and only request permissions necessary for core functionality:
-
-- **Storage (`storage`)**: Used exclusively to save your configuration (Server URLs, API Keys, View Preferences) locally within your browser profile via the Chrome Sync API. No data is ever sent to external servers or analytics.
-- **Optional Host Permissions (`optional_host_permissions`)**: This extension uses _optional host permissions_ to communicate with your self-hosted instances (SABnzbd, Sonarr, etc.). **Permission is only requested when you attempt to connect a specific server URL in the extension options.** Since your servers can be on any local IP address or custom domain, we require this dynamic permission to fetch data from the specific URLs you configure. **We do not access any other websites.**
-
-## 💻 Tech Stack
-
-- **Frontend**: HTML5, CSS3 (Custom Variables), JavaScript (ES6 Modules).
-- **Platform**: Chrome Extension Manifest V3.
-- **Storage**: Chrome Sync Storage API for settings persistence.
-
-## 🤝 Contributing
-
-Contributions are welcome! If you have a feature request or bug report, please open an issue or submit a pull request.
+</details>
 
 ---
 
-_Built with ❤️ for the HomeLab community._
+## 🚀 Installation
+
+### Option 1: Chrome Web Store (Recommended)
+
+<div align="center">
+
+[![Install from Chrome Web Store](https://img.shields.io/badge/Install_Now-Chrome_Web_Store-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/home-server-companion/legakiehaacgpdkmlebkjcijaiegoeld)
+
+</div>
+
+### Option 2: Manual Installation (Developers)
+
+1. Clone this repository
+2. Go to `chrome://extensions`
+3. Enable **Developer mode**
+4. Click **Load unpacked** -> Select the project folder
+
+---
+
+## 🔧 Configuration
+
+| Service       | Where to find API Key      |
+| :------------ | :------------------------- |
+| **Unraid**    | Management Access settings |
+| **SABnzbd**   | Config -> General -> API   |
+| **Sonarr**    | Settings -> General        |
+| **Radarr**    | Settings -> General        |
+| **Tautulli**  | Settings -> Web Interface  |
+| **Overseerr** | Settings -> General        |
+| **Prowlarr**  | Settings -> General        |
+| **Wizarr**    | Settings -> API            |
+
+> 💡 **Tip**: Include `http://` or `https://` and port if needed (e.g., `http://192.168.1.10:8080`)
+
+---
+
+## ⌨️ Keyboard Shortcuts & Search
+
+| Action           | How                                                                |
+| :--------------- | :----------------------------------------------------------------- |
+| Open Search      | `Ctrl+S` or click search bar or press `Enter`                      |
+| Search Movies/TV | Type and press `Enter`                                             |
+| Search NZBs      | Type `n:searchterm`                                                |
+| Close Search     | Press `Escape` or click outside                                    |
+| Context Menu     | Highlight text -> Right-click -> "Search in Home Server Companion" |
+
+---
+
+## 🛡️ Privacy & Permissions
+
+- **Storage**: Saves your config locally (URLs, API keys, preferences)
+- **Host Permissions**: Only requested for servers YOU configure
+- **No Analytics**: Zero data sent to external servers
+- **Local Only**: Everything stays in your browser
+
+---
+
+## 💻 Tech Stack
+
+|              |                              |
+| :----------- | :--------------------------- |
+| **Frontend** | HTML5, CSS3, JavaScript ES6  |
+| **Platform** | Chrome Extension Manifest V3 |
+| **Storage**  | Chrome Sync Storage API      |
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Open an issue or submit a PR.
+
+---
+
+<div align="center">
+
+**Built with ❤️ for the HomeLab community**
+
+[![GitHub Stars](https://img.shields.io/github/stars/JoKerIsCraZy/HomeServerCompanion?style=social)](https://github.com/JoKerIsCraZy/HomeServerCompanion/stargazers)
+
+</div>

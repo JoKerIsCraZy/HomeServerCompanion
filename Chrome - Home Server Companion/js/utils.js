@@ -450,18 +450,71 @@ export async function checkAndShowChangelog() {
     const result = await getStorage(['last_run_version']);
     
     if (result.last_run_version !== version) {
-        // Defines the changelog content for the current version
-        const changelog = `
-            <ul style="text-align: left; padding-left: 20px; margin: 0; list-style-type: disc;">
-                <li style="margin-bottom: 4px;"><b>Dashboard & UI:</b> Completely new Dashboard view and refactored Settings page.</li>
-                <li style="margin-bottom: 4px;"><b>Unified Search:</b> New global search bar for faster navigation and queries.</li>
-                <li style="margin-bottom: 4px;"><b>Performance:</b> Optimized API queries and faster load times.</li>
-                <li style="margin-bottom: 4px;"><b>Tautulli Enhancements:</b> IP Geolocation lookup, country flags, and performance optimizations.</li>
-                <li style="margin-bottom: 4px;"><b>Wizarr & SABnzbd:</b> Added Wizarr integration and SABnzbd badges.</li>
-            </ul>
-        `;
+        // Create changelog content safely using DOM API
+        const changelogItems = [
+            { title: 'Ctrl+S Shortcut:', desc: 'Press Ctrl+S anywhere to instantly open Unified Search.' },
+            { title: 'Unified Search:', desc: 'Centralized search bar to quickly find content across services.' },
+            { title: 'Fullscreen Mode:', desc: 'Redesigned fullscreen dashboard with grid layouts.' },
+            { title: 'Tautulli:', desc: 'IP Geolocation lookup with country flags and maps.' },
+            { title: 'Wizarr Integration:', desc: 'Manage Plex invitations directly from the extension.' }
+        ];
         
-        await showInfoModal(`What's New in v${version}`, changelog, 'Awesome!', '#2196f3');
+        // Create modal with DOM
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal-backdrop';
+        
+        const content = document.createElement('div');
+        content.className = 'custom-modal';
+        
+        const header = document.createElement('div');
+        header.className = 'custom-modal-header';
+        header.textContent = `What's New in v${version}`;
+        
+        const body = document.createElement('div');
+        body.className = 'custom-modal-body';
+        body.style.textAlign = 'left';
+        
+        const ul = document.createElement('ul');
+        ul.style.cssText = 'padding-left: 20px; margin: 0; list-style-type: disc;';
+        
+        changelogItems.forEach(item => {
+            const li = document.createElement('li');
+            li.style.marginBottom = '4px';
+            const b = document.createElement('b');
+            b.textContent = item.title;
+            li.appendChild(b);
+            li.appendChild(document.createTextNode(' ' + item.desc));
+            ul.appendChild(li);
+        });
+        
+        body.appendChild(ul);
+        
+        const footer = document.createElement('div');
+        footer.className = 'custom-modal-footer';
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'modal-btn confirm';
+        confirmBtn.style.backgroundColor = '#2196f3';
+        confirmBtn.textContent = 'Awesome!';
+        footer.appendChild(confirmBtn);
+        
+        content.appendChild(header);
+        content.appendChild(body);
+        content.appendChild(footer);
+        modal.appendChild(content);
+        
+        document.body.appendChild(modal);
+        requestAnimationFrame(() => modal.classList.add('show'));
+        
+        await new Promise(resolve => {
+            const cleanup = () => {
+                modal.classList.remove('show');
+                setTimeout(() => modal.remove(), 200);
+                resolve();
+            };
+            confirmBtn.addEventListener('click', cleanup);
+            modal.addEventListener('click', (e) => { if (e.target === modal) cleanup(); });
+        });
         
         // Save new version so it doesn't show again
         await new Promise(resolve => chrome.storage.local.set({ last_run_version: version }, resolve));
