@@ -51,6 +51,27 @@ export const checkUnraidStatus = async (url, apiKey) => {
     } catch { return false; }
 };
 
+// Helper to parse potential string numbers
+const parse = (val) => parseInt(val, 10) || 0;
+
+// Helper to normalize disk object
+const normalizeDisk = (d, type) => {
+    const used = parse(d.fsUsed) * 1024;
+    const total = parse(d.fsSize) * 1024;
+    const free = d.fsFree ? (parse(d.fsFree) * 1024) : (total - used);
+    
+    return {
+        type,
+        name: d.name || type,
+        temp: d.temp,
+        spinning: d.isSpinning,
+        status: d.status,
+        used,
+        total,
+        free
+    };
+};
+
 /**
  * Fetches comprehensive system data (System info, Array, Docker, Metrics).
  * @param {string} url 
@@ -123,27 +144,6 @@ export const getSystemData = async (url, apiKey) => {
     try {
         const res = await graphQL(url, apiKey, systemQuery);
         
-        // Helper to parse potential string numbers
-        const parse = (val) => parseInt(val, 10) || 0;
-
-        // Helper to normalize disk object
-        const normalizeDisk = (d, type) => {
-            const used = parse(d.fsUsed) * 1024;
-            const total = parse(d.fsSize) * 1024;
-            const free = d.fsFree ? (parse(d.fsFree) * 1024) : (total - used);
-            
-            return {
-                type,
-                name: d.name || type,
-                temp: d.temp,
-                spinning: d.isSpinning,
-                status: d.status,
-                used,
-                total,
-                free
-            };
-        };
-
         const serverHostname = new URL(url).hostname;
         const serverProtocol = new URL(url).protocol; // http: or https:
 

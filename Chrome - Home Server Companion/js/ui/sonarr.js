@@ -12,20 +12,38 @@ import { showNotification, showConfirmModal } from "../utils.js";
  */
 export async function initSonarr(url, key, state) {
     try {
-        // Calendar
-        const calendar = await Sonarr.getSonarrCalendar(url, key);
-        renderSonarrCalendar(calendar, state);
+        // Create independent promise chains for parallel execution
+        const pCalendar = Sonarr.getSonarrCalendar(url, key)
+            .then(calendar => renderSonarrCalendar(calendar, state));
 
-        // Queue
-        const queue = await Sonarr.getSonarrQueue(url, key);
-        renderSonarrQueue(queue.records || [], state);
+        const pQueue = Sonarr.getSonarrQueue(url, key)
+            .then(queue => {
+                renderSonarrQueue(queue.records || [], state);
+                return updateSonarrBadge(url, key, queue);
+            });
 
-        // Initial Badge Update
-        await updateSonarrBadge(url, key);
+        const pHistory = Sonarr.getSonarrHistory(url, key)
+            .then(history => renderSonarrHistory(history.records || [], state));
 
-        // History (Recent)
-        const history = await Sonarr.getSonarrHistory(url, key);
-        renderSonarrHistory(history.records || [], state);
+        // Add listeners for new tabs (lazy load)
+        const sonarrView = document.getElementById("sonarr-view");
+        if (sonarrView) {
+            const missingBtn = sonarrView.querySelector('.tab-btn[data-tab="missing"]');
+            if (missingBtn) {
+                missingBtn.addEventListener('click', () => {
+                   loadSonarrMissing(url, key, state);
+                });
+                
+                // If tab is already active (restored state), load immediately
+                if (missingBtn.classList.contains('active')) {
+                    loadSonarrMissing(url, key, state);
+                }
+            }
+        }
+
+        // Wait for all (settled) so we don't throw on partial failure immediately
+        await Promise.allSettled([pCalendar, pQueue, pHistory]);
+
     } catch (e) {
         console.error("Sonarr loading error", e);
         throw e;
@@ -231,7 +249,7 @@ function renderSonarrQueue(records, state) {
         }
         try {
             const newQueue = await Sonarr.getSonarrQueue(state.configs.sonarrUrl, state.configs.sonarrKey);
-            await updateSonarrBadge(state.configs.sonarrUrl, state.configs.sonarrKey);
+            await updateSonarrBadge(state.configs.sonarrUrl, state.configs.sonarrKey, newQueue);
             renderSonarrQueue(newQueue.records || [], state);
         } catch(e) {
             if(btn) {
@@ -360,7 +378,7 @@ function renderSonarrQueue(records, state) {
                       delBtn.style.display = 'block';
                       itemEl.remove();
                       optionsDiv.remove();
-                      showNotification('Item removed from queue', '#2196f3');
+                      showNotification('Item removed from queue', 'success');
                   } catch(e) { 
                       if (e.message.includes('404')) {
                           showNotification("Item not found (404)", 'error');
@@ -388,7 +406,7 @@ function renderSonarrQueue(records, state) {
                     await Sonarr.deleteQueueItem(state.configs.sonarrUrl, state.configs.sonarrKey, item.id, true, true);
                     delBtn.style.display = 'block';
                     optionsDiv.remove();
-                    showNotification('Item blocked and searching for new release', '#f44336');
+                    showNotification('Item blocked and searching for new release', 'success');
                   } catch(e) { 
                       if (e.message.includes('404')) {
                           showNotification("Item not found (404)", 'error');
@@ -965,7 +983,7 @@ function renderSonarrHistory(records, state) {
     container.appendChild(grid);
 }
 
-async function updateSonarrBadge(url, key) {
+async function updateSonarrBadge(url, key, existingQueue = null) {
     const sonarrNavItem = document.querySelector('.nav-item[data-target="sonarr"]');
     if (!sonarrNavItem) return;
 
@@ -977,7 +995,7 @@ async function updateSonarrBadge(url, key) {
     }
     
     try {
-        const queue = await Sonarr.getSonarrQueue(url, key);
+        const queue = existingQueue || await Sonarr.getSonarrQueue(url, key);
         const records = queue.records || [];
         
         const issues = records.filter(item => {
@@ -1020,6 +1038,226 @@ async function updateSonarrBadge(url, key) {
         console.error("Sonarr badge update error", e);
         badge.classList.add('hidden');
     }
+}
+
+/**
+ * Loads missing episodes
+ */
+/**
+ * Loads missing episodes with Caching (15 min)
+ */
+async function loadSonarrMissing(url, key, state, forceRefresh = false) {
+    const container = document.getElementById("sonarr-missing");
+    if (!container) return;
+    
+    // Check Cache first
+    if (!forceRefresh) {
+        try {
+            const cache = await new Promise(resolve => chrome.storage.local.get(['sonarrMissingCache'], resolve));
+            if (cache.sonarrMissingCache) {
+                const { timestamp, data } = cache.sonarrMissingCache;
+                const age = (Date.now() - timestamp) / 1000 / 60; // Minutes
+                if (age < 15) {
+                    renderSonarrMissing(data, state);
+                    return; 
+                }
+            }
+        } catch(e) { console.warn("Cache read error", e); }
+    }
+
+    container.innerHTML = '<div class="loading-spinner">Loading Missing Episodes...</div>';
+    
+    try {
+        const data = await Sonarr.getSonarrMissing(url, key);
+        const records = data.records || [];
+        
+        renderSonarrMissing(records, state);
+        
+        // Save Cache
+        chrome.storage.local.set({
+            sonarrMissingCache: {
+                timestamp: Date.now(),
+                data: records
+            }
+        });
+        
+    } catch (e) {
+        container.innerHTML = `<div class="error-banner">Error loading missing: ${e.message}</div>`;
+    }
+}
+
+/**
+ * Renders missing episodes as a Poster Grid (similar to Calendar/Recent)
+ * Filters for Released episodes only.
+ */
+function renderSonarrMissing(records, state) {
+    const container = document.getElementById("sonarr-missing");
+    if (!container) return;
+    container.innerHTML = '';
+    
+    // Filter: AirDate must be in the past (Released)
+    const now = new Date();
+    const filtered = records.filter(item => {
+        if (!item.airDateUtc) return false;
+        return new Date(item.airDateUtc) <= now;
+    });
+
+    // Sort by Date Descending
+    // Sort by Date Descending
+    filtered.sort((a, b) => new Date(b.airDateUtc) - new Date(a.airDateUtc));
+
+    // Toolbar / Header
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;";
+    
+    const countBadge = document.createElement('div');
+    countBadge.textContent = `${filtered.length} Missing`;
+    countBadge.style.cssText = "font-weight: bold; color: var(--text-secondary); font-size: 0.9em;";
+    
+    const refreshBtn = document.createElement('button');
+    refreshBtn.textContent = "↻ Refresh Cache";
+    refreshBtn.style.cssText = "background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em; transition: all 0.2s;";
+    refreshBtn.onmouseover = () => refreshBtn.style.background = "rgba(255,255,255,0.2)";
+    refreshBtn.onmouseout = () => refreshBtn.style.background = "rgba(255,255,255,0.1)";
+    refreshBtn.onclick = () => {
+        loadSonarrMissing(state.configs.sonarrUrl, state.configs.sonarrKey, state, true);
+    };
+    
+    toolbar.appendChild(countBadge);
+    toolbar.appendChild(refreshBtn);
+    container.appendChild(toolbar);
+
+    if (filtered.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = "card";
+        emptyMsg.style.padding = "20px";
+        emptyMsg.style.textAlign = "center";
+        emptyMsg.style.color = "var(--text-secondary)";
+        emptyMsg.textContent = "No missing released episodes found.";
+        container.appendChild(emptyMsg);
+        return;
+    }
+
+    const grid = document.createElement("div");
+    grid.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 5px;";
+
+    filtered.forEach(item => {
+        const card = document.createElement("div");
+        card.style.cssText = "background: var(--card-bg); border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.2s; cursor: pointer;";
+        
+        // Find Image (Poster)
+        let posterUrl = 'icons/icon48.png';
+        if (item.series && item.series.images) {
+            const posterObj = item.series.images.find(img => img.coverType.toLowerCase() === 'poster');
+            if (posterObj) {
+                if (posterObj.url) {
+                     let baseUrl = state.configs.sonarrUrl || "";
+                     if(baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+                     
+                     let imgPath = posterObj.url;
+                     if(!imgPath.startsWith('http')) {
+                         if (!imgPath.startsWith('/')) imgPath = '/' + imgPath;
+                         posterUrl = `${baseUrl}${imgPath}`;
+                         const joinChar = posterUrl.includes('?') ? '&' : '?';
+                         posterUrl += `${joinChar}apikey=${state.configs.sonarrKey}`;
+                     } else {
+                         posterUrl = imgPath;
+                     }
+                } else if (posterObj.remoteUrl) {
+                    posterUrl = posterObj.remoteUrl;
+                }
+            }
+        }
+
+        const imgDiv = document.createElement("div");
+        imgDiv.style.cssText = "width: 100%; aspect-ratio: 2/3; overflow: hidden;";
+        const img = document.createElement("img");
+        img.src = posterUrl;
+        img.style.cssText = "width: 100%; height: 100%; object-fit: cover;";
+        img.onerror = () => { if (img.src !== 'icons/icon48.png') img.src = 'icons/icon48.png'; };
+        imgDiv.appendChild(img);
+        
+        // Overlay Info
+        const infoDiv = document.createElement("div");
+        infoDiv.style.cssText = "padding: 8px; position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 50%, transparent 100%); color: white; text-shadow: 1px 1px 2px black;";
+        
+        const sTitle = document.createElement("div");
+        sTitle.textContent = item.series ? item.series.title : "Unknown";
+        sTitle.style.cssText = "font-weight: bold; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
+        
+        const epInfo = document.createElement("div");
+        const sNum = String(item.seasonNumber).padStart(2, '0');
+        const eNum = String(item.episodeNumber).padStart(2, '0');
+        epInfo.textContent = `S${sNum}E${eNum}`;
+        epInfo.style.cssText = "font-size: 0.8em; opacity: 0.9;";
+        
+        const airDate = new Date(item.airDateUtc).toLocaleDateString();
+        const dateDiv = document.createElement("div");
+        dateDiv.textContent = airDate;
+        dateDiv.style.cssText = "font-size: 0.75em; opacity: 0.8; margin-top: 2px;";
+
+        infoDiv.appendChild(sTitle);
+        infoDiv.appendChild(epInfo);
+        infoDiv.appendChild(dateDiv);
+
+        // Search Button (overlay on hover or persistent small icon)
+        // User requested "Design from Calendar", calendar has click to open. 
+        // We add a search icon at top right.
+        const searchBtn = document.createElement("div");
+        searchBtn.textContent = "🔍";
+        searchBtn.title = "Search for Episode";
+        searchBtn.style.cssText = `
+            position: absolute; top: 5px; right: 5px; 
+            width: 24px; height: 24px; 
+            background: rgba(0,0,0,0.6); border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 14px; color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: background 0.2s;
+        `;
+        searchBtn.onmouseover = () => searchBtn.style.background = "#2196f3";
+        searchBtn.onmouseout = () => searchBtn.style.background = "rgba(0,0,0,0.6)";
+        
+        searchBtn.onclick = async (e) => {
+             e.stopPropagation();
+             searchBtn.style.pointerEvents = "none";
+             searchBtn.textContent = "⏳";
+             try {
+                 await fetch(`${state.configs.sonarrUrl}/api/v3/command`, {
+                     method: 'POST',
+                     headers: { 
+                        'X-Api-Key': state.configs.sonarrKey,
+                        'Content-Type': 'application/json'
+                     },
+                     body: JSON.stringify({
+                         name: 'EpisodeSearch',
+                         episodeIds: [item.id]
+                     })
+                 });
+                 showNotification('Search started', 'success');
+                 searchBtn.textContent = "✓";
+             } catch(err) {
+                 showNotification('Search failed', 'error');
+                 searchBtn.textContent = "❌";
+             }
+        };
+
+        card.appendChild(imgDiv);
+        card.appendChild(infoDiv);
+        card.appendChild(searchBtn);
+
+        // Card Click -> Open Series
+        card.onclick = () => {
+             if (item.series && item.series.titleSlug) {
+                 const url = state.configs.sonarrUrl;
+                 chrome.tabs.create({ url: `${url}/series/${item.series.titleSlug}` });
+             }
+        };
+
+        grid.appendChild(card);
+    });
+    
+    container.appendChild(grid);
 }
 
 // Export for background updates

@@ -12,22 +12,35 @@ import { showNotification, showConfirmModal } from "../utils.js";
  */
 export async function initRadarr(url, key, state) {
     try {
-        // Calendar
-        const calendar = await Radarr.getRadarrCalendar(url, key);
-        renderRadarrCalendar(calendar, state);
+        const radarrView = document.getElementById("radarr-view");
+        if (radarrView) {
+            const missingBtn = radarrView.querySelector('.tab-btn[data-tab="missing"]');
+            if (missingBtn) {
+                missingBtn.addEventListener('click', () => {
+                   loadRadarrMissing(url, key, state);
+                });
+                
+                // If tab is already active (restored state), load immediately
+                if (missingBtn.classList.contains('active')) {
+                    loadRadarrMissing(url, key, state);
+                }
+            }
+        }
 
-        // Load Queue
-        const queue = await Radarr.getRadarrMovies(url, key);
-        renderRadarrQueue(queue.records || [], state);
+        const pCalendar = Radarr.getRadarrCalendar(url, key)
+            .then(calendar => renderRadarrCalendar(calendar, state));
 
-        // Initial Badge Update
-        await updateRadarrBadge(url, key);
+        const pQueue = Radarr.getRadarrQueue(url, key)
+            .then(queue => {
+                renderRadarrQueue(queue.records || [], state);
+                return updateRadarrBadge(url, key, queue);
+            });
 
-        // Load Recent (History)
+        const pHistory = Radarr.getRadarrHistory(url, key)
+            .then(history => renderRadarrRecent(history.records || [], state));
 
-        // Load Recent (History)
-        const history = await Radarr.getRadarrHistory(url, key);
-        renderRadarrRecent(history.records || [], state);
+        await Promise.allSettled([pCalendar, pQueue, pHistory]);
+
     } catch (e) {
         console.error("Radarr loading error", e);
         throw e;
@@ -261,7 +274,7 @@ function renderRadarrQueue(records, state) {
         }
         try {
             const newQueue = await Radarr.getRadarrMovies(state.configs.radarrUrl, state.configs.radarrKey);
-            await updateRadarrBadge(state.configs.radarrUrl, state.configs.radarrKey);
+            await updateRadarrBadge(state.configs.radarrUrl, state.configs.radarrKey, newQueue);
             renderRadarrQueue(newQueue.records || [], state);
         } catch(e) {
             if(btn) {
@@ -392,7 +405,7 @@ function renderRadarrQueue(records, state) {
                       // The refresh interval will clean it up. We can just hide the buttons.
                       delBtn.style.display = 'block';
                       optionsDiv.remove();
-                      showNotification('Item removed from queue', '#ffc107');
+                      showNotification('Item removed from queue', 'success');
                   } catch(e) { 
                       if (e.message.includes('404')) {
                           showNotification("Item not found (404)", 'error');
@@ -420,7 +433,7 @@ function renderRadarrQueue(records, state) {
                     await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, true);
                     delBtn.style.display = 'block';
                     optionsDiv.remove();
-                    showNotification('Item blocked and searching for new release', '#f44336');
+                    showNotification('Item blocked and searching for new release', 'success');
                   } catch(e) { 
                       if (e.message.includes('404')) {
                           showNotification("Item not found (404)", 'error');
@@ -895,7 +908,7 @@ function renderRadarrRecent(records, state) {
     container.appendChild(grid);
 }
 
-async function updateRadarrBadge(url, key) {
+async function updateRadarrBadge(url, key, existingQueue = null) {
     const radarrNavItem = document.querySelector('.nav-item[data-target="radarr"]');
     if (!radarrNavItem) return;
 
@@ -907,7 +920,7 @@ async function updateRadarrBadge(url, key) {
     }
     
     try {
-        const queue = await Radarr.getRadarrMovies(url, key);
+        const queue = existingQueue || await Radarr.getRadarrQueue(url, key);
         const records = queue.records || [];
         
         const issues = records.filter(item => {
@@ -954,3 +967,245 @@ async function updateRadarrBadge(url, key) {
 
 // Export for background updates
 export { updateRadarrBadge };
+
+/**
+ * Loads missing movies
+ */
+/**
+ * Loads missing movies with Caching (15 min)
+ */
+async function loadRadarrMissing(url, key, state, forceRefresh = false) {
+    const container = document.getElementById("radarr-missing");
+    if (!container) return;
+    
+    // Check Cache first
+    if (!forceRefresh) {
+        // Show spinner only if we don't have immediate cache? 
+        // Or show old cache + spinner? Let's just default to logic: Cache -> Render; No Cache -> Spinner -> Fetch.
+        try {
+            const cache = await new Promise(resolve => chrome.storage.local.get(['radarrMissingCache'], resolve));
+            if (cache.radarrMissingCache) {
+                const { timestamp, data } = cache.radarrMissingCache;
+                const age = (Date.now() - timestamp) / 1000 / 60; // Minutes
+                
+                if (age < 15) {
+                    // Use cache
+                    renderRadarrMissing(data, state);
+                    return; 
+                }
+            }
+        } catch(e) { console.warn("Cache read error", e); }
+    }
+
+    container.innerHTML = '<div class="loading-spinner">Loading Missing Movies...</div>';
+    
+    try {
+        const data = await Radarr.getRadarrMissing(url, key);
+        const records = data.records || [];
+        
+        // Render
+        renderRadarrMissing(records, state);
+        
+        // Save Cache
+        chrome.storage.local.set({
+            radarrMissingCache: {
+                timestamp: Date.now(),
+                data: records
+            }
+        });
+        
+    } catch (e) {
+        container.innerHTML = `<div class="error-banner">Error loading missing: ${e.message}</div>`;
+    }
+}
+
+/**
+ * Renders missing movies as a Poster Grid.
+ * Filters for Released movies only (Physical/Digital release date <= Today OR status='released').
+ */
+function renderRadarrMissing(records, state) {
+    const container = document.getElementById("radarr-missing");
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const now = new Date();
+    // Filter logic:
+    // 1. Is Available? (Radarr's 'isAvailable' flag is useful if populated, usually strictly follows delay profiles)
+    // 2. Or explicit check on release dates.
+    // User requested: "missing die schon released wurden"
+    const filtered = records.filter(m => {
+        if (m.status === 'released') return true;
+        if (m.digitalRelease && new Date(m.digitalRelease) <= now) return true;
+        if (m.physicalRelease && new Date(m.physicalRelease) <= now) return true;
+        return false;
+    });
+
+    // Sort by Date Descending
+    const getReleaseDate = (m) => {
+        if (m.digitalRelease) return new Date(m.digitalRelease);
+        if (m.physicalRelease) return new Date(m.physicalRelease);
+        if (m.inCinemas) return new Date(m.inCinemas);
+        return new Date(0);
+    };
+    filtered.sort((a, b) => getReleaseDate(b) - getReleaseDate(a));
+
+    // Toolbar / Header
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;";
+    
+    const countBadge = document.createElement('div');
+    countBadge.textContent = `${filtered.length} Missing`;
+    countBadge.style.cssText = "font-weight: bold; color: var(--text-secondary); font-size: 0.9em;";
+    
+    const refreshBtn = document.createElement('button');
+    refreshBtn.textContent = "↻ Refresh Cache";
+    refreshBtn.style.cssText = "background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em; transition: all 0.2s;";
+    refreshBtn.onmouseover = () => refreshBtn.style.background = "rgba(255,255,255,0.2)";
+    refreshBtn.onmouseout = () => refreshBtn.style.background = "rgba(255,255,255,0.1)";
+    refreshBtn.onclick = () => {
+        loadRadarrMissing(state.configs.radarrUrl, state.configs.radarrKey, state, true);
+    };
+    
+    toolbar.appendChild(countBadge);
+    toolbar.appendChild(refreshBtn);
+    container.appendChild(toolbar);
+
+    if (filtered.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = "card";
+        emptyMsg.style.padding = "20px";
+        emptyMsg.style.textAlign = "center";
+        emptyMsg.style.color = "var(--text-secondary)";
+        emptyMsg.textContent = "No missing released movies found.";
+        container.appendChild(emptyMsg);
+        return;
+    }
+
+    const grid = document.createElement("div");
+    grid.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 5px;";
+
+    filtered.forEach(movie => {
+        const card = document.createElement("div");
+        card.style.cssText = "background: var(--card-bg); border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.2s; cursor: pointer;";
+        card.onmouseover = () => card.style.transform = "translateY(-2px)";
+        card.onmouseout = () => card.style.transform = "translateY(0)";
+
+        // Poster
+        let posterUrl = 'icons/icon48.png';
+        if (movie.images) {
+             const posterObj = movie.images.find(img => img.coverType.toLowerCase() === 'poster');
+             if (posterObj) {
+                if (posterObj.url) {
+                     let baseUrl = state.configs.radarrUrl || "";
+                     if(baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+                     
+                     let imgPath = posterObj.url;
+                     if(!imgPath.startsWith('http')) {
+                         if (!imgPath.startsWith('/')) imgPath = '/' + imgPath;
+                         posterUrl = `${baseUrl}${imgPath}`;
+                         const joinChar = posterUrl.includes('?') ? '&' : '?';
+                         posterUrl += `${joinChar}apikey=${state.configs.radarrKey}`;
+                     } else {
+                         posterUrl = imgPath;
+                     }
+                } else if (posterObj.remoteUrl) {
+                    posterUrl = posterObj.remoteUrl;
+                }
+            }
+        }
+
+        const imgDiv = document.createElement("div");
+        imgDiv.style.cssText = "width: 100%; aspect-ratio: 2/3; overflow: hidden;";
+        const img = document.createElement("img");
+        img.src = posterUrl;
+        img.style.cssText = "width: 100%; height: 100%; object-fit: cover;";
+        img.onerror = () => { if (img.src !== 'icons/icon48.png') img.src = 'icons/icon48.png'; };
+        imgDiv.appendChild(img);
+
+        // Overlay Info
+        const infoDiv = document.createElement("div");
+        infoDiv.style.cssText = "padding: 8px; position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 50%, transparent 100%); color: white; text-shadow: 1px 1px 2px black;";
+
+        const title = document.createElement("div");
+        title.textContent = movie.title;
+        title.style.cssText = "font-weight: bold; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
+        
+        const yearDiv = document.createElement("div");
+        yearDiv.textContent = movie.year;
+        yearDiv.style.cssText = "font-size: 0.8em; opacity: 0.9;";
+        
+        // Show Release info
+        let releaseStr = "";
+        if (movie.digitalRelease && new Date(movie.digitalRelease) <= now) {
+            releaseStr = "Digital: " + new Date(movie.digitalRelease).toLocaleDateString();
+        } else if (movie.physicalRelease && new Date(movie.physicalRelease) <= now) {
+            releaseStr = "Physical: " + new Date(movie.physicalRelease).toLocaleDateString();
+        } else if (movie.inCinemas) {
+            releaseStr = "Cinema: " + new Date(movie.inCinemas).toLocaleDateString();
+        }
+
+        const releaseDiv = document.createElement("div");
+        releaseDiv.textContent = releaseStr;
+        releaseDiv.style.cssText = "font-size: 0.7em; opacity: 0.8; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
+
+        infoDiv.appendChild(title);
+        infoDiv.appendChild(yearDiv);
+        infoDiv.appendChild(releaseDiv);
+
+        // Search Button
+        const searchBtn = document.createElement("div");
+        searchBtn.textContent = "🔍";
+        searchBtn.title = "Search for Movie";
+        searchBtn.style.cssText = `
+            position: absolute; top: 5px; right: 5px; 
+            width: 24px; height: 24px; 
+            background: rgba(0,0,0,0.6); border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 14px; color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: background 0.2s;
+        `;
+        searchBtn.onmouseover = () => searchBtn.style.background = "#2196f3";
+        searchBtn.onmouseout = () => searchBtn.style.background = "rgba(0,0,0,0.6)";
+
+        searchBtn.onclick = async (e) => {
+             e.stopPropagation();
+             searchBtn.style.pointerEvents = "none";
+             searchBtn.textContent = "⏳";
+             try {
+                 await fetch(`${state.configs.radarrUrl}/api/v3/command`, {
+                     method: 'POST',
+                     headers: { 
+                        'X-Api-Key': state.configs.radarrKey,
+                        'Content-Type': 'application/json'
+                     },
+                     body: JSON.stringify({
+                         name: 'MoviesSearch',
+                         movieIds: [movie.id]
+                     })
+                 });
+                 showNotification('Search started', 'success');
+                 searchBtn.textContent = "✓";
+             } catch(err) {
+                 showNotification('Search failed', 'error');
+                 searchBtn.textContent = "❌";
+             }
+        };
+
+        card.appendChild(imgDiv);
+        card.appendChild(infoDiv);
+        card.appendChild(searchBtn);
+        
+        // Link logic
+        if (movie.titleSlug) {
+            card.addEventListener("click", () => {
+                const url = state.configs.radarrUrl;
+                chrome.tabs.create({ url: `${url}/movie/${movie.titleSlug}` });
+            });
+        }
+
+        grid.appendChild(card);
+    });
+    
+    container.appendChild(grid);
+}

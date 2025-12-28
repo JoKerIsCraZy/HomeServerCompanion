@@ -76,7 +76,11 @@ export async function initUnraid(url, key, state) {
 
     const searchInput = document.getElementById("unraid-docker-search");
     if (searchInput && !searchInput.dataset.initListener) {
-        searchInput.addEventListener("input", triggerUpdate);
+        let debounceTimer;
+        searchInput.addEventListener("input", () => {
+             clearTimeout(debounceTimer);
+             debounceTimer = setTimeout(triggerUpdate, 300); // 300ms debounce
+        });
         searchInput.dataset.initListener = "true";
     }
 

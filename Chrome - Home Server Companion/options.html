@@ -135,6 +135,7 @@
       .section {
         display: none;
         animation: fadeIn 0.3s ease;
+        padding: 0 5px;
       }
 
       .section.active {
@@ -442,6 +443,7 @@
             <button class="tab-btn active" data-target="general">
               General
             </button>
+            <button class="tab-btn" data-target="dashboard">Dashboard</button>
             <button class="tab-btn" data-target="unraid">Unraid</button>
             <button class="tab-btn" data-target="sabnzbd">Sabnzbd</button>
             <button class="tab-btn" data-target="sonarr">Sonarr</button>
@@ -520,18 +522,14 @@
             </div>
           </div>
           <div class="form-group">
-            <label style="display: flex; align-items: center; cursor: pointer">
-              <input
-                type="checkbox"
-                id="enablePersistence"
-                style="width: auto; margin-right: 10px"
-              />
-              Remember Last Open View
-            </label>
-            <div class="help-text">
-              If enabled, the extension will remember your last open tab for
-              supported services (Overseerr, Unraid, SABnzbd).
-            </div>
+            <div class="input-group">
+          <label for="startPage" style="display: block; margin-bottom: 8px; font-weight: 500;">Start Page</label>
+          <select id="startPage" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+              <option value="last-active">Continue where I left off (Last Active)</option>
+              <!-- Services will be populated dynamically via JS -->
+          </select>
+          <div class="help-text" style="margin-top: 5px;">Choose which service to open by default.</div>
+        </div>
           </div>
           <div class="form-group">
             <label for="badgeCheckInterval"
@@ -558,6 +556,28 @@
           <div id="statusGeneral" class="status"></div>
         </div>
 
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section">
+          <h2>Dashboard Settings</h2>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; cursor: pointer">
+              <input
+                type="checkbox"
+                id="dashboardEnabled"
+                style="width: auto; margin-right: 10px"
+              />
+              Enable Dashboard
+            </label>
+            <div class="help-text">
+                Disabling the dashboard will remove it from the sidebar and navigation.
+            </div>
+          </div>
+          <div class="actions">
+            <button id="saveDashboard" class="btn-primary">Save Dashboard</button>
+          </div>
+          <div id="statusDashboard" class="status"></div>
+        </div>
+
         <!-- SABnzbd Section -->
         <div id="sabnzbd" class="section">
           <h2>SABnzbd Settings</h2>
@@ -570,6 +590,9 @@
               />
               Enable SABnzbd
             </label>
+            <div class="help-text">
+                Disabling the service will remove it from the sidebar and navigation.
+            </div>
           </div>
           <div class="form-group">
             <label for="sabnzbdUrl">Server URL</label>
@@ -614,6 +637,9 @@
               />
               Enable Sonarr
             </label>
+            <div class="help-text">
+                Disabling the service will remove it from the sidebar and navigation.
+            </div>
           </div>
           <div class="form-group">
             <label for="sonarrUrl">Server URL</label>
@@ -628,6 +654,9 @@
                 placeholder="localhost:8989"
                 style="flex: 1"
               />
+            </div>
+            <div class="help-text">
+              Enter host and port, e.g., 192.168.1.10:8080
             </div>
           </div>
           <div class="form-group">
@@ -655,6 +684,9 @@
               />
               Enable Radarr
             </label>
+            <div class="help-text">
+                Disabling the service will remove it from the sidebar and navigation.
+            </div>
           </div>
           <div class="form-group">
             <label for="radarrUrl">Server URL</label>
@@ -669,6 +701,9 @@
                 placeholder="localhost:7878"
                 style="flex: 1"
               />
+            </div>
+            <div class="help-text">
+              Enter host and port, e.g., 192.168.1.10:8080
             </div>
           </div>
           <div class="form-group">
@@ -696,6 +731,9 @@
               />
               Enable Tautulli
             </label>
+            <div class="help-text">
+                Disabling the service will remove it from the sidebar and navigation.
+            </div>
           </div>
           <div class="form-group">
             <label for="tautulliUrl">Server URL</label>
@@ -710,6 +748,9 @@
                 placeholder="localhost:8181"
                 style="flex: 1"
               />
+            </div>
+            <div class="help-text">
+              Enter host and port, e.g., 192.168.1.10:8080
             </div>
           </div>
           <div class="form-group">
@@ -737,6 +778,9 @@
               />
               Enable Overseerr
             </label>
+            <div class="help-text">
+                Disabling the service will remove it from the sidebar and navigation.
+            </div>
           </div>
           <div class="form-group">
             <label for="overseerrUrl">Server URL</label>
@@ -751,6 +795,9 @@
                 placeholder="localhost:5055"
                 style="flex: 1"
               />
+            </div>
+            <div class="help-text">
+              Enter host and port, e.g., 192.168.1.10:8080
             </div>
           </div>
           <div class="form-group">
@@ -780,6 +827,9 @@
               />
               Enable Unraid
             </label>
+            <div class="help-text">
+                Disabling the service will remove it from the sidebar and navigation.
+            </div>
           </div>
           <div class="form-group">
             <label for="unraidUrl">Server URL</label>
@@ -829,6 +879,9 @@
               />
               Enable Prowlarr
             </label>
+            <div class="help-text">
+                Disabling the service will remove it from the sidebar and navigation.
+            </div>
           </div>
           <div class="form-group">
             <label for="prowlarrUrl">Server URL</label>
@@ -843,6 +896,9 @@
                 placeholder="localhost:9696"
                 style="flex: 1"
               />
+            </div>
+            <div class="help-text">
+              Enter host and port, e.g., 192.168.1.10:8080
             </div>
           </div>
           <div class="form-group">
@@ -872,6 +928,9 @@
               />
               Enable Wizarr
             </label>
+            <div class="help-text">
+                Disabling the service will remove it from the sidebar and navigation.
+            </div>
           </div>
           <div class="form-group">
             <label for="wizarrUrl">Server URL</label>
@@ -888,7 +947,7 @@
               />
             </div>
             <div class="help-text">
-              Your Wizarr server URL (e.g., wizarr.example.com)
+              Enter host and port, e.g., 192.168.1.10:8080
             </div>
           </div>
           <div class="form-group">

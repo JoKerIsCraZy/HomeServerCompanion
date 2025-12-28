@@ -180,3 +180,82 @@ export const getSonarrQualities = async (url, apiKey) => {
         throw error;
     }
 };
+
+/**
+ * Fetches all series from library.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Array>} List of series
+ */
+export const getSonarrSeries = async (url, apiKey) => {
+    try {
+        const response = await fetch(`${url}/api/v3/series`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Series Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Sonarr Series Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Fetches missing episodes (wanted).
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {number} pageSize 
+ * @returns {Promise<Object>} Object with 'records'
+ */
+export const getSonarrMissing = async (url, apiKey, pageSize = 50) => {
+    try {
+        const response = await fetch(`${url}/api/v3/wanted/missing?page=1&pageSize=${pageSize}&sortKey=airDateUtc&sortDirection=descending&includeSeries=true`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Missing Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Sonarr Missing Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Fetches the blocklist.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Object>} Object with 'records'
+ */
+export const getSonarrBlocklist = async (url, apiKey) => {
+    try {
+        const response = await fetch(`${url}/api/v3/blocklist?page=1&pageSize=100&sortKey=date&sortDirection=descending`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Blocklist Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Sonarr Blocklist Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Deletes an item from the blocklist.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {number} id - Blocklist Item ID
+ */
+export const deleteSonarrBlocklistItem = async (url, apiKey, id) => {
+    try {
+        const response = await fetch(`${url}/api/v3/blocklist/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Delete Blocklist Error: ${response.status}`);
+        return true;
+    } catch (error) {
+        console.error("Sonarr Delete Blocklist Error:", error);
+        throw error;
+    }
+};
+

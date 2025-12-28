@@ -57,22 +57,35 @@ const loadProwlarrData = async (url, apiKey) => {
 
     try {
         // 2. NETWORK FETCH
-        // Parallel Fetch
-        const [indexers, stats, statuses] = await Promise.all([
+        // 2. NETWORK FETCH
+        // Parallel Fetch with partial failure handling
+        const results = await Promise.allSettled([
             Prowlarr.getProwlarrIndexers(url, apiKey),
             Prowlarr.getProwlarrStats(url, apiKey),
             Prowlarr.getProwlarrIndexerStatuses(url, apiKey)
         ]);
 
+        const indexers = results[0].status === 'fulfilled' ? results[0].value : [];
+        const stats = results[1].status === 'fulfilled' ? results[1].value : null;
+        const statuses = results[2].status === 'fulfilled' ? results[2].value : [];
+
+        // If Indexers failed, we can't do much, so throw error to fall through to catch
+        if (results[0].status === 'rejected') {
+            throw results[0].reason;
+        }
+
         // 3. UPDATE UI
         renderIndexers(indexers, statuses);
-        renderStats(stats, indexers);
+        
+        // Only render stats if successful, otherwise maybe clear or show partial?
+        // renderStats handles null stats gracefully enough (checks for arrays)
+        if (stats) renderStats(stats, indexers);
 
         // 4. UPDATE CACHE
         localStorage.setItem(CACHE_KEY, JSON.stringify({
             timestamp: Date.now(),
             indexers: indexers,
-            stats: stats,
+            stats: stats || {},
             statuses: statuses
         }));
 

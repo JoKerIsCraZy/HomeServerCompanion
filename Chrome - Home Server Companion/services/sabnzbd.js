@@ -88,3 +88,12 @@ export const deleteHistoryItem = async (url, apiKey, nzo_id) => {
         throw error;
     }
 };
+
+export const setSpeedLimit = async (url, apiKey, limit) => {
+    try {
+        const response = await fetch(`${url}/api?mode=config&name=speedlimit&value=${limit}&apikey=${apiKey}&output=json`);
+        return await response.json();
+    } catch (error) {
+        console.error("SABnzbd Speed Limit Error:", error);
+    }
+};

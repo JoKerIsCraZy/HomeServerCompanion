@@ -20,3 +20,14 @@ This is the original Chrome version of the Home Server Companion extension.
 ## Development
 
 - This version uses Manifest V3.
+
+### New in v3.4
+
+- **Dashboard & UI**: Brand new Dashboard view for a quick overview and a completely refactored, tab-based Settings page.
+- **Unified Search**: Centralized search bar (Omnibox) to quickly find content across services.
+- **Performance**: Significant improvements in API query handling and load times.
+- **Wizarr Integration**: Create and manage invites directly from the extension.
+- **Tautulli Enhancements**: IP Geolocation lookup, country flags, and performance optimizations.
+- **Service Enhancements**:
+  - **SABnzbd**: Live badges for file counts in Queue and History.
+- **Security**: Reinforced Content Security Policy (CSP) and safer DOM handling.

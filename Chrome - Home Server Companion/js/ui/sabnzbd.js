@@ -152,7 +152,7 @@ function renderSabnzbdQueue(queue, state, url, key) {
               delBtn.textContent = "⏳";
               await Sabnzbd.deleteQueueItem(url, key, item.nzo_id);
               div.remove();
-              showNotification(`Removed "${item.filename}"`, '#ffc107');
+              showNotification(`Removed "${item.filename}"`, 'success');
           }
       };
 
@@ -269,7 +269,7 @@ function renderSabnzbdHistory(history, state, url, key) {
                delBtn.textContent = "⏳";
                await Sabnzbd.deleteHistoryItem(url, key, item.nzo_id);
                div.remove();
-               showNotification(`Removed "${item.name}"`, '#ffc107');
+               showNotification(`Removed "${item.name}"`, 'success');
           }
       };
 
@@ -376,6 +376,34 @@ export async function initSabnzbd(url, key, state) {
             const timeEl = document.getElementById("sab-timeleft");
             if (timeEl) timeEl.textContent = queue.timeleft || "00:00:00";
 
+            // Update Speed Limit Dropdown
+            // Sync Speed Limit Slider/Input
+            const speedSlider = document.getElementById("sab-speed-slider");
+            const speedInput = document.getElementById("sab-speed-input");
+            
+            if (speedSlider && speedInput) {
+                const isActive = (document.activeElement === speedSlider || document.activeElement === speedInput);
+                if (!isActive) {
+                    let currentLimit = (queue.speedlimit || "").trim(); // e.g. "50", "80%", "5 M", "65"
+                    let val = "100"; // Default to 100% (No Limit)
+                    
+                    if (!currentLimit || currentLimit === "0") {
+                        val = "100";
+                    } else if (currentLimit.includes("%")) {
+                        // Extract number from "80%"
+                        val = currentLimit.replace("%", "").trim();
+                    } else if (!isNaN(currentLimit)) {
+                        // Plain number, assume it matches slider scale (percentage or raw value if SAB returns strict ints)
+                        val = currentLimit;
+                    }
+                    
+                    if (!isNaN(val)) {
+                        speedSlider.value = val;
+                        speedInput.value = val;
+                    }
+                }
+            }
+
             // Status Bubble Logic
             const statusBubble = document.getElementById("sab-status-bubble");
             if (statusBubble) {
@@ -408,7 +436,7 @@ export async function initSabnzbd(url, key, state) {
             }
             
             // Badge
-            updateSabnzbdBadge(url, key);
+            updateSabnzbdBadge(url, key, queue);
 
             renderSabnzbdQueue(queue.slots || [], state, url, key);
             
@@ -471,14 +499,16 @@ export async function initSabnzbd(url, key, state) {
     const mainBtn = document.getElementById("sab-pause-main");
     const arrowBtn = document.getElementById("sab-pause-arrow");
     const menu = document.getElementById("sab-pause-menu");
+    // Slider Controls
+    const speedSlider = document.getElementById("sab-speed-slider");
+    const speedInput = document.getElementById("sab-speed-input");
+    const speedSetBtn = document.getElementById("sab-speed-set-btn");
 
     if (mainBtn && arrowBtn && menu && !mainBtn.dataset.bound) {
         
         // 1. Main Button Click
         mainBtn.addEventListener("click", async (e) => {
              e.stopPropagation();
-             // We need to know current state. We could check classList or re-fetch.
-             // Class list is sync with UI, so it's a good proxy.
              const isPaused = mainBtn.classList.contains("paused");
              if (isPaused) await Sabnzbd.resumeQueue(url, key);
              else await Sabnzbd.pauseQueue(url, key);
@@ -505,7 +535,34 @@ export async function initSabnzbd(url, key, state) {
             });
         });
 
-        // 4. Outside Click
+        // 4. Speed Limit Slider Logic
+        if (speedSlider && speedInput && speedSetBtn) {
+            // Slider -> Input
+            speedSlider.addEventListener("input", () => {
+                speedInput.value = speedSlider.value;
+            });
+            
+            // Input -> Slider
+            speedInput.addEventListener("input", () => {
+                let val = parseInt(speedInput.value);
+                if (val > 100) val = 100;
+                if (val < 0) val = 0;
+                // Don't force value on input while typing, but update slider
+                if (!isNaN(val)) speedSlider.value = val;
+            });
+            
+            // Set Button
+            speedSetBtn.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                // Send value as percentage string
+                const val = speedInput.value;
+                await Sabnzbd.setSpeedLimit(url, key, `${val}%`);
+                showNotification(`Speed Limit set to ${val}%`, 'success');
+                setTimeout(update, 500);
+            });
+        }
+
+        // 5. Outside Click
         document.body.addEventListener("click", (e) => {
             if (!menu.classList.contains("hidden") && !menu.contains(e.target) && !arrowBtn.contains(e.target)) {
                  menu.classList.add("hidden");
@@ -521,9 +578,9 @@ export async function initSabnzbd(url, key, state) {
 }
 
 // Background Badge Update
-export async function updateSabnzbdBadge(url, key) {
+export async function updateSabnzbdBadge(url, key, existingQueue = null) {
   try {
-    const queue = await Sabnzbd.getSabnzbdQueue(url, key);
+    const queue = existingQueue || await Sabnzbd.getSabnzbdQueue(url, key);
     if (!queue) return;
 
     const sabNavItem = document.querySelector('.nav-item[data-target="sabnzbd"]');

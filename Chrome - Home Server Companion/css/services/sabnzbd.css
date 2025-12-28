@@ -128,3 +128,8 @@
 .sab-history-item.failed .sab-item-title { color: #fe5f55; }
 .sab-history-item.processing .sab-item-title { color: #ff9800; }
 .sab-history-item.completed .sab-item-title { color: #4caf50; }
+
+/* SABnzbd Speed Set Button Hover */
+#sab-speed-set-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}

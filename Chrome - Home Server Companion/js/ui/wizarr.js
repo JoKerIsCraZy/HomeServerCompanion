@@ -23,14 +23,13 @@ export async function initWizarr(url, key) {
     // Setup event listeners (only once)
     setupEventListeners();
     
-    // Load servers
-    await loadServers();
-    
-    // Load libraries
-    await loadLibraries();
-    
-    // Load invitations
-    await loadInvitations();
+    // Load all data in parallel
+    // We use allSettled so one failure doesn't block others (e.g. invites might fail but libraries load)
+    await Promise.allSettled([
+        loadServers(),
+        loadLibraries(),
+        loadInvitations()
+    ]);
 }
 
 function showError(message) {
@@ -436,7 +435,7 @@ async function deleteInvite(inviteId) {
         'Delete Invitation', 
         'Are you sure you want to delete this invitation?', 
         'Delete', 
-        '#d54c86' // Wizarr pink/purple
+        '#d03142' // Wizarr Brand Color
     );
     
     if (!confirmed) return;
@@ -445,7 +444,7 @@ async function deleteInvite(inviteId) {
         const success = await Wizarr.deleteInvitation(currentUrl, currentKey, inviteId);
         if (success) {
             await loadInvitations();
-            showNotification('Invitation deleted', '#d54c86');
+            showNotification('Invitation deleted', 'success');
         } else {
             showNotification('Failed to delete', 'error');
         }

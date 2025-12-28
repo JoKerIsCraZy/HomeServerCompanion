@@ -16,22 +16,8 @@ export async function initTautulli(url, key, state) {
         renderTautulliActivity(activity.sessions || [], url, key, state);
         
         // Update badge directly from this data to ensure sync
-        const count = activity.sessions ? activity.sessions.length : 0;
-        const tautulliNavItem = document.querySelector('.nav-item[data-target="tautulli"]');
-        if (tautulliNavItem) {
-            let badge = tautulliNavItem.querySelector('.nav-badge');
-            if (!badge) {
-                badge = document.createElement('div');
-                badge.className = 'nav-badge hidden';
-                tautulliNavItem.appendChild(badge);
-            }
-            if (count > 0) {
-                badge.textContent = count;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
+        // Update badge directly using shared function
+        updateTautulliBadge(url, key, activity.sessions || []);
       } catch (e) {
         console.error("Tautulli Auto-refresh error", e);
       }
@@ -214,7 +200,7 @@ function renderTautulliActivity(sessions, url, key, state) {
             
             if (reason !== null) {
               await Tautulli.terminateSession(url, key, session.session_id, reason);
-              showNotification('Stream terminated', '#e5a00d');
+              showNotification('Stream terminated', 'success');
               setTimeout(() => initTautulli(url, key, state), 1000);
             }
           };
@@ -332,10 +318,9 @@ function renderTautulliActivity(sessions, url, key, state) {
 }
 
 // Background Badge Update Function (exported for use by popup.js)
-export async function updateTautulliBadge(url, key) {
+export async function updateTautulliBadge(url, key, existingSessions = null) {
   try {
-    const activity = await Tautulli.getTautulliActivity(url, key);
-    const sessions = activity.sessions || [];
+    const sessions = existingSessions || (await Tautulli.getTautulliActivity(url, key)).sessions || [];
     
     const tautulliNavItem = document.querySelector('.nav-item[data-target="tautulli"]');
     if (!tautulliNavItem) return;

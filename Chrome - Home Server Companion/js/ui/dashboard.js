@@ -1,0 +1,302 @@
+export async function initDashboard(state) {
+    const container = document.getElementById('dashboard-view');
+    // Clear existing content (or reuse if we implement diffing later)
+    container.innerHTML = '';
+
+    // 1. Header / Greeting
+    const header = document.createElement('div');
+    header.className = 'dashboard-header';
+    
+    // Time/Date logic moved to update function
+    
+    header.innerHTML = `
+        <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div class="greeting-container">
+                <h1 id="greeting-text">Good Day</h1> <!-- Will be updated by clock -->
+                <p class="date-subtitle">Welcome Back</p>
+            </div>
+            <div class="clock-card" style="text-align: right; min-width: 150px;">
+                <div id="dashboard-time" style="font-size: 32px; font-weight: 700; color: #fff; line-height: 1;">--:--</div>
+                <div id="dashboard-date" style="font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 5px; font-weight: 500;">--</div>
+            </div>
+        </div>
+    `;
+    container.appendChild(header);
+
+    // Start Clock
+    startClock(state);
+
+    // 2. Service Grid Container
+    const grid = document.createElement('div');
+    grid.className = 'dashboard-grid';
+    grid.innerHTML = '<div class="loading-spinner">Loading System Status...</div>';
+    container.appendChild(grid);
+
+    // 3. Trigger Parallel Status Checks
+    // We'll populate this in the next step
+    renderServiceGrid(grid, state);
+
+    // 4. Auto Refresh Loop
+    // Use configured interval or default 5000ms
+    const intervalTime = parseInt(state.configs.refreshInterval) || 5000;
+    
+    // Clear any existing interval to be safe (though popup.js usually handles view transitions)
+    if (state.refreshInterval) clearInterval(state.refreshInterval);
+
+    state.refreshInterval = setInterval(() => {
+        // Only refresh if Dashboard is actually active/visible in DOM
+        if (document.getElementById('dashboard-view')) {
+            // We use 'quiet' updates often, but renderServiceGrid replaces innerHTML currently.
+            // For smoother updates, we should implementation diffing or just update values.
+            // For now, full re-render is acceptable as per previous design, but let's be careful.
+            // Actually, `renderServiceGrid` clears innerHTML: `container.innerHTML = '';`
+            // This causes flickering. We should optimize `renderServiceGrid` to UPDATE if exists.
+            
+            // Re-render
+            renderServiceGrid(grid, state, true); // Pass 'true' for update mode
+        } else {
+            clearInterval(state.refreshInterval);
+        }
+    }, intervalTime);
+}
+
+// Imports from Service APIs
+import * as Sabnzbd from "../../services/sabnzbd.js";
+import * as Sonarr from "../../services/sonarr.js";
+import * as Radarr from "../../services/radarr.js";
+import * as Tautulli from "../../services/tautulli.js";
+import * as Overseerr from "../../services/overseerr.js";
+import * as Unraid from "../../services/unraid.js";
+import * as Prowlarr from "../../services/prowlarr.js";
+import * as Wizarr from "../../services/wizarr.js";
+
+async function renderServiceGrid(container, state, isUpdate = false) {
+    // Only clear if NOT updating
+    if (!isUpdate) container.innerHTML = '';
+
+    // Define services and their specific check functions
+    const services = [
+        { 
+            id: 'unraid', 
+            name: 'Unraid', 
+            icon: 'unraid.png',
+            check: async (url, key) => {
+                const data = await Unraid.getSystemData(url, key);
+                // metrics: cpu, ram
+                const cpu = Math.round(data.cpu || 0);
+                const ram = Math.round(data.ram || 0);
+                return { 
+                    status: 'online', 
+                    metric: `<div style="font-size: 16px; display: flex; flex-direction: column; gap: 2px;">
+                                <div>${cpu}% <span style="font-size: 10px; opacity: 0.7;">CPU</span></div>
+                                <div>${ram}% <span style="font-size: 10px; opacity: 0.7;">RAM</span></div>
+                             </div>`, 
+                    label: '' // Label is now integrated
+                };
+            }
+        },
+        { 
+            id: 'sabnzbd', 
+            name: 'SABnzbd', 
+            icon: 'sabnzbd.png',
+            check: async (url, key) => {
+                const queue = await Sabnzbd.getSabnzbdQueue(url, key);
+                const count = queue.noofslots || 0;
+                const speed = queue.speed || '0 B/s';
+                return { status: 'online', metric: count, label: 'In Queue', sub: speed };
+            }
+        },
+        { 
+            id: 'sonarr', 
+            name: 'Sonarr', 
+            icon: 'sonarr.png',
+            check: async (url, key) => {
+                const queue = await Sonarr.getSonarrQueue(url, key);
+                return { status: 'online', metric: queue.totalRecords || 0, label: 'In Queue' };
+            }
+        },
+        { 
+            id: 'radarr', 
+            name: 'Radarr', 
+            icon: 'radarr.png',
+            check: async (url, key) => {
+                const queue = await Radarr.getRadarrQueue(url, key);
+                return { status: 'online', metric: queue.totalRecords || 0, label: 'In Queue' };
+            }
+        },
+        { 
+            id: 'tautulli', 
+            name: 'Tautulli', 
+            icon: 'tautulli.png', 
+            check: async (url, key) => {
+                const activity = await Tautulli.getTautulliActivity(url, key);
+                return { status: 'online', metric: activity.stream_count || 0, label: 'Streams' };
+            }
+        },
+        { 
+            id: 'overseerr', 
+            name: 'Overseerr', 
+            icon: 'overseerr.png',
+            check: async (url, key) => {
+                const requests = await Overseerr.getRequests(url, key);
+                // Filter for pending
+                const pending = requests.results ? requests.results.filter(r => r.status === 1).length : 0; 
+                return { status: 'online', metric: pending, label: 'Pending' };
+            }
+        },
+        {
+            id: 'prowlarr',
+            name: 'Prowlarr',
+            icon: 'prowlarr.png',
+            check: async (url, key) => {
+               await Prowlarr.getProwlarrIndexers(url, key);
+               return { status: 'online', metric: 'OK', label: 'Status' };
+            }
+        },
+        {
+            id: 'wizarr',
+            name: 'Wizarr',
+            icon: 'wizarr.png',
+            check: async (url, key) => {
+               // Wizarr doesn't always have simple stats, just check connection
+               await Wizarr.getInvitations(url, key);
+               return { status: 'online', metric: 'OK', label: 'Status' };
+            }
+        }
+    ];
+
+    // Filter enabled services
+    let enabledServices = services.filter(svc => state.configs[`${svc.id}Enabled`] !== false);
+
+    // Apply Custom Sort Order if present
+    if (state.configs.serviceOrder && Array.isArray(state.configs.serviceOrder)) {
+        const orderMap = new Map();
+        state.configs.serviceOrder.forEach((id, index) => orderMap.set(id, index));
+        
+        enabledServices.sort((a, b) => {
+            const indexA = orderMap.has(a.id) ? orderMap.get(a.id) : 999;
+            const indexB = orderMap.has(b.id) ? orderMap.get(b.id) : 999;
+            return indexA - indexB;
+        });
+    }
+
+    // Create placeholders ONLY if not updating
+    if (!isUpdate) {
+        enabledServices.forEach(svc => {
+            const card = document.createElement('div');
+            card.className = 'service-card';
+            card.id = `card-${svc.id}`;
+            card.onclick = () => {
+                 const navItem = document.querySelector(`.nav-item[data-target="${svc.id}"]`);
+                 if (navItem) navItem.click();
+            };
+    
+            card.innerHTML = `
+                <div class="service-card-header">
+                    <img src="icons/${svc.icon}" class="service-icon" alt="${svc.name}">
+                    <div class="status-dot casting-shadow" id="status-${svc.id}"></div>
+                </div>
+                <div class="service-name">${svc.name}</div>
+                <div class="service-metric" id="metric-${svc.id}">--</div>
+                <div class="service-metric-label" id="label-${svc.id}">Checking...</div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // Run checks in parallel
+    const checks = enabledServices.map(async (svc) => {
+        const url = state.configs[`${svc.id}Url`];
+        const key = state.configs[`${svc.id}Key`];
+
+        // Validation for Unraid/Wizarr which might not have keys or different logic
+        if (svc.id !== 'unraid' && svc.id !== 'wizarr' && (!url || !key)) {
+             updateCard(svc.id, 'offline', 'Cfg', 'Missing Config');
+             return;
+        }
+
+        try {
+            const result = await svc.check(url, key);
+            updateCard(svc.id, result.status, result.metric, result.label);
+
+            // Smart Navigation: Go to Queue if items are pending
+            if ((svc.id === 'sonarr' || svc.id === 'radarr') && result.metric > 0) {
+                const card = document.getElementById(`card-${svc.id}`);
+                if (card) {
+                    card.onclick = () => {
+                         // 1. Switch to Service
+                         const navItem = document.querySelector(`.nav-item[data-target="${svc.id}"]`);
+                         if (navItem) navItem.click();
+                         
+                         // 2. Force Switch to Queue Tab (Overrides restoreView)
+                         setTimeout(() => {
+                             const view = document.getElementById(`${svc.id}-view`);
+                             if (view) {
+                                 // Try standard tab-btn or sub-tab-btn depending on layout. 
+                                 // Sonarr/Radarr usually use standard tabs for Queue
+                                 const queueBtn = view.querySelector(`.tab-btn[data-tab="queue"]`);
+                                 if (queueBtn) queueBtn.click();
+                             }
+                         }, 150);
+                    };
+                }
+            } else if (svc.id === 'sabnzbd' && parseInt(result.metric) > 0) {
+                 // Optional: Doing the same for SABnzbd if user wants? 
+                 // User only asked for Sonarr/Radarr, but logic implies "if something hangs in queue".
+                 // Let's stick to Sonarr/Radarr as requested explicitly, but this pattern is extensible.
+            }
+            
+        } catch (e) {
+            updateCard(svc.id, 'offline', 'ERR', 'Offline');
+        }
+    });
+    
+    await Promise.allSettled(checks);
+}
+
+function updateCard(id, status, metric, label) {
+    const dot = document.getElementById(`status-${id}`);
+    const metricEl = document.getElementById(`metric-${id}`);
+    const labelEl = document.getElementById(`label-${id}`);
+    
+    if (dot) {
+        dot.className = `status-dot ${status}`;
+        if (status === 'online') dot.classList.add('pulse');
+    }
+    if (metricEl) metricEl.innerHTML = metric;
+    if (labelEl) labelEl.textContent = label;
+}
+
+function startClock(state) {
+    const update = () => {
+        const now = new Date();
+        const timeEl = document.getElementById('dashboard-time');
+        const dateEl = document.getElementById('dashboard-date');
+        const greetingEl = document.getElementById('greeting-text');
+        
+        if (timeEl && dateEl) {
+            // Time: HH:MM
+            const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+            timeEl.textContent = timeStr;
+            
+            // Date: Weekday, DD. Month YYYY
+            const dateStr = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            dateEl.textContent = dateStr;
+        }
+
+        if (greetingEl) {
+            const hour = now.getHours();
+            let greeting = 'Good Evening';
+            if (hour < 12) greeting = 'Good Morning';
+            else if (hour < 18) greeting = 'Good Afternoon';
+            
+            // Only update if changed to avoid flicker/selection loss (though unlikely on header)
+            if (greetingEl.textContent !== greeting) {
+                greetingEl.textContent = greeting;
+            }
+        }
+    };
+
+    update(); // Initial call
+    state.refreshInterval = setInterval(update, 1000);
+}

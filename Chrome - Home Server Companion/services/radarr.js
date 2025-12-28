@@ -4,7 +4,7 @@
  * @param {string} apiKey 
  * @returns {Promise<Object>} Queue object
  */
-export const getRadarrMovies = async (url, apiKey) => {
+export const getRadarrQueue = async (url, apiKey) => {
     try {
         // Just get recently added or just a few to show 'Recent'
         // Unfortunately /movie returns ALL movies. We should probably sort/limit client side or use a different endpoint if available.
@@ -188,3 +188,82 @@ export const getRadarrQualities = async (url, apiKey) => {
         throw error;
     }
 };
+
+/**
+ * Fetches all movies from library.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Array>} List of movies
+ */
+export const getAllMovies = async (url, apiKey) => {
+    try {
+        const response = await fetch(`${url}/api/v3/movie`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`All Movies Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Radarr ALL Movies Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Fetches missing movies.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {number} pageSize 
+ * @returns {Promise<Object>} Object with 'records'
+ */
+export const getRadarrMissing = async (url, apiKey, pageSize = 50) => {
+    try {
+        const response = await fetch(`${url}/api/v3/wanted/missing?page=1&pageSize=${pageSize}&sortKey=releaseDate&sortDirection=descending&includeMovie=true`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Missing Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Radarr Missing Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Fetches the blocklist.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @returns {Promise<Object>} Object with 'records'
+ */
+export const getRadarrBlocklist = async (url, apiKey) => {
+    try {
+        const response = await fetch(`${url}/api/v3/blocklist?page=1&pageSize=100&sortKey=date&sortDirection=descending`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Blocklist Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Radarr Blocklist Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Deletes an item from the blocklist.
+ * @param {string} url 
+ * @param {string} apiKey 
+ * @param {number} id - Blocklist Item ID
+ */
+export const deleteRadarrBlocklistItem = async (url, apiKey, id) => {
+    try {
+        const response = await fetch(`${url}/api/v3/blocklist/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Delete Blocklist Error: ${response.status}`);
+        return true;
+    } catch (error) {
+        console.error("Radarr Delete Blocklist Error:", error);
+        throw error;
+    }
+};
+

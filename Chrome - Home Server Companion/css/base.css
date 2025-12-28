@@ -62,7 +62,7 @@ body.fullscreen-mode .app-container {
   height: 100vh;
 }
 
-/* Hide the fullscreen button when already in fullscreen mode */
-body.fullscreen-mode #fullscreen-btn {
-  display: none;
+/* Generic Utility Classes */
+.hidden {
+  display: none !important;
 }

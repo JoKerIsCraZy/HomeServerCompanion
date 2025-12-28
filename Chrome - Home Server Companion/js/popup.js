@@ -6,6 +6,7 @@ import { initOverseerr } from "./ui/overseerr.js";
 import { initUnraid } from "./ui/unraid.js";
 import { initProwlarr } from "./ui/prowlarr.js";
 import { initWizarr } from "./ui/wizarr.js";
+import { initDashboard } from "./ui/dashboard.js";
 import { checkAndShowChangelog } from "./utils.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -47,9 +48,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   chrome.storage.sync.get(null, (items) => {
     state.configs = items;
 
-
     // Determine Service Order
     let order = [
+      "dashboard",
       "unraid",
       "sabnzbd",
       "sonarr",
@@ -61,6 +62,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     ];
     if (items.serviceOrder && Array.isArray(items.serviceOrder)) {
       order = items.serviceOrder;
+    }
+    
+    // Safety: Ensure Dashboard is always in the order (it might be missing in custom sorts)
+    if (!order.includes('dashboard')) {
+        order.unshift('dashboard');
     }
 
     // Reorder Sidebar
@@ -83,37 +89,54 @@ document.addEventListener("DOMContentLoaded", async () => {
     const visibleOrder = order.filter((s) => items[`${s}Enabled`] !== false);
 
     // Default to first service in order
-    let defaultService = visibleOrder.length > 0 ? visibleOrder[0] : "sabnzbd";
+    let defaultService = visibleOrder.length > 0 ? visibleOrder[0] : "dashboard";
 
-    // PERSISTENCE: Restore Last Active Service
-    // Only if enablePersistence is NOT false (default true)
-    if (items.enablePersistence !== false) {
-      const lastService = localStorage.getItem("lastActiveService");
-      // Verify it still exists and is enabled
-      if (
-        lastService &&
-        items[`${lastService}Enabled`] !== false &&
-        order.includes(lastService)
-      ) {
-        defaultService = lastService;
-      }
+    // START PAGE LOGIC
+    // Options: 'last-active' (default) or specific service id
+    const startPage = items.startPage || (items.enablePersistence === false ? 'dashboard' : 'last-active');
+
+    if (startPage === 'last-active') {
+        const lastService = localStorage.getItem("lastActiveService");
+        if (
+            lastService &&
+            items[`${lastService}Enabled`] !== false &&
+            order.includes(lastService)
+        ) {
+            defaultService = lastService;
+        }
+    } else {
+        // Specific start page requested
+        if (
+            items[`${startPage}Enabled`] !== false &&
+            order.includes(startPage)
+        ) {
+            defaultService = startPage;
+        }
     }
 
     initNavigation();
 
-    state.activeService = defaultService;
+    // Reset all views to hidden initially to prevent overlap/splitscreen
+    views.forEach(v => {
+        v.classList.remove('active');
+        v.classList.add('hidden');
+    });
 
-    // Simulate click on active to init view
-    const activeEl = sidebar.querySelector(
-      `.nav-item[data-target="${defaultService}"]`
-    );
-    if (activeEl) activeEl.click();
-    else loadService(defaultService); // Fallback
+    state.activeService = defaultService;
+    
+    // Load local storage states for sub-tabs before loading service
+    restoreView(defaultService);
+
+    // Load Default Service
+    loadService(defaultService);
 
     // BADGE PRE-LOAD: Load other services in background to show badges
     ["sabnzbd", "radarr", "sonarr"].forEach((svc) => {
       if (svc !== defaultService && items[`${svc}Enabled`] !== false) {
-        loadService(svc);
+        // Just fetch data, don't switch view
+        // We use a simplified load if possible or just let the badge loop handle it.
+        // But badge loop runs every X seconds, we might want immediate.
+        // For now, relying on background update loop is safer than calling loadService which might trigger UI logic.
       }
     });
 
@@ -125,35 +148,36 @@ document.addEventListener("DOMContentLoaded", async () => {
         const searchQuery = result.pendingSearch;
         
         if (searchQuery) {
-            // Clear immediately so it doesn't persist on next open
+            // Clear immediately
             chrome.storage.local.remove('pendingSearch');
 
-            // 1. Switch to Overseerr
-            setTimeout(() => {
-                 const overseerrNavItem = document.querySelector(`.nav-item[data-target="overseerr"]`);
-                 if (overseerrNavItem) overseerrNavItem.click();
-                 
-                 setTimeout(() => {
-                     const searchTabBtn = document.querySelector(`.sub-tab-btn[data-target="overseerr-search-tab"]`);
-                     if (searchTabBtn) searchTabBtn.click();
-                     
-                     setTimeout(() => {
-                         const overseerrInput = document.getElementById("overseerr-search-input");
-                         if (overseerrInput) {
-                             overseerrInput.value = searchQuery;
-                             import("./ui/overseerr.js").then((module) => {
-                                 module.doSearch(state.configs.overseerrUrl, state.configs.overseerrKey, searchQuery);
-                             });
-                         }
-                     }, 200);
-                 }, 100);
-            }, 200);
+            // Trigger Unified Search
+            import("./ui/searchUI.js").then((module) => {
+                // Ensure UI is initialized
+                module.initSearchUI(state).then(() => {
+                    module.openSearch();
+                    
+                    setTimeout(() => {
+                        const input = document.getElementById('unified-search-input');
+                        if (input) {
+                            input.value = searchQuery;
+                            // Trigger input event to fire the debounce listener
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }, 100);
+                });
+            });
         }
+
+        // Start background badge updates
+        startBackgroundBadgeUpdates();
+
+        // Initialize Search UI (Background Warmup)
+        import("./ui/searchUI.js").then((module) => {
+            module.initSearchUI(state);
+        });
     });
-
   });
-
-  // Background Badge Update System
   function startBackgroundBadgeUpdates() {
     // Clear any existing intervals
     Object.values(state.badgeIntervals).forEach((interval) =>
@@ -164,89 +188,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Get configured interval (default 5000ms)
     const interval = state.configs.badgeCheckInterval || 5000;
 
-    // Sabnzbd Badge Update
-    if (
-      state.configs.sabnzbdEnabled !== false &&
-      state.configs.sabnzbdUrl &&
-      state.configs.sabnzbdKey
-    ) {
-      const updateSabnzbd = async () => {
-        try {
-          const { updateSabnzbdBadge } = await import("./ui/sabnzbd.js");
-          await updateSabnzbdBadge(
-            state.configs.sabnzbdUrl,
-            state.configs.sabnzbdKey
-          );
-        } catch (e) {
-          console.error("Background Sabnzbd badge update failed", e);
-        }
-      };
-      updateSabnzbd(); // Initial call
-      state.badgeIntervals.sabnzbd = setInterval(updateSabnzbd, interval);
-    }
+    // Services Definition
+    const services = [
+      { id: "sabnzbd", module: "./ui/sabnzbd.js", badgeFn: "updateSabnzbdBadge" },
+      { id: "sonarr", module: "./ui/sonarr.js", badgeFn: "updateSonarrBadge" },
+      { id: "radarr", module: "./ui/radarr.js", badgeFn: "updateRadarrBadge" },
+      { id: "tautulli", module: "./ui/tautulli.js", badgeFn: "updateTautulliBadge" },
+    ];
 
-    // Sonarr Badge Update
-    if (
-      state.configs.sonarrEnabled !== false &&
-      state.configs.sonarrUrl &&
-      state.configs.sonarrKey
-    ) {
-      const updateSonarr = async () => {
-        try {
-          const { updateSonarrBadge } = await import("./ui/sonarr.js");
-          await updateSonarrBadge(
-            state.configs.sonarrUrl,
-            state.configs.sonarrKey
-          );
-        } catch (e) {
-          console.error("Background Sonarr badge update failed", e);
-        }
-      };
-      updateSonarr(); // Initial call
-      state.badgeIntervals.sonarr = setInterval(updateSonarr, interval);
-    }
+    services.forEach(svc => {
+        if (
+            state.configs[`${svc.id}Enabled`] !== false &&
+            state.configs[`${svc.id}Url`] &&
+            state.configs[`${svc.id}Key`]
+        ) {
+            const updateFn = async () => {
+                // SKIP if this is the active service (already being polled by main loop)
+                if (state.activeService === svc.id) return;
 
-    // Radarr Badge Update
-    if (
-      state.configs.radarrEnabled !== false &&
-      state.configs.radarrUrl &&
-      state.configs.radarrKey
-    ) {
-      const updateRadarr = async () => {
-        try {
-          const { updateRadarrBadge } = await import("./ui/radarr.js");
-          await updateRadarrBadge(
-            state.configs.radarrUrl,
-            state.configs.radarrKey
-          );
-        } catch (e) {
-          console.error("Background Radarr badge update failed", e);
+                try {
+                    const module = await import(svc.module);
+                    if (module[svc.badgeFn]) {
+                        await module[svc.badgeFn](
+                            state.configs[`${svc.id}Url`],
+                            state.configs[`${svc.id}Key`]
+                        );
+                    }
+                } catch (e) {
+                   // Silent fail for badges
+                }
+            };
+            
+            updateFn(); // Initial call
+            state.badgeIntervals[svc.id] = setInterval(updateFn, interval);
         }
-      };
-      updateRadarr(); // Initial call
-      state.badgeIntervals.radarr = setInterval(updateRadarr, interval);
-    }
-
-    // Tautulli Badge Update
-    if (
-      state.configs.tautulliEnabled !== false &&
-      state.configs.tautulliUrl &&
-      state.configs.tautulliKey
-    ) {
-      const updateTautulli = async () => {
-        try {
-          const { updateTautulliBadge } = await import("./ui/tautulli.js");
-          await updateTautulliBadge(
-            state.configs.tautulliUrl,
-            state.configs.tautulliKey
-          );
-        } catch (e) {
-          console.error("Background Tautulli badge update failed", e);
-        }
-      };
-      updateTautulli(); // Initial call
-      state.badgeIntervals.tautulli = setInterval(updateTautulli, interval);
-    }
+    });
   }
 
 
@@ -277,7 +253,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         item.classList.add("active");
 
         // Update View
-        views.forEach((v) => v.classList.remove("active"));
+        views.forEach((v) => {
+            v.classList.remove("active");
+            v.classList.add("hidden");
+        });
         const targetView = document.getElementById(`${target}-view`);
         targetView.classList.remove("hidden"); // Ensure hidden is removed
         targetView.classList.add("active");
@@ -287,10 +266,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         headerTitle.textContent =
           target.charAt(0).toUpperCase() + target.slice(1);
 
-        // PERSISTENCE: Save Active Service
-        if (state.configs.enablePersistence !== false) {
-          localStorage.setItem("lastActiveService", target);
-        }
+        // PERSISTENCE: Save Active Service (Always save, so 'Last Active' option works if selected)
+        localStorage.setItem("lastActiveService", target);
 
         // Load Content
         hideError();
@@ -347,55 +324,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         omniboxInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
                 const query = omniboxInput.value.trim();
-                if (!query) return;
                 
-                // Validate query length (security measure)
-                if (query.length > 100) {
-                    alert("Search query too long (max 100 characters)");
-                    return;
-                }
-
-                // 0. CAPTURE CURRENT PERSISTENT STATE
-                // We want to return to the CURRENT service on next boot, not Overseerr
-                const previousService = localStorage.getItem("lastActiveService");
-
-                // 1. Switch to Overseerr (Triggers click listener which updates localStorage to 'overseerr')
-                const overseerrNavItem = document.querySelector(`.nav-item[data-target="overseerr"]`);
-                if (overseerrNavItem) overseerrNavItem.click();
-
-                // 2. RESTORE PERSISTENT STATE
-                // Overwrite 'overseerr' back to the service we were just on
-                if (previousService) {
-                    localStorage.setItem("lastActiveService", previousService);
-                }
-
-                // 3. Switch to Search Tab
-                setTimeout(() => {
-                    // 3a. CAPTURE CURRENT OVERSEERR TAB STATE
-                    const previousOverseerrTab = localStorage.getItem("overseerr_last_sub_tab");
-
-                    const searchTabBtn = document.querySelector(`.sub-tab-btn[data-target="overseerr-search-tab"]`);
-                    if (searchTabBtn) searchTabBtn.click();
+                // New Unified Search Logic
+                import("./ui/searchUI.js").then((module) => {
+                    module.initSearchUI(state); // Ensure initialized
+                    module.openSearch();
                     
-                    // 3b. RESTORE OVERSEERR TAB STATE
-                    // The click above overwrote it to 'overseerr-search-tab'. We undo that.
-                    if (previousOverseerrTab) {
-                        localStorage.setItem("overseerr_last_sub_tab", previousOverseerrTab);
+                    // Pre-fill if typed in omnibox
+                    const searchInput = document.getElementById('unified-search-input');
+                    if (searchInput && query) {
+                        searchInput.value = query;
+                        searchInput.dispatchEvent(new Event('input')); // Trigger search
                     }
-
-                    // 4. Populate and trigger search
-                    // We need to wait for view transition
-                    setTimeout(() => {
-                        const overseerrInput = document.getElementById("overseerr-search-input");
-                        if (overseerrInput) {
-                            overseerrInput.value = query;
-                            // Trigger search logic
-                             import("./ui/overseerr.js").then((module) => {
-                                module.doSearch(state.configs.overseerrUrl, state.configs.overseerrKey, query);
-                             });
-                        }
-                    }, 100);
-                }, 50);
+                });
                 
                 closeOmnibox();
             }
@@ -526,14 +467,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         }
 
-        // PERSISTENCE
+        // PERSISTENCE: Sub-tabs
         if (!EXCLUDED_FROM_PERSISTENCE.includes(state.activeService)) {
-          if (state.configs.enablePersistence !== false) {
-            localStorage.setItem(
-              `${state.activeService}_last_sub_tab`,
-              targetId
-            );
-          }
+             localStorage.setItem(
+               `${state.activeService}_last_sub_tab`,
+               targetId
+             );
         }
 
         // Trigger Load
@@ -578,9 +517,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (!EXCLUDED_FROM_PERSISTENCE.includes(state.activeService)) {
-          if (state.configs.enablePersistence !== false) {
             localStorage.setItem(`${state.activeService}_last_tab`, tabName);
-          }
         }
       });
     });
@@ -633,7 +570,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     const url = state.configs[`${service}Url`];
     const key = state.configs[`${service}Key`];
 
-    if (service !== "unraid" && service !== "wizarr" && (!url || !key)) {
+    // Update State
+    state.activeService = service;
+
+    // Update Sidebar Active State
+    navItems.forEach(item => {
+       if (item.dataset.target === service) item.classList.add('active');
+       else item.classList.remove('active');
+    });
+
+    // Update View Visibility
+    views.forEach(v => {
+       if (v.id === `${service}-view`) {
+           v.classList.remove('hidden');
+           v.classList.add('active');
+       } else {
+           v.classList.remove('active');
+           v.classList.add('hidden');
+       }
+    });
+
+    // Update Header
+    if (headerTitle) {
+        headerTitle.textContent = service.charAt(0).toUpperCase() + service.slice(1);
+    }
+
+    if (service !== "dashboard" && service !== "unraid" && service !== "wizarr" && (!url || !key)) {
       showError(`Please configure ${service} in settings.`);
       return;
     }
@@ -644,6 +606,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       switch (service) {
+        case "dashboard":
+          await initDashboard(state);
+          break;
         case "sabnzbd":
           await initSabnzbd(url, key, state);
           break;

@@ -54,20 +54,50 @@ export function showNotification(message, type = 'info', duration = 3000) {
  * @param {string} confirmColor - Color class/code for confirm button (default: '#f44336' red)
  * @returns {Promise<boolean>} - Resolves true if confirmed, false if cancelled
  */
+/**
+ * Shows a custom confirmation modal
+ * @param {string} title - Title
+ * @param {string} message - Message
+ * @param {string} confirmText - Text for confirm button
+ * @param {string} confirmColor - Color class/code for confirm button (default: '#f44336' red)
+ * @returns {Promise<boolean>} - Resolves true if confirmed, false if cancelled
+ */
 export function showConfirmModal(title, message, confirmText = 'Confirm', confirmColor = '#f44336') {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'custom-modal-backdrop';
-        modal.innerHTML = `
-            <div class="custom-modal">
-                <div class="custom-modal-header">${title}</div>
-                <div class="custom-modal-body">${message}</div>
-                <div class="custom-modal-footer">
-                    <button class="modal-btn cancel">Cancel</button>
-                    <button class="modal-btn confirm" style="background-color: ${confirmColor}">${confirmText}</button>
-                </div>
-            </div>
-        `;
+        
+        const content = document.createElement('div');
+        content.className = 'custom-modal';
+        
+        const header = document.createElement('div');
+        header.className = 'custom-modal-header';
+        header.textContent = title;
+        
+        const body = document.createElement('div');
+        body.className = 'custom-modal-body';
+        body.textContent = message; // Safe: textContent handles escaping
+        
+        const footer = document.createElement('div');
+        footer.className = 'custom-modal-footer';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'modal-btn cancel';
+        cancelBtn.textContent = 'Cancel';
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'modal-btn confirm';
+        confirmBtn.style.backgroundColor = confirmColor;
+        confirmBtn.textContent = confirmText;
+        
+        footer.appendChild(cancelBtn);
+        footer.appendChild(confirmBtn);
+        
+        content.appendChild(header);
+        content.appendChild(body);
+        content.appendChild(footer);
+        modal.appendChild(content);
+        
         document.body.appendChild(modal);
 
         // Animation
@@ -79,8 +109,8 @@ export function showConfirmModal(title, message, confirmText = 'Confirm', confir
             resolve(result);
         };
 
-        modal.querySelector('.cancel').addEventListener('click', () => cleanup(false));
-        modal.querySelector('.confirm').addEventListener('click', () => cleanup(true));
+        cancelBtn.addEventListener('click', () => cleanup(false));
+        confirmBtn.addEventListener('click', () => cleanup(true));
         modal.addEventListener('click', (e) => {
             if (e.target === modal) cleanup(false);
         });
@@ -111,23 +141,51 @@ export function showPromptModal(title, message, defaultValue = '', confirmColor 
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'custom-modal-backdrop';
-        modal.innerHTML = `
-            <div class="custom-modal">
-                <div class="custom-modal-header">${title}</div>
-                <div class="custom-modal-body">
-                    <label class="modal-label">${message}</label>
-                    <input type="text" class="modal-input" value="${defaultValue}">
-                </div>
-                <div class="custom-modal-footer">
-                    <button class="modal-btn cancel">Cancel</button>
-                    <button class="modal-btn confirm" style="background-color: ${confirmColor}">OK</button>
-                </div>
-            </div>
-        `;
+        
+        const content = document.createElement('div');
+        content.className = 'custom-modal';
+        
+        const header = document.createElement('div');
+        header.className = 'custom-modal-header';
+        header.textContent = title;
+        
+        const body = document.createElement('div');
+        body.className = 'custom-modal-body';
+        
+        const label = document.createElement('label');
+        label.className = 'modal-label';
+        label.textContent = message;
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'modal-input';
+        input.value = defaultValue;
+        
+        body.appendChild(label);
+        body.appendChild(input);
+        
+        const footer = document.createElement('div');
+        footer.className = 'custom-modal-footer';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'modal-btn cancel';
+        cancelBtn.textContent = 'Cancel';
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'modal-btn confirm';
+        confirmBtn.style.backgroundColor = confirmColor;
+        confirmBtn.textContent = 'OK';
+        
+        footer.appendChild(cancelBtn);
+        footer.appendChild(confirmBtn);
+        
+        content.appendChild(header);
+        content.appendChild(body);
+        content.appendChild(footer);
+        modal.appendChild(content);
+        
         document.body.appendChild(modal);
 
-        const input = modal.querySelector('input');
-        
         requestAnimationFrame(() => {
             modal.classList.add('show');
             input.focus();
@@ -140,8 +198,8 @@ export function showPromptModal(title, message, defaultValue = '', confirmColor 
             resolve(result);
         };
 
-        modal.querySelector('.cancel').addEventListener('click', () => cleanup(null));
-        modal.querySelector('.confirm').addEventListener('click', () => cleanup(input.value));
+        cancelBtn.addEventListener('click', () => cleanup(null));
+        confirmBtn.addEventListener('click', () => cleanup(input.value));
         modal.addEventListener('click', (e) => {
             if (e.target === modal) cleanup(null);
         });
@@ -167,15 +225,40 @@ export function showInfoModal(title, message, btnText = 'OK', btnColor = '#2196f
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'custom-modal-backdrop';
-        modal.innerHTML = `
-            <div class="custom-modal">
-                <div class="custom-modal-header">${title}</div>
-                <div class="custom-modal-body">${message}</div>
-                <div class="custom-modal-footer">
-                    <button class="modal-btn confirm" style="background-color: ${btnColor}">${btnText}</button>
-                </div>
-            </div>
-        `;
+        
+        const content = document.createElement('div');
+        content.className = 'custom-modal';
+        
+        const header = document.createElement('div');
+        header.className = 'custom-modal-header';
+        header.textContent = title;
+        
+        const body = document.createElement('div');
+        body.className = 'custom-modal-body';
+        // Note: For changelog, we might WANT HTML. 
+        // Logic: Check if message starts with <, otherwise use textContent.
+        // This is a simple heuristic but safer than always innerHTML.
+        if (typeof message === 'string' && message.trim().startsWith('<')) {
+             body.innerHTML = message;
+        } else {
+             body.textContent = message;
+        }
+        
+        const footer = document.createElement('div');
+        footer.className = 'custom-modal-footer';
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'modal-btn confirm';
+        confirmBtn.style.backgroundColor = btnColor;
+        confirmBtn.textContent = btnText;
+        
+        footer.appendChild(confirmBtn);
+        
+        content.appendChild(header);
+        content.appendChild(body);
+        content.appendChild(footer);
+        modal.appendChild(content);
+        
         document.body.appendChild(modal);
 
         requestAnimationFrame(() => modal.classList.add('show'));
@@ -186,7 +269,7 @@ export function showInfoModal(title, message, btnText = 'OK', btnColor = '#2196f
             resolve();
         };
 
-        modal.querySelector('.confirm').addEventListener('click', cleanup);
+        confirmBtn.addEventListener('click', cleanup);
         modal.addEventListener('click', (e) => {
             if (e.target === modal) cleanup();
         });
@@ -212,21 +295,48 @@ export async function showIpInfoModal(ip) {
     // Create modal immediately with loading state
     const modal = document.createElement('div');
     modal.className = 'custom-modal-backdrop';
-    modal.innerHTML = `
-        <div class="custom-modal ip-info-modal">
-            <div class="custom-modal-header">
-                <span class="ip-modal-title">IP Information</span>
-                <span class="ip-address-badge">${ip}</span>
-            </div>
-            <div class="custom-modal-body ip-modal-body">
-                <div class="ip-loading">Loading...</div>
-            </div>
-            <div class="custom-modal-footer">
-                <button class="modal-btn confirm" style="background-color: #e5a00d">Close</button>
-            </div>
-        </div>
-    `;
+    
+    // HEADER
+    const modalContent = document.createElement('div');
+    modalContent.className = 'custom-modal ip-info-modal';
+    
+    const header = document.createElement('div');
+    header.className = 'custom-modal-header';
+    
+    const title = document.createElement('span');
+    title.className = 'ip-modal-title';
+    title.textContent = 'IP Information';
+    
+    const badge = document.createElement('span');
+    badge.className = 'ip-address-badge';
+    badge.textContent = ip;
+    
+    header.appendChild(title);
+    header.appendChild(badge);
+    modalContent.appendChild(header);
+    
+    // BODY
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'custom-modal-body ip-modal-body';
+    const loading = document.createElement('div');
+    loading.className = 'ip-loading';
+    loading.textContent = 'Loading...';
+    bodyEl.appendChild(loading);
+    modalContent.appendChild(bodyEl);
+    
+    // FOOTER
+    const footer = document.createElement('div');
+    footer.className = 'custom-modal-footer';
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-btn confirm';
+    closeBtn.style.backgroundColor = '#e5a00d';
+    closeBtn.textContent = 'Close';
+    footer.appendChild(closeBtn);
+    modalContent.appendChild(footer);
+    
+    modal.appendChild(modalContent);
     document.body.appendChild(modal);
+    
     requestAnimationFrame(() => modal.classList.add('show'));
 
     const cleanup = () => {
@@ -234,7 +344,7 @@ export async function showIpInfoModal(ip) {
         setTimeout(() => modal.remove(), 200);
     };
 
-    modal.querySelector('.confirm').addEventListener('click', cleanup);
+    closeBtn.addEventListener('click', cleanup);
     modal.addEventListener('click', (e) => {
         if (e.target === modal) cleanup();
     });
@@ -247,69 +357,94 @@ export async function showIpInfoModal(ip) {
     };
     window.addEventListener('keydown', keyHandler);
 
-    // Fetch IP data
+    // Fetch IP data from ipwho.is (HTTPS support)
     try {
-        const response = await fetch(`http://ip-api.com/json/${ip}`);
+        const response = await fetch(`https://ipwho.is/${ip}`);
         const data = await response.json();
         
-        const bodyEl = modal.querySelector('.ip-modal-body');
-        
-        if (data.status === 'success') {
-            const flagUrl = `https://flagsapi.com/${data.countryCode}/flat/64.png`;
+        bodyEl.replaceChildren(); // Clear loading
+
+        if (data.success) {
+            const grid = document.createElement('div');
+            grid.className = 'ip-info-grid';
             
-            bodyEl.innerHTML = `
-                <div class="ip-info-grid">
-                    <div class="ip-info-flag">
-                        <img src="${flagUrl}" alt="${data.country}" onerror="this.style.display='none'">
-                    </div>
-                    <div class="ip-info-details">
-                        <div class="ip-info-row">
-                            <span class="ip-info-label">Country</span>
-                            <span class="ip-info-value">${data.country}</span>
-                        </div>
-                        <div class="ip-info-row">
-                            <span class="ip-info-label">Region</span>
-                            <span class="ip-info-value">${data.regionName}</span>
-                        </div>
-                        <div class="ip-info-row">
-                            <span class="ip-info-label">City</span>
-                            <span class="ip-info-value">${data.city}</span>
-                        </div>
-                        <div class="ip-info-row">
-                            <span class="ip-info-label">ZIP</span>
-                            <span class="ip-info-value">${data.zip || 'N/A'}</span>
-                        </div>
-                        <div class="ip-info-row">
-                            <span class="ip-info-label">Timezone</span>
-                            <span class="ip-info-value">${data.timezone}</span>
-                        </div>
-                        <div class="ip-info-row">
-                            <span class="ip-info-label">ISP</span>
-                            <span class="ip-info-value">${data.isp}</span>
-                        </div>
-                        <div class="ip-info-row">
-                            <span class="ip-info-label">AS</span>
-                            <span class="ip-info-value">${data.as}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="ip-map-container">
-                    <iframe 
-                        class="ip-map-frame"
-                        src="https://www.openstreetmap.org/export/embed.html?bbox=${data.lon - 0.05},${data.lat - 0.03},${data.lon + 0.05},${data.lat + 0.03}&layer=mapnik&marker=${data.lat},${data.lon}"
-                        frameborder="0"
-                        loading="lazy">
-                    </iframe>
-                    <div class="ip-map-coords">${data.lat.toFixed(4)}, ${data.lon.toFixed(4)}</div>
-                </div>
-            `;
+            // Flag
+            const flagDiv = document.createElement('div');
+            flagDiv.className = 'ip-info-flag';
+            const flagImg = document.createElement('img');
+            // Use provided flag or fallback
+            flagImg.src = data.flag ? data.flag.img : `https://flagsapi.com/${data.country_code}/flat/64.png`;
+            flagImg.alt = data.country || "Flag";
+            flagImg.onerror = () => { flagImg.style.display = 'none'; };
+            flagDiv.appendChild(flagImg);
+            grid.appendChild(flagDiv);
+            
+            // Details
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'ip-info-details';
+            
+            const createRow = (label, value) => {
+                const row = document.createElement('div');
+                row.className = 'ip-info-row';
+                const lbl = document.createElement('span');
+                lbl.className = 'ip-info-label';
+                lbl.textContent = label;
+                const val = document.createElement('span');
+                val.className = 'ip-info-value';
+                val.textContent = value || 'N/A';
+                row.appendChild(lbl);
+                row.appendChild(val);
+                detailsDiv.appendChild(row);
+            };
+
+            createRow('Country', data.country);
+            createRow('Region', data.region); // Changed from regionName
+            createRow('City', data.city);
+            createRow('ZIP', data.postal);    // Changed from zip
+            // Timezone ID usually more useful/readable than just abbr
+            createRow('Timezone', data.timezone ? data.timezone.id : 'N/A');
+            
+            // Connection info (ISP/Org/ASN)
+            const conn = data.connection || {};
+            createRow('ISP', conn.isp);
+            createRow('ASN', conn.asn ? `AS${conn.asn} (${conn.org})` : conn.org);
+            
+            grid.appendChild(detailsDiv);
+            bodyEl.appendChild(grid);
+            
+            // Map
+            const mapContainer = document.createElement('div');
+            mapContainer.className = 'ip-map-container';
+            const iframe = document.createElement('iframe');
+            iframe.className = 'ip-map-frame';
+            // OpenStreetMap using new lat/long fields (latitude/longitude)
+            const lat = data.latitude;
+            const lon = data.longitude;
+            iframe.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.05},${lat - 0.03},${lon + 0.05},${lat + 0.03}&layer=mapnik&marker=${lat},${lon}`;
+            iframe.frameBorder = "0";
+            iframe.loading = "lazy";
+            
+            const coords = document.createElement('div');
+            coords.className = 'ip-map-coords';
+            coords.textContent = `${lat}, ${lon}`;
+            
+            mapContainer.appendChild(iframe);
+            mapContainer.appendChild(coords);
+            bodyEl.appendChild(mapContainer);
+
         } else {
-            bodyEl.innerHTML = `<div class="ip-error">Could not retrieve information for this IP address.</div>`;
+            const errDiv = document.createElement('div');
+            errDiv.className = 'ip-error';
+            errDiv.textContent = data.message || 'Could not retrieve information for this IP address.';
+            bodyEl.appendChild(errDiv);
         }
     } catch (error) {
         console.error('IP lookup failed:', error);
-        const bodyEl = modal.querySelector('.ip-modal-body');
-        bodyEl.innerHTML = `<div class="ip-error">Failed to fetch IP information.</div>`;
+        bodyEl.replaceChildren();
+        const errDiv = document.createElement('div');
+        errDiv.className = 'ip-error';
+        errDiv.textContent = 'Failed to fetch IP information.';
+        bodyEl.appendChild(errDiv);
     }
 }
 
@@ -324,10 +459,11 @@ export async function checkAndShowChangelog() {
         // Defines the changelog content for the current version
         const changelog = `
             <ul style="text-align: left; padding-left: 20px; margin: 0; list-style-type: disc;">
-                <li style="margin-bottom: 4px;"><b>Custom Modals:</b> New dark-mode styled dialogs replacing native alerts & confirmation dialogs.</li>
-                <li style="margin-bottom: 4px;"><b>Service Colors:</b> Notifications matches service branding.</li>
-                <li style="margin-bottom: 4px;"><b>SABnzbd:</b> Added item count badges to Queue & History.</li>
-                <li style="margin-bottom: 4px;"><b>Wizarr:</b> Added Wizarr as a service to manage & create invites.</li>
+                <li style="margin-bottom: 4px;"><b>Dashboard & UI:</b> Completely new Dashboard view and refactored Settings page.</li>
+                <li style="margin-bottom: 4px;"><b>Unified Search:</b> New global search bar for faster navigation and queries.</li>
+                <li style="margin-bottom: 4px;"><b>Performance:</b> Optimized API queries and faster load times.</li>
+                <li style="margin-bottom: 4px;"><b>Tautulli Enhancements:</b> IP Geolocation lookup, country flags, and performance optimizations.</li>
+                <li style="margin-bottom: 4px;"><b>Wizarr & SABnzbd:</b> Added Wizarr integration and SABnzbd badges.</li>
             </ul>
         `;
         

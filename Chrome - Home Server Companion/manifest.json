@@ -1,9 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Home Server Companion",
-  "version": "3.3",
+  "version": "3.4",
   "description": "Manage SABnzbd, Sonarr, Radarr, Prowlarr, Overseerr, Tautulli, Unraid, and Wizarr",
   "permissions": ["storage", "contextMenus"],
+  "host_permissions": [
+    "https://ipwho.is/*"
+  ],
   "background": {
     "service_worker": "js/background.js"
   },

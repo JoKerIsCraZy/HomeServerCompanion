@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/layout.css" />
     <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/services/dashboard.css" />
+    <link rel="stylesheet" href="css/services/search.css" />
     <link rel="stylesheet" href="css/services/sabnzbd.css" />
     <link rel="stylesheet" href="css/services/sonarr.css" />
     <link rel="stylesheet" href="css/services/radarr.css" />
@@ -20,7 +22,10 @@
     <div class="app-container">
       <!-- Sidebar -->
       <nav class="sidebar">
-        <div class="nav-item active" data-target="sabnzbd" title="SABnzbd">
+        <div class="nav-item active" data-target="dashboard" title="Dashboard">
+          <img src="icons/icon48.png" class="nav-icon" alt="Dashboard" />
+        </div>
+        <div class="nav-item" data-target="sabnzbd" title="SABnzbd">
           <img src="icons/sabnzbd.png" class="nav-icon" alt="SABnzbd" />
         </div>
         <div class="nav-item" data-target="sonarr" title="Sonarr">
@@ -190,7 +195,8 @@
         <div id="error-msg" class="error-banner hidden"></div>
 
         <!-- Views -->
-        <div id="sabnzbd-view" class="view active">
+        <div id="dashboard-view" class="view active"></div>
+        <div id="sabnzbd-view" class="view hidden">
           <!-- New Modern Header (Status) -->
           <div class="unraid-list-header">
             <div class="unraid-list-header-stack">
@@ -205,6 +211,28 @@
                     gap: 10px;
                   "
                 >
+                  <div class="sab-speed-control" style="display: flex; align-items: center; gap: 8px; margin-right: 15px;">
+                      <span style="font-size: 11px; font-weight: bold; color: var(--text-secondary); white-space: nowrap;">SPEED LIMIT</span>
+                      <input type="range" id="sab-speed-slider" min="0" max="100" step="5" style="width: 80px; height: 4px; accent-color: var(--primary-color); cursor: pointer;">
+                      <div style="display: flex; align-items: center; gap: 2px;">
+                          <input type="number" id="sab-speed-input" min="0" max="100" style="width: 50px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 4px; padding: 4px; text-align: center; font-size: 12px; font-weight: bold; -moz-appearance: textfield;">
+                          <span style="font-size: 12px; color: var(--text-secondary); font-weight: bold;">%</span>
+                      </div>
+                      <button id="sab-speed-set-btn" style="
+                          background: rgba(255, 255, 255, 0.1); 
+                          border: 1px solid rgba(255, 255, 255, 0.05); 
+                          color: var(--text-primary); 
+                          border-radius: 20px; 
+                          padding: 4px 12px; 
+                          font-size: 11px; 
+                          cursor: pointer; 
+                          font-weight: bold; 
+                          transition: all 0.2s;
+                          letter-spacing: 0.5px;
+                          min-width: 40px;
+                          text-align: center;
+                      " >SET</button>
+                  </div>
                   <div id="sab-status-bubble" class="status-bubble">Idle</div>
                   <div class="split-btn-group">
                     <button id="sab-pause-arrow" class="split-btn-arrow">
@@ -269,10 +297,12 @@
           <div class="tabs">
             <div class="tab-glider"></div>
             <button class="tab-btn active" data-tab="calendar">Calendar</button>
+            <button class="tab-btn" data-tab="missing">Missing</button>
             <button class="tab-btn" data-tab="history">Recent</button>
             <button class="tab-btn" data-tab="queue">Queue</button>
           </div>
           <div class="sub-view active" id="sonarr-calendar"></div>
+          <div class="sub-view hidden" id="sonarr-missing"></div>
           <div class="sub-view hidden" id="sonarr-history"></div>
           <div class="sub-view hidden" id="sonarr-queue"></div>
         </div>
@@ -281,10 +311,12 @@
           <div class="tabs">
             <div class="tab-glider"></div>
             <button class="tab-btn active" data-tab="calendar">Calendar</button>
+            <button class="tab-btn" data-tab="missing">Missing</button>
             <button class="tab-btn" data-tab="movies">Recent</button>
             <button class="tab-btn" data-tab="queue">Queue</button>
           </div>
           <div class="sub-view active" id="radarr-calendar"></div>
+          <div class="sub-view hidden" id="radarr-missing"></div>
           <div class="sub-view hidden" id="radarr-movies"></div>
           <div class="sub-view hidden" id="radarr-queue"></div>
         </div>

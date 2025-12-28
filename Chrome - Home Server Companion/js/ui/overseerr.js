@@ -514,16 +514,25 @@ async function hydrateRequests(requests, url, key) {
     });
     
     // 2. Fetch all in parallel (movies and TVs simultaneously)
+    // Use allSettled to prevent one failure from breaking the entire list
     const [movieResults, tvResults] = await Promise.all([
-        Promise.all(movieRequests.map(m => Overseerr.getMovie(url, key, m.id))),
-        Promise.all(tvRequests.map(t => Overseerr.getTv(url, key, t.id)))
+        Promise.allSettled(movieRequests.map(m => Overseerr.getMovie(url, key, m.id))),
+        Promise.allSettled(tvRequests.map(t => Overseerr.getTv(url, key, t.id)))
     ]);
     
     // 3. Build lookup maps for O(1) access
     const movieMap = new Map();
     const tvMap = new Map();
-    movieRequests.forEach((m, i) => movieMap.set(m.id, movieResults[i]));
-    tvRequests.forEach((t, i) => tvMap.set(t.id, tvResults[i]));
+    movieRequests.forEach((m, i) => {
+        if (movieResults[i].status === 'fulfilled') {
+            movieMap.set(m.id, movieResults[i].value);
+        }
+    });
+    tvRequests.forEach((t, i) => {
+        if (tvResults[i].status === 'fulfilled') {
+            tvMap.set(t.id, tvResults[i].value);
+        }
+    });
     
     // 4. Enrich requests
     return requests.map(req => {

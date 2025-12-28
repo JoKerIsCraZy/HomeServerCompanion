@@ -1,4 +1,4 @@
-const services = ['unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'prowlarr', 'wizarr'];
+const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'prowlarr', 'wizarr'];
 
 // --- UI Navigation ---
 // --- UI Navigation ---
@@ -51,14 +51,30 @@ const loadOptions = () => {
         // Apply Dark Mode (Forced)
         document.body.classList.add('dark-mode');
 
-        // Load Persistence Setting (default true if undefined)
-        const persistenceEl = document.getElementById('enablePersistence');
-        if (persistenceEl) {
-             if (items.enablePersistence === undefined) {
-                 persistenceEl.checked = true; // Default
-             } else {
-                 persistenceEl.checked = items.enablePersistence;
-             }
+        // Populate Start Page Options
+        const startPageSelect = document.getElementById('startPage');
+        if (startPageSelect) {
+            // Clear existing except first (Last Active) if needed, but easier to rebuild or append
+            // Assuming first option is static in HTML
+            
+            services.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+                startPageSelect.appendChild(opt);
+            });
+
+            // Load Setting
+            if (items.startPage) {
+                startPageSelect.value = items.startPage;
+            } else {
+                // Migration: Check old enablePersistence
+                if (items.enablePersistence === false) {
+                    startPageSelect.value = 'dashboard';
+                } else {
+                    startPageSelect.value = 'last-active';
+                }
+            }
         }
 
         // Load Badge Check Interval (default 5000ms)
@@ -414,12 +430,13 @@ document.addEventListener('DOMContentLoaded', () => {
         saveOrderBtn.addEventListener('click', () => {
              // const currentOrder = getCurrentOrder(); // Use window.currentOrder
              const currentOrder = window.currentOrder;
-             const enablePersistence = document.getElementById('enablePersistence').checked;
+             const startPage = document.getElementById('startPage').value;
              const badgeCheckInterval = parseInt(document.getElementById('badgeCheckInterval').value) || 5000;
              
              chrome.storage.sync.set({ 
-                 serviceOrder: window.currentOrder || currentOrder, // window.currentOrder is set below
-                 enablePersistence: enablePersistence,
+                 serviceOrder: window.currentOrder || currentOrder, 
+                 startPage: startPage,
+                 // enablePersistence: true // We can keep this true internally or deprecate it. Let's rely on StartPage value.
                  badgeCheckInterval: badgeCheckInterval
              }, () => {
                  showStatus('General', 'Settings saved!', 'success');
