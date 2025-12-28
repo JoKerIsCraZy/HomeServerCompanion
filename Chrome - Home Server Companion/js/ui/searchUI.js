@@ -52,7 +52,7 @@ export async function initSearchUI(state) {
             if (debounceTimer) clearTimeout(debounceTimer);
             
             if (query.length < 2) {
-                document.getElementById('unified-search-results').innerHTML = '';
+                document.getElementById('unified-search-results').textContent = '';
                 return;
             }
 
@@ -76,8 +76,14 @@ export function openSearch() {
     if (overlay) {
         overlay.classList.remove('hidden');
         input.value = '';
-        input.focus();
-        document.getElementById('unified-search-results').innerHTML = '<div class="search-placeholder"><p>Type to search...</p></div>';
+        const resultsContainer = document.getElementById('unified-search-results');
+        resultsContainer.textContent = '';
+        const placeholder = document.createElement('div');
+        placeholder.className = 'search-placeholder';
+        const p = document.createElement('p');
+        p.textContent = 'Type to search...';
+        placeholder.appendChild(p);
+        resultsContainer.appendChild(placeholder);
     }
 }
 
@@ -88,13 +94,21 @@ function closeSearch() {
 
 async function performSearch(query, state) {
     const container = document.getElementById('unified-search-results');
-    container.innerHTML = '<div class="loading-spinner">Searching...</div>';
+    container.textContent = '';
+    const spinner = document.createElement('div');
+    spinner.className = 'loading-spinner';
+    spinner.textContent = 'Searching...';
+    container.appendChild(spinner);
 
     try {
         const results = await aggregatedSearch(query, state.configs);
         renderResults(results, container, state);
     } catch (e) {
-        container.innerHTML = `<div class="error-msg">Search failed: ${e.message}</div>`;
+        container.textContent = '';
+        const errDiv = document.createElement('div');
+        errDiv.className = 'error-msg';
+        errDiv.textContent = 'Search failed: ' + e.message;
+        container.appendChild(errDiv);
     }
 }
 

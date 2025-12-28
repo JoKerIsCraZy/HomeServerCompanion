@@ -757,6 +757,19 @@
             <label for="tautulliKey">API Key</label>
             <input type="password" id="tautulliKey" />
           </div>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; cursor: pointer">
+              <input
+                type="checkbox"
+                id="tautulliEnableIpLookup"
+                style="width: auto; margin-right: 10px"
+              />
+              Enable IP Geolocation Lookup
+            </label>
+            <div class="help-text">
+                Enables clicking on IP addresses to view location info. Requires <code>ipwho.is</code> permission.
+            </div>
+          </div>
           <div class="actions">
             <button id="saveTautulli" class="btn-primary">Save Tautulli</button>
             <button id="testTautulli" class="btn-secondary">

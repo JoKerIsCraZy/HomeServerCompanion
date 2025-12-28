@@ -114,6 +114,16 @@ const loadOptions = () => {
                 urlEl.value = fullUrl;
             }
             if (keyEl && items[`${service}Key`]) keyEl.value = items[`${service}Key`];
+			
+			// Load Extra Boolean Settings (e.g. Tautulli IP Lookup)
+            const activeIpEl = document.getElementById(`${service}EnableIpLookup`);
+            if (activeIpEl) {
+                if (items[`${service}EnableIpLookup`] === undefined) {
+                    activeIpEl.checked = false; // Default false for optional behavior
+                } else {
+                    activeIpEl.checked = items[`${service}EnableIpLookup`];
+                }
+            }
         });
     });
 };
@@ -128,12 +138,20 @@ const saveService = (service) => {
     const keyEl = document.getElementById(keyId);
     const protocolEl = document.getElementById(protocolId);
     const enabledEl = document.getElementById(enabledId);
-    
+    // Extra Toggle
+    const enableIpLookupId = `${service}EnableIpLookup`;
+    const enableIpLookupEl = document.getElementById(enableIpLookupId);
+
     const data = {};
     const isActive = enabledEl ? enabledEl.checked : false;
     if (enabledEl) data[enabledId] = isActive;
 
-    let originToRequest = null;
+    // Handle Extra Toggle
+    if (enableIpLookupEl) {
+        data[enableIpLookupId] = enableIpLookupEl.checked;
+    }
+
+    let originsToRequest = [];
 
     if (urlEl) {
         let val = urlEl.value.trim().replace(/\/$/, ""); // Strip trailing slash
@@ -184,7 +202,7 @@ const saveService = (service) => {
                 }
                 
                 data[urlId] = fullUrl;
-                originToRequest = `${urlObj.origin}/*`;
+                originsToRequest.push(`${urlObj.origin}/*`);
             } catch (e) {
                 showStatus(service, 'Invalid URL format!', 'error');
                 console.warn("Invalid URL:", fullUrl, e);
@@ -206,7 +224,7 @@ const saveService = (service) => {
                 try {
                     const urlObj = new URL(fullUrl); // Just check if it parses
                      data[urlId] = fullUrl;
-                     originToRequest = `${urlObj.origin}/*`;
+                     originsToRequest.push(`${urlObj.origin}/*`);
                 } catch(e) {
                      // If it's invalid but disabled, maybe just don't save the URL update? 
                      // Or block? logic: "If you type it, it must be valid."
@@ -277,18 +295,28 @@ const saveService = (service) => {
         });
     };
 
-    if (originToRequest) {
-        chrome.permissions.contains({ origins: [originToRequest] }, (result) => {
+    // IP Lookup Permission Extra Check
+    if (enableIpLookupEl && enableIpLookupEl.checked) {
+        originsToRequest.push('https://ipwho.is/*');
+    }
+
+    if (originsToRequest.length > 0) {
+        chrome.permissions.contains({ origins: originsToRequest }, (result) => {
             if (result) {
                 // Already has permission
                 performSave();
             } else {
                 // Request permission
-                chrome.permissions.request({ origins: [originToRequest] }, (granted) => {
+                chrome.permissions.request({ origins: originsToRequest }, (granted) => {
                     if (granted) {
                         performSave();
                     } else {
                         showStatus(service, 'Saved, but permission denied!', 'error');
+                        // Revert check for clarity if denied
+                        if (enableIpLookupEl && originsToRequest.includes('https://ipwho.is/*')) {
+                             data[enableIpLookupId] = false;
+                             enableIpLookupEl.checked = false;
+                        }
                         // Still save to storage so they don't lose the text
                         chrome.storage.sync.set(data); 
                     }
@@ -296,6 +324,9 @@ const saveService = (service) => {
             }
         });
     } else {
+        // Check if we should REMOVE permissions if unchecked? 
+        // Optional: If user unchecked IP lookup, we could remove 'https://ipwho.is/*'.
+        // But usually better to keep permissions unless explicitly revoked to avoid re-prompting.
         performSave();
     }
 };

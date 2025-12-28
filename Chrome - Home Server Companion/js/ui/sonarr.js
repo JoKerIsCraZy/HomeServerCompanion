@@ -1065,7 +1065,11 @@ async function loadSonarrMissing(url, key, state, forceRefresh = false) {
         } catch(e) { console.warn("Cache read error", e); }
     }
 
-    container.innerHTML = '<div class="loading-spinner">Loading Missing Episodes...</div>';
+    container.textContent = '';
+    const spinner = document.createElement('div');
+    spinner.className = 'loading-spinner';
+    spinner.textContent = 'Loading Missing Episodes...';
+    container.appendChild(spinner);
     
     try {
         const data = await Sonarr.getSonarrMissing(url, key);
@@ -1082,7 +1086,11 @@ async function loadSonarrMissing(url, key, state, forceRefresh = false) {
         });
         
     } catch (e) {
-        container.innerHTML = `<div class="error-banner">Error loading missing: ${e.message}</div>`;
+        container.textContent = '';
+        const errBanner = document.createElement('div');
+        errBanner.className = 'error-banner';
+        errBanner.textContent = 'Error loading missing: ' + e.message;
+        container.appendChild(errBanner);
     }
 }
 
@@ -1093,7 +1101,7 @@ async function loadSonarrMissing(url, key, state, forceRefresh = false) {
 function renderSonarrMissing(records, state) {
     const container = document.getElementById("sonarr-missing");
     if (!container) return;
-    container.innerHTML = '';
+    container.textContent = '';
     
     // Filter: AirDate must be in the past (Released)
     const now = new Date();

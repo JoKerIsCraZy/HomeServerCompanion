@@ -997,7 +997,11 @@ async function loadRadarrMissing(url, key, state, forceRefresh = false) {
         } catch(e) { console.warn("Cache read error", e); }
     }
 
-    container.innerHTML = '<div class="loading-spinner">Loading Missing Movies...</div>';
+    container.textContent = '';
+    const spinner = document.createElement('div');
+    spinner.className = 'loading-spinner';
+    spinner.textContent = 'Loading Missing Movies...';
+    container.appendChild(spinner);
     
     try {
         const data = await Radarr.getRadarrMissing(url, key);
@@ -1015,7 +1019,11 @@ async function loadRadarrMissing(url, key, state, forceRefresh = false) {
         });
         
     } catch (e) {
-        container.innerHTML = `<div class="error-banner">Error loading missing: ${e.message}</div>`;
+        container.textContent = '';
+        const errBanner = document.createElement('div');
+        errBanner.className = 'error-banner';
+        errBanner.textContent = 'Error loading missing: ' + e.message;
+        container.appendChild(errBanner);
     }
 }
 
@@ -1026,7 +1034,7 @@ async function loadRadarrMissing(url, key, state, forceRefresh = false) {
 function renderRadarrMissing(records, state) {
     const container = document.getElementById("radarr-missing");
     if (!container) return;
-    container.innerHTML = '';
+    container.textContent = '';
     
     const now = new Date();
     // Filter logic:

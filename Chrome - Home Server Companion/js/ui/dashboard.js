@@ -1,35 +1,56 @@
 export async function initDashboard(state) {
     const container = document.getElementById('dashboard-view');
     // Clear existing content (or reuse if we implement diffing later)
-    container.innerHTML = '';
+    container.textContent = '';
 
     // 1. Header / Greeting
     const header = document.createElement('div');
     header.className = 'dashboard-header';
     
-    // Time/Date logic moved to update function
+    // Build header with DOM API
+    const headerContent = document.createElement('div');
+    headerContent.className = 'header-content';
+    headerContent.style.cssText = 'display: flex; justify-content: space-between; align-items: center; width: 100%;';
     
-    header.innerHTML = `
-        <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-            <div class="greeting-container">
-                <h1 id="greeting-text">Good Day</h1> <!-- Will be updated by clock -->
-                <p class="date-subtitle">Welcome Back</p>
-            </div>
-            <div class="clock-card" style="text-align: right; min-width: 150px;">
-                <div id="dashboard-time" style="font-size: 32px; font-weight: 700; color: #fff; line-height: 1;">--:--</div>
-                <div id="dashboard-date" style="font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 5px; font-weight: 500;">--</div>
-            </div>
-        </div>
-    `;
+    const greetingContainer = document.createElement('div');
+    greetingContainer.className = 'greeting-container';
+    const h1 = document.createElement('h1');
+    h1.id = 'greeting-text';
+    h1.textContent = 'Good Day';
+    const pSubtitle = document.createElement('p');
+    pSubtitle.className = 'date-subtitle';
+    pSubtitle.textContent = 'Welcome Back';
+    greetingContainer.appendChild(h1);
+    greetingContainer.appendChild(pSubtitle);
+    
+    const clockCard = document.createElement('div');
+    clockCard.className = 'clock-card';
+    clockCard.style.cssText = 'text-align: right; min-width: 150px;';
+    const timeDiv = document.createElement('div');
+    timeDiv.id = 'dashboard-time';
+    timeDiv.style.cssText = 'font-size: 32px; font-weight: 700; color: #fff; line-height: 1;';
+    timeDiv.textContent = '--:--';
+    const dateDiv = document.createElement('div');
+    dateDiv.id = 'dashboard-date';
+    dateDiv.style.cssText = 'font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 5px; font-weight: 500;';
+    dateDiv.textContent = '--';
+    clockCard.appendChild(timeDiv);
+    clockCard.appendChild(dateDiv);
+    
+    headerContent.appendChild(greetingContainer);
+    headerContent.appendChild(clockCard);
+    header.appendChild(headerContent);
     container.appendChild(header);
 
     // Start Clock
     startClock(state);
 
-    // 2. Service Grid Container
     const grid = document.createElement('div');
     grid.className = 'dashboard-grid';
-    grid.innerHTML = '<div class="loading-spinner">Loading System Status...</div>';
+    const loadingSpinner = document.createElement('div');
+    loadingSpinner.className = 'loading-spinner';
+    loadingSpinner.textContent = 'Loading System Status...';
+    grid.appendChild(loadingSpinner);
     container.appendChild(grid);
 
     // 3. Trigger Parallel Status Checks
@@ -72,7 +93,7 @@ import * as Wizarr from "../../services/wizarr.js";
 
 async function renderServiceGrid(container, state, isUpdate = false) {
     // Only clear if NOT updating
-    if (!isUpdate) container.innerHTML = '';
+    if (!isUpdate) container.textContent = '';
 
     // Define services and their specific check functions
     const services = [
@@ -190,16 +211,39 @@ async function renderServiceGrid(container, state, isUpdate = false) {
                  const navItem = document.querySelector(`.nav-item[data-target="${svc.id}"]`);
                  if (navItem) navItem.click();
             };
-    
-            card.innerHTML = `
-                <div class="service-card-header">
-                    <img src="icons/${svc.icon}" class="service-icon" alt="${svc.name}">
-                    <div class="status-dot casting-shadow" id="status-${svc.id}"></div>
-                </div>
-                <div class="service-name">${svc.name}</div>
-                <div class="service-metric" id="metric-${svc.id}">--</div>
-                <div class="service-metric-label" id="label-${svc.id}">Checking...</div>
-            `;
+            // Build card with DOM API
+            const cardHeader = document.createElement('div');
+            cardHeader.className = 'service-card-header';
+            
+            const iconImg = document.createElement('img');
+            iconImg.src = 'icons/' + svc.icon;
+            iconImg.className = 'service-icon';
+            iconImg.alt = svc.name;
+            cardHeader.appendChild(iconImg);
+            
+            const statusDot = document.createElement('div');
+            statusDot.className = 'status-dot casting-shadow';
+            statusDot.id = 'status-' + svc.id;
+            cardHeader.appendChild(statusDot);
+            
+            const serviceName = document.createElement('div');
+            serviceName.className = 'service-name';
+            serviceName.textContent = svc.name;
+            
+            const serviceMetric = document.createElement('div');
+            serviceMetric.className = 'service-metric';
+            serviceMetric.id = 'metric-' + svc.id;
+            serviceMetric.textContent = '--';
+            
+            const serviceLabel = document.createElement('div');
+            serviceLabel.className = 'service-metric-label';
+            serviceLabel.id = 'label-' + svc.id;
+            serviceLabel.textContent = 'Checking...';
+            
+            card.appendChild(cardHeader);
+            card.appendChild(serviceName);
+            card.appendChild(serviceMetric);
+            card.appendChild(serviceLabel);
             container.appendChild(card);
         });
     }

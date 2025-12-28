@@ -235,14 +235,8 @@ export function showInfoModal(title, message, btnText = 'OK', btnColor = '#2196f
         
         const body = document.createElement('div');
         body.className = 'custom-modal-body';
-        // Note: For changelog, we might WANT HTML. 
-        // Logic: Check if message starts with <, otherwise use textContent.
-        // This is a simple heuristic but safer than always innerHTML.
-        if (typeof message === 'string' && message.trim().startsWith('<')) {
-             body.innerHTML = message;
-        } else {
-             body.textContent = message;
-        }
+        // Always use textContent for safety
+        body.textContent = message;
         
         const footer = document.createElement('div');
         footer.className = 'custom-modal-footer';

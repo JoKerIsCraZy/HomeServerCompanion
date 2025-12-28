@@ -283,14 +283,18 @@ function renderTautulliActivity(sessions, url, key, state) {
           return /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|127\.)/.test(ip);
       };
       
-      // Make IP clickable for IP lookup (only for external IPs, only once)
+      // Make IP clickable for IP lookup (only for external IPs, only once, and if ENABLED)
       if (session.ip_address && !isPrivateIp(session.ip_address) && !valIp.dataset.listenerAttached) {
           valIp.style.cursor = 'pointer';
           valIp.style.textDecoration = 'underline';
           valIp.title = 'Click to view IP information';
           valIp.addEventListener('click', (e) => {
               e.stopPropagation();
-              showIpInfoModal(session.ip_address);
+              if (state.configs.tautulliEnableIpLookup) {
+                  showIpInfoModal(session.ip_address);
+              } else {
+                  showNotification('Enable IP Geolocation in Tautulli Settings first.', 'info');
+              }
           });
           valIp.dataset.listenerAttached = 'true';
       }
