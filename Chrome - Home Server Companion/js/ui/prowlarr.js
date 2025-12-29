@@ -1,4 +1,5 @@
 import * as Prowlarr from "../../services/prowlarr.js";
+import { showNotification } from "../utils.js";
 
 // --- PROWLARR UI LOGIC ---
 
@@ -1002,6 +1003,74 @@ export function renderSearchResults(results, customContainer = null) {
         
         // Actions
         const dlBtn = card.querySelector(".download-btn");
+        const actionsDiv = dlBtn.parentElement;
+        
+        // SABnzbd Send Button (via Prowlarr grab API)
+        if (res.guid && res.indexerId) {
+            const sabBtn = document.createElement('button');
+            sabBtn.className = 'action-btn sab-send-btn';
+            sabBtn.title = 'Send to SABnzbd';
+            sabBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.1); border: none; cursor: pointer; transition: background 0.2s;';
+            
+            const sabIcon = document.createElement('img');
+            sabIcon.src = 'icons/sabnzbd.png';
+            sabIcon.alt = 'SABnzbd';
+            sabIcon.style.cssText = 'width: 18px; height: 18px;';
+            sabBtn.appendChild(sabIcon);
+            
+            sabBtn.onmouseover = () => sabBtn.style.background = 'rgba(255, 214, 0, 0.3)';
+            sabBtn.onmouseout = () => sabBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+            
+            sabBtn.onclick = async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                sabBtn.disabled = true;
+                sabBtn.style.opacity = '0.5';
+                
+                try {
+                    // Get Prowlarr config from state or localStorage
+                    const stored = localStorage.getItem('prowlarr_config') || '{}';
+                    let prowlarrUrl, prowlarrKey;
+                    try {
+                        const cfg = JSON.parse(stored);
+                        prowlarrUrl = cfg.url;
+                        prowlarrKey = cfg.key;
+                    } catch(e) {}
+                    
+                    // Fallback: try to get from chrome storage
+                    if (!prowlarrUrl || !prowlarrKey) {
+                        const items = await new Promise(r => chrome.storage.sync.get(['prowlarrUrl', 'prowlarrKey'], r));
+                        prowlarrUrl = items.prowlarrUrl;
+                        prowlarrKey = items.prowlarrKey;
+                    }
+                    
+                    if (!prowlarrUrl || !prowlarrKey) {
+                        throw new Error('Prowlarr not configured');
+                    }
+                    
+                    await Prowlarr.grabRelease(prowlarrUrl, prowlarrKey, res.guid, res.indexerId);
+                    
+                    // Success feedback
+                    sabIcon.style.filter = 'brightness(1.5)';
+                    sabBtn.title = 'Sent!';
+                    
+                    // Show success notification
+                    showNotification('Sent to SABnzbd!', '#e5a00d');
+                } catch (err) {
+                    console.error('Grab failed:', err);
+                    sabBtn.style.background = 'rgba(244, 67, 54, 0.3)';
+                    sabBtn.title = 'Failed: ' + err.message;
+                    
+                    showNotification('Failed: ' + err.message, 'error');
+                } finally {
+                    sabBtn.disabled = false;
+                    sabBtn.style.opacity = '1';
+                }
+            };
+            
+            actionsDiv.insertBefore(sabBtn, dlBtn);
+        }
+        
         if (res.downloadUrl) {
             dlBtn.href = res.downloadUrl;
         } else {

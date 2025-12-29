@@ -125,3 +125,32 @@ export const searchProwlarr = async (url, apiKey, query, categories = null, inde
   }
 };
 
+/**
+ * Grabs a release and sends to configured download client (e.g., SABnzbd)
+ * @param {string} url - Prowlarr URL
+ * @param {string} apiKey - API Key
+ * @param {string} guid - Release GUID
+ * @param {number} indexerId - Indexer ID
+ * @returns {Promise<Object>} Response
+ */
+export const grabRelease = async (url, apiKey, guid, indexerId) => {
+  try {
+    const response = await fetch(`${url}/api/v1/search`, {
+      method: 'POST',
+      headers: {
+        'X-Api-Key': apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ guid, indexerId })
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Grab Error: ${response.status} - ${errText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Prowlarr Grab Release Error:", error);
+    throw error;
+  }
+};
+

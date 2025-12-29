@@ -131,12 +131,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     loadService(defaultService);
 
     // BADGE PRE-LOAD: Load other services in background to show badges
-    ["sabnzbd", "radarr", "sonarr"].forEach((svc) => {
+    ["sabnzbd", "radarr", "sonarr", "tautulli"].forEach((svc) => {
       if (svc !== defaultService && items[`${svc}Enabled`] !== false) {
-        // Just fetch data, don't switch view
-        // We use a simplified load if possible or just let the badge loop handle it.
-        // But badge loop runs every X seconds, we might want immediate.
-        // For now, relying on background update loop is safer than calling loadService which might trigger UI logic.
+        const svcUrl = items[`${svc}Url`];
+        const svcKey = items[`${svc}Key`];
+        if (svcUrl && svcKey) {
+          // Pre-fetch in background with slight delay to not block main service
+          setTimeout(async () => {
+            try {
+              if (svc === "tautulli") {
+                await initTautulli(svcUrl, svcKey, state);
+              } else if (svc === "sabnzbd") {
+                await initSabnzbd(svcUrl, svcKey, state);
+              } else if (svc === "sonarr") {
+                await initSonarr(svcUrl, svcKey, state);
+              } else if (svc === "radarr") {
+                await initRadarr(svcUrl, svcKey, state);
+              }
+            } catch (e) {
+              console.debug(`[Pre-fetch] ${svc} failed:`, e.message);
+            }
+          }, 500);
+        }
       }
     });
 
