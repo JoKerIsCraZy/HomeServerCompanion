@@ -710,14 +710,10 @@ body.fullscreen-mode #wizarr-view.active {
 }
 
 body.fullscreen-mode #wizarr-content {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 24px;
-}
-
-body.fullscreen-mode #wizarr-content > div {
-  padding: 20px;
-  border-radius: 14px;
+  max-width: 900px;
 }
 
 /* Header */
@@ -905,8 +901,7 @@ body.fullscreen-mode ::-webkit-scrollbar-thumb {
   body.fullscreen-mode #prowlarr-search-results,
   body.fullscreen-mode #overseerr-requests,
   body.fullscreen-mode #overseerr-trending-results,
-  body.fullscreen-mode #overseerr-search-results,
-  body.fullscreen-mode #wizarr-content {
+  body.fullscreen-mode #overseerr-search-results {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
   }
 }
@@ -927,7 +922,6 @@ body.fullscreen-mode ::-webkit-scrollbar-thumb {
   body.fullscreen-mode #overseerr-requests,
   body.fullscreen-mode #overseerr-trending-results,
   body.fullscreen-mode #overseerr-search-results,
-  body.fullscreen-mode #wizarr-content,
   body.fullscreen-mode #dashboard-view .dashboard-grid {
     grid-template-columns: 1fr !important;
   }
