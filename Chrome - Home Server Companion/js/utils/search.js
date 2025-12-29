@@ -45,7 +45,6 @@ export async function aggregatedSearch(query, configs) {
         let exists = false;
         
         let sonarrSlug = null;
-        let radarrId = null;
 
         if (item.mediaInfo) {
             // Overseerr MediaInfo Status:
@@ -108,11 +107,9 @@ export async function aggregatedSearch(query, configs) {
             }
 
         } else if (item.mediaType === 'movie' && moviesCache) {
-             // Radarr Mapping
-             // moviesCache items have: tmdbId, id (Database ID)
+             // Radarr Mapping - check if in library
              let match = moviesCache.find(m => m.tmdbId === item.id);
              if (match) {
-                 radarrId = match.id; // Internal Radarr DB ID
                  exists = true;
                  if (status === 'Request') status = 'Pending';
              }
@@ -130,8 +127,7 @@ export async function aggregatedSearch(query, configs) {
             overview: item.overview,
             plexRatingKey: item.mediaInfo?.ratingKey || item.mediaInfo?.plexUrl?.match(/\/library\/metadata\/(\d+)/)?.[1] || null,
             plexUrl: item.mediaInfo?.plexUrl || null,
-            sonarrSlug: sonarrSlug, // For direct links
-            radarrId: radarrId      // For direct links
+            sonarrSlug: sonarrSlug // For direct Sonarr links
         };
     });
 }

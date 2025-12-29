@@ -218,65 +218,6 @@ export function showPromptModal(title, message, defaultValue = '', confirmColor 
     });
 }
 
-/**
- * Shows a simple info modal with one button
- */
-export function showInfoModal(title, message, btnText = 'OK', btnColor = '#2196f3') {
-    return new Promise((resolve) => {
-        const modal = document.createElement('div');
-        modal.className = 'custom-modal-backdrop';
-        
-        const content = document.createElement('div');
-        content.className = 'custom-modal';
-        
-        const header = document.createElement('div');
-        header.className = 'custom-modal-header';
-        header.textContent = title;
-        
-        const body = document.createElement('div');
-        body.className = 'custom-modal-body';
-        // Always use textContent for safety
-        body.textContent = message;
-        
-        const footer = document.createElement('div');
-        footer.className = 'custom-modal-footer';
-        
-        const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'modal-btn confirm';
-        confirmBtn.style.backgroundColor = btnColor;
-        confirmBtn.textContent = btnText;
-        
-        footer.appendChild(confirmBtn);
-        
-        content.appendChild(header);
-        content.appendChild(body);
-        content.appendChild(footer);
-        modal.appendChild(content);
-        
-        document.body.appendChild(modal);
-
-        requestAnimationFrame(() => modal.classList.add('show'));
-
-        const cleanup = () => {
-            modal.classList.remove('show');
-            setTimeout(() => modal.remove(), 200);
-            resolve();
-        };
-
-        confirmBtn.addEventListener('click', cleanup);
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) cleanup();
-        });
-        
-        const keyHandler = (e) => {
-            if (e.key === 'Escape' || e.key === 'Enter') {
-                window.removeEventListener('keydown', keyHandler);
-                cleanup();
-            }
-        };
-        window.addEventListener('keydown', keyHandler);
-    });
-}
 
 /**
  * Checks if version changed and shows changelog

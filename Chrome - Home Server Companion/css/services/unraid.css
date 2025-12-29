@@ -243,41 +243,6 @@ body.dark-mode .unraid-card {
   transition: width 1s ease-in-out;
 }
 
-/* Storage Bars */
-.storage-disk-row {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 15px;
-}
-.storage-disk-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  margin-bottom: 5px;
-  color: var(--text-primary);
-  font-weight: 500;
-}
-.storage-track {
-  height: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
-  overflow: hidden;
-}
-.storage-fill {
-  height: 100%;
-  border-radius: 5px;
-  transition: width 0.5s;
-}
-.storage-fill.ok {
-  background: #4caf50;
-}
-.storage-fill.warn {
-  background: #ff9800;
-}
-.storage-fill.crit {
-  background: #f44336;
-}
-
 /* Docker/VM Cards */
 .docker-card,
 .vm-card {
