@@ -568,6 +568,45 @@ body.fullscreen-mode .vm-card {
   min-height: 130px !important;
 }
 
+/* Row layout - ensure proper vertical centering in fullscreen */
+body.fullscreen-mode .docker-card.row-layout,
+body.fullscreen-mode .vm-card.row-layout {
+  min-height: auto !important;
+  padding: 14px 20px !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 15px !important;
+}
+
+body.fullscreen-mode .docker-card.row-layout .card-header,
+body.fullscreen-mode .vm-card.row-layout .card-header {
+  flex: 1 !important;
+  align-items: center !important;
+  display: flex !important;
+}
+
+body.fullscreen-mode .docker-card.row-layout .card-body,
+body.fullscreen-mode .vm-card.row-layout .card-body {
+  display: none !important;
+}
+
+body.fullscreen-mode .docker-card.row-layout .card-actions,
+body.fullscreen-mode .vm-card.row-layout .card-actions {
+  align-items: center !important;
+  justify-content: center !important;
+  margin-top: 0 !important;
+  margin-left: auto !important;
+}
+
+/* Only style buttons when they are visible (JS controls display) */
+body.fullscreen-mode .docker-card.row-layout .action-btn,
+body.fullscreen-mode .vm-card.row-layout .action-btn {
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
 body.fullscreen-mode .card-title {
   font-size: 15px !important;
 }

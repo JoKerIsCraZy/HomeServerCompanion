@@ -436,6 +436,7 @@ body.fullscreen-mode #unraid-view .action-btn:hover {
 .unraid-card.row-layout .card-actions {
   margin-top: 0;
   display: flex;
+  align-items: center; /* Ensure buttons are perfectly centered vertically */
   gap: 10px;
   opacity: 0;
   transform: translateX(10px);
