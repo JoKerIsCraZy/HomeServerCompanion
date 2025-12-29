@@ -273,7 +273,7 @@ function renderRadarrQueue(records, state) {
              btn.disabled = true;
         }
         try {
-            const newQueue = await Radarr.getRadarrMovies(state.configs.radarrUrl, state.configs.radarrKey);
+            const newQueue = await Radarr.getRadarrQueue(state.configs.radarrUrl, state.configs.radarrKey);
             await updateRadarrBadge(state.configs.radarrUrl, state.configs.radarrKey, newQueue);
             renderRadarrQueue(newQueue.records || [], state);
         } catch(e) {

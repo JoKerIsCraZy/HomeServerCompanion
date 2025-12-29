@@ -158,8 +158,15 @@ body.fullscreen-mode .sub-tabs {
 }
 
 body.fullscreen-mode .sub-tabs .sub-tab-btn {
-  padding: 12px 24px;
-  font-size: 14px;
+  padding: 12px 28px;
+  font-size: 15px;
+  border-radius: 12px;
+}
+
+body.fullscreen-mode .sub-tabs .tab-glider {
+  top: 8px;
+  left: 8px;
+  height: calc(100% - 16px);
   border-radius: 12px;
 }
 
@@ -427,6 +434,26 @@ body.fullscreen-mode .tautulli-session-meta {
 /* ============================================
    UNRAID
    ============================================ */
+/* Unraid Tabs - Match other services */
+body.fullscreen-mode #unraid-view .sub-tabs {
+  padding: 8px !important;
+  border-radius: 16px !important;
+  gap: 8px !important;
+}
+
+body.fullscreen-mode #unraid-view .sub-tab-btn {
+  padding: 12px 28px !important;
+  font-size: 15px !important;
+  border-radius: 12px !important;
+}
+
+body.fullscreen-mode #unraid-view .tab-glider {
+  top: 8px !important;
+  left: 8px !important;
+  height: calc(100% - 16px) !important;
+  border-radius: 12px !important;
+}
+
 body.fullscreen-mode .unraid-list-title {
   font-size: 20px;
 }
@@ -563,10 +590,30 @@ body.fullscreen-mode #unraid-view .action-btn {
 /* ============================================
    PROWLARR
    ============================================ */
+/* Prowlarr Tabs - Match other services */
+body.fullscreen-mode #prowlarr-view .tabs {
+  padding: 8px;
+  border-radius: 16px;
+  gap: 8px;
+}
+
+body.fullscreen-mode #prowlarr-view .tabs .tab-btn {
+  padding: 12px 28px !important;
+  font-size: 15px !important;
+  border-radius: 12px !important;
+}
+
+body.fullscreen-mode #prowlarr-view .tab-glider {
+  top: 8px;
+  left: 8px;
+  height: calc(100% - 16px);
+  border-radius: 12px;
+}
+
 body.fullscreen-mode #prowlarr-indexers {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  gap: 24px;
 }
 
 body.fullscreen-mode #prowlarr-search-results {
@@ -685,6 +732,26 @@ body.fullscreen-mode .dropdown-item {
 /* ============================================
    OVERSEERR
    ============================================ */
+/* Overseerr Tabs - Match other services */
+body.fullscreen-mode #overseerr-view .sub-tabs {
+  padding: 8px !important;
+  border-radius: 16px !important;
+  gap: 8px !important;
+}
+
+body.fullscreen-mode #overseerr-view .sub-tab-btn {
+  padding: 12px 28px !important;
+  font-size: 15px !important;
+  border-radius: 12px !important;
+}
+
+body.fullscreen-mode #overseerr-view .tab-glider {
+  top: 8px !important;
+  left: 8px !important;
+  height: calc(100% - 16px) !important;
+  border-radius: 12px !important;
+}
+
 body.fullscreen-mode #overseerr-requests,
 body.fullscreen-mode #overseerr-trending-results,
 body.fullscreen-mode #overseerr-search-results {
