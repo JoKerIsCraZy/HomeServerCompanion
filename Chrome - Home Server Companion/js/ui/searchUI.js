@@ -477,8 +477,8 @@ function renderResults(results, container, state) {
                      radarrBtn.appendChild(radarrImg);
                      radarrBtn.addEventListener('click', (e) => {
                          e.stopPropagation();
-                         const radarrTarget = item.radarrId ? item.radarrId : item.id;
-                         const radarrUrl = `${state.configs.radarrUrl}/movie/${radarrTarget}`;
+                         // Use TMDB ID (item.id) - Radarr URLs use /movie/{tmdbId} format
+                         const radarrUrl = `${state.configs.radarrUrl}/movie/${item.id}`;
                          chrome.tabs.create({ url: radarrUrl });
                      });
                      actions.appendChild(radarrBtn);
