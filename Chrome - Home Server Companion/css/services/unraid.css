@@ -401,23 +401,11 @@ body.dark-mode .unraid-card {
   font-size: 10px;
   transition: all 0.2s;
 }
-.action-btn:hover {
-  background: #f15a2c; /* Unraid Orange per user request */
-  color: white;
+#unraid-view .action-btn:hover,
+body.fullscreen-mode #unraid-view .action-btn:hover {
+  background: #F88501 !important; /* Unraid Orange - same as tab glider */
+  color: white !important;
   transform: scale(1.1);
-}
-/* Override specific colors to strictly follow user request */
-.start-btn:hover {
-  background: #f15a2c;
-}
-.stop-btn:hover {
-  background: #f15a2c;
-}
-.restart-btn:hover {
-  background: #f15a2c; 
-}
-.webui-btn:hover {
-  background: #f15a2c;
 }
 
 /* Vertical List Layout - Added for User Request */

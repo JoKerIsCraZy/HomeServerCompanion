@@ -36,10 +36,10 @@ export async function initUnraid(url, key, state) {
          try {
              if (target === 'unraid-tab-vms') {
                  await renderUnraidVms(url, key);
-                 const card = document.getElementById("unraid-status-card");
-                 if (card && card.querySelector(".status-indicator").textContent === "CONNECTION ERROR") {
-                      card.querySelector(".status-indicator").textContent = "ONLINE";
-                      card.querySelector(".status-indicator").className = "status-indicator online";
+                 // Also fetch system data for status card (version, license)
+                 const data = await getSystemData(url, key);
+                 if (!data._error) {
+                     updateStatusCard(data);
                  }
              } else {
                  const data = await getSystemData(url, key);
@@ -108,43 +108,46 @@ const getUptime = (iso) => {
   return `${days}d ${hours}h`;
 };
 
-function renderUnraidSystem(data, url, key, state) {
+function updateStatusCard(data) {
     const card = document.getElementById("unraid-status-card");
-    if (card) {
-        // Clear and rebuild for vertical stack (Status -> License -> Version)
-        card.replaceChildren();
-        card.style.display = "flex";
-        card.style.flexDirection = "column";
-        card.style.justifyContent = "center"; // Vertical center
-        card.style.alignItems = "flex-end";   // Right align (as defined in CSS usually, or center?)
-        // CSS says text-align: right. Let's align flex items to flex-end.
+    if (!card) return;
 
-        // 1. Status
-        const ind = document.createElement("div");
-        ind.className = "status-indicator online";
-        ind.textContent = "ONLINE";
-        ind.style.marginBottom = "2px";
-        card.appendChild(ind);
+    // Clear and rebuild for vertical stack (Status -> License -> Version)
+    card.replaceChildren();
+    card.style.display = "flex";
+    card.style.flexDirection = "column";
+    card.style.justifyContent = "center";
+    card.style.alignItems = "flex-end";
 
-        // 2. License
-        if (data.system && data.system.registration) {
-            const licenseDiv = document.createElement("div");
-            licenseDiv.className = "server-name"; // Reuse style for font/color
-            licenseDiv.style.opacity = "0.7";     // Slightly dimmer
-            licenseDiv.style.fontWeight = "400";
-            licenseDiv.style.marginBottom = "2px";
-            licenseDiv.textContent = data.system.registration; 
-            card.appendChild(licenseDiv);
-        }
+    // 1. Status
+    const ind = document.createElement("div");
+    ind.className = "status-indicator online";
+    ind.textContent = "ONLINE";
+    ind.style.marginBottom = "2px";
+    card.appendChild(ind);
 
-        // 3. Version
-        if (data.system && data.system.version) {
-            const versionDiv = document.createElement("div");
-            versionDiv.className = "server-name"; // Reuse style
-            versionDiv.textContent = `Unraid v${data.system.version}`;
-            card.appendChild(versionDiv);
-        }
+    // 2. License
+    if (data.system && data.system.registration) {
+        const licenseDiv = document.createElement("div");
+        licenseDiv.className = "server-name";
+        licenseDiv.style.opacity = "0.7";
+        licenseDiv.style.fontWeight = "400";
+        licenseDiv.style.marginBottom = "2px";
+        licenseDiv.textContent = data.system.registration;
+        card.appendChild(licenseDiv);
     }
+
+    // 3. Version
+    if (data.system && data.system.version) {
+        const versionDiv = document.createElement("div");
+        versionDiv.className = "server-name";
+        versionDiv.textContent = `Unraid v${data.system.version}`;
+        card.appendChild(versionDiv);
+    }
+}
+
+function renderUnraidSystem(data, url, key, state) {
+    updateStatusCard(data);
 
     // --- Render System Tab (DASHBOARD) ---
     const systemTab = document.getElementById("unraid-tab-system");
@@ -958,13 +961,11 @@ async function renderUnraidVms(url, key) {
 
             const startBtn = card.querySelector('.start-btn');
             const stopBtn = card.querySelector('.stop-btn');
-            const webBtn = card.querySelector('.webui-btn');
 
             if (isRunning) {
                 startBtn.style.display = 'none';
             } else {
                 stopBtn.style.display = 'none';
-                webBtn.style.display = 'none';
             }
 
             startBtn.onclick = async (e) => {
