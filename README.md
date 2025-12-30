@@ -135,7 +135,7 @@ Beautiful high-contrast dark UI:
 - **System Dashboard** - Real-time CPU ring, RAM bar, uptime
 - **Storage Overview** - Array, Cache, Pools, Boot drives
 - **Docker Management** - Start/Stop/Restart with search & sort
-- **VM Control** - Manage VMs with VNC access
+- **VM Control** - Manage VMs
 - **Quick Links** - Direct access to WebUIs
 
 </details>
