@@ -1,4 +1,4 @@
-const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'plex', 'overseerr', 'prowlarr', 'wizarr'];
+const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'prowlarr', 'wizarr'];
 
 // --- UI Navigation ---
 // --- UI Navigation ---
@@ -7,13 +7,16 @@ const glider = document.getElementById('glider');
 
 const moveGlider = (el) => {
     if (!el || !glider) return;
-    // sub-tabs padding is 5px, glider is absolute at left: 5px
-    // We want glider visual position to match button visual position
-    // glidetLeft + translateX = buttonLeft
-    // 5 + translateX = offsetLeft
-    const offset = el.offsetLeft - 5;
+    const subTabs = el.parentElement;
+    const subTabsRect = subTabs.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    
+    // Calculate position relative to parent
+    const left = elRect.left - subTabsRect.left - 6; // 6px padding
+    const top = elRect.top - subTabsRect.top - 6;
+    
     glider.style.width = `${el.offsetWidth}px`;
-    glider.style.transform = `translateX(${offset}px)`;
+    glider.style.transform = `translate(${left}px, ${top}px)`;
 };
 
 // Initialize Glider
@@ -42,6 +45,29 @@ tabs.forEach(item => {
         document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
         document.getElementById(target).classList.add('active');
     });
+});
+
+// Keyboard navigation with arrow keys
+document.addEventListener('keydown', (e) => {
+    // Only handle if not focused on input/select
+    if (document.activeElement.tagName === 'INPUT' || 
+        document.activeElement.tagName === 'SELECT' || 
+        document.activeElement.tagName === 'TEXTAREA') return;
+    
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const tabsArray = Array.from(tabs);
+        const currentIndex = tabsArray.findIndex(t => t.classList.contains('active'));
+        let newIndex;
+        
+        if (e.key === 'ArrowLeft') {
+            newIndex = currentIndex > 0 ? currentIndex - 1 : tabsArray.length - 1;
+        } else {
+            newIndex = currentIndex < tabsArray.length - 1 ? currentIndex + 1 : 0;
+        }
+        
+        tabsArray[newIndex].click();
+    }
 });
 
 // --- Save & Load ---
@@ -512,15 +538,16 @@ services.forEach(service => {
     const testBtn = document.getElementById(`test${service.charAt(0).toUpperCase() + service.slice(1)}`);
 
     if (saveBtn) {
-        if (service === 'plex') {
-            // Special save handler for Plex
-            saveBtn.addEventListener('click', () => savePlexSettings());
-        } else {
-            saveBtn.addEventListener('click', () => saveService(service));
-        }
+        saveBtn.addEventListener('click', () => saveService(service));
     }
     if (testBtn) testBtn.addEventListener('click', () => testConnection(service));
 });
+
+// Plex-specific event listeners (Plex is not in services array)
+const plexSaveBtn = document.getElementById('savePlex');
+const plexTestBtn = document.getElementById('testPlex');
+if (plexSaveBtn) plexSaveBtn.addEventListener('click', () => savePlexSettings());
+if (plexTestBtn) plexTestBtn.addEventListener('click', () => testConnection('plex'));
 
 // Special Plex save function
 const savePlexSettings = () => {
@@ -653,7 +680,8 @@ const renderOrderList = (initialLoad = true) => {
     if (initialLoad) {
         chrome.storage.sync.get(['serviceOrder'], (items) => {
             if (items.serviceOrder) {
-                window.currentOrder = items.serviceOrder;
+                // Filter out any services that are no longer valid (e.g., plex was removed)
+                window.currentOrder = items.serviceOrder.filter(s => services.includes(s));
                 // Ensure all known services are present
                 services.forEach(s => {
                     if (!window.currentOrder.includes(s)) window.currentOrder.push(s);
