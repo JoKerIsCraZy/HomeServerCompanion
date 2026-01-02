@@ -136,12 +136,14 @@ function renderRadarrCalendar(movies, state) {
 
       // Add Link to FIRST element ("Top element")
       if (index === 0) {
-          const linkBtn = document.createElement('span');
-          linkBtn.textContent = "\u2197"; // NE Arrow
+          const linkBtn = document.createElement('button');
+          linkBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
           linkBtn.title = "Open Calendar";
-          linkBtn.style.cssText = "cursor: pointer; font-size: 1.3em; margin-left: 10px; color: var(--text-secondary); opacity: 0.8; transition: opacity 0.2s;";
-          linkBtn.onmouseover = () => linkBtn.style.opacity = "1";
-          linkBtn.onmouseout = () => linkBtn.style.opacity = "0.8";
+          linkBtn.style.cssText = "background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); cursor: pointer; padding: 6px 8px; border-radius: 6px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; margin-left: 10px;";
+          
+          linkBtn.onmouseover = () => { linkBtn.style.background = "rgba(255,255,255,0.1)"; linkBtn.style.color = "var(--accent-radarr)"; };
+          linkBtn.onmouseout = () => { linkBtn.style.background = "rgba(255,255,255,0.05)"; linkBtn.style.color = "var(--text-secondary)"; };
+          
           linkBtn.onclick = (e) => {
               e.stopPropagation();
               let cleanUrl = state.configs.radarrUrl;
@@ -269,7 +271,7 @@ function renderRadarrQueue(records, state) {
     const refreshQueue = async () => {
         const btn = container.querySelector('.refresh-btn');
         if(btn) {
-             btn.textContent = "Loading...";
+             btn.classList.add('spinning');
              btn.disabled = true;
         }
         try {
@@ -278,206 +280,238 @@ function renderRadarrQueue(records, state) {
             renderRadarrQueue(newQueue.records || [], state);
         } catch(e) {
             if(btn) {
-                btn.textContent = "Error";
-                setTimeout(() => { 
-                    btn.textContent = "↻ Refresh"; 
-                    btn.disabled = false; 
-                }, 2000);
+                btn.classList.remove('spinning');
+                btn.disabled = false;
             }
         }
     };
 
-    // Toolbar
+    // Helper to get poster URL
+    const getPosterUrl = (movie) => {
+        let posterUrl = 'icons/icon48.png';
+        if (movie && movie.images) {
+            const posterObj = movie.images.find(img => img.coverType.toLowerCase() === 'poster');
+            if (posterObj) {
+                if (posterObj.remoteUrl) {
+                    posterUrl = posterObj.remoteUrl;
+                } else if (posterObj.url) {
+                    let baseUrl = state.configs.radarrUrl || "";
+                    if(baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+                    let imgPath = posterObj.url;
+                    if(!imgPath.startsWith('http')) {
+                        if (!imgPath.startsWith('/')) imgPath = '/' + imgPath;
+                        posterUrl = `${baseUrl}${imgPath}`;
+                        const joinChar = posterUrl.includes('?') ? '&' : '?';
+                        posterUrl += `${joinChar}apikey=${state.configs.radarrKey}`;
+                    } else {
+                        posterUrl = imgPath;
+                    }
+                }
+            }
+        }
+        return posterUrl;
+    };
+
+    // Toolbar with icon-only buttons
     const toolbar = document.createElement('div');
-    toolbar.style.cssText = "display: flex; justify-content: flex-end; margin-bottom: 10px; padding: 0 5px;";
-    const refreshBtn = document.createElement('button');
-    refreshBtn.className = "refresh-btn";
-    refreshBtn.textContent = "↻ Refresh";
-    refreshBtn.style.cssText = "background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;";
-    refreshBtn.onclick = refreshQueue;
+    toolbar.style.cssText = "display: flex; justify-content: flex-end; margin-bottom: 10px; padding: 0 5px; gap: 8px;";
+    
+    // Open in Radarr button (external link icon)
     const linkBtn = document.createElement('button');
-    linkBtn.textContent = "\u2197"; // NE Arrow
+    linkBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
     linkBtn.title = "Open Activity Queue in Radarr";
-    linkBtn.style.cssText = "background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.2em; margin-right: 15px; transition: color 0.2s;";
-    linkBtn.onmouseover = () => linkBtn.style.color = "var(--primary-color)";
-    linkBtn.onmouseout = () => linkBtn.style.color = "var(--text-secondary)";
+    linkBtn.style.cssText = "background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); cursor: pointer; padding: 6px 8px; border-radius: 6px; transition: all 0.2s; display: flex; align-items: center; justify-content: center;";
+    linkBtn.onmouseover = () => { linkBtn.style.background = "rgba(255,255,255,0.1)"; linkBtn.style.color = "var(--accent-radarr)"; };
+    linkBtn.onmouseout = () => { linkBtn.style.background = "rgba(255,255,255,0.05)"; linkBtn.style.color = "var(--text-secondary)"; };
     linkBtn.onclick = (e) => {
         e.stopPropagation();
         let cleanUrl = state.configs.radarrUrl;
         if(cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
         chrome.tabs.create({ url: `${cleanUrl}/activity/queue` });
     };
+    
+    // Refresh button (icon only)
+    const refreshBtn = document.createElement('button');
+    refreshBtn.className = "refresh-btn";
+    refreshBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`;
+    refreshBtn.title = "Refresh Queue";
+    refreshBtn.style.cssText = "background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); cursor: pointer; padding: 6px 8px; border-radius: 6px; transition: all 0.2s; display: flex; align-items: center; justify-content: center;";
+    refreshBtn.onmouseover = () => { if(!refreshBtn.disabled) { refreshBtn.style.background = "rgba(255,255,255,0.1)"; refreshBtn.style.color = "var(--text-primary)"; } };
+    refreshBtn.onmouseout = () => { refreshBtn.style.background = "rgba(255,255,255,0.05)"; refreshBtn.style.color = "var(--text-secondary)"; };
+    refreshBtn.onclick = refreshQueue;
+    
+    // Add spinning animation style
+    const style = document.createElement('style');
+    style.textContent = `.refresh-btn.spinning svg { animation: spin 1s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
+    if (!document.querySelector('style[data-refresh-spin]')) {
+        style.dataset.refreshSpin = 'true';
+        document.head.appendChild(style);
+    }
+    
     toolbar.appendChild(linkBtn);
-
     toolbar.appendChild(refreshBtn);
     container.appendChild(toolbar);
 
+    // Empty state
     if (records.length === 0) {
-      const emptyMsg = document.createElement('div');
-      const card = document.createElement('div');
-      card.className = "card";
-      const header = document.createElement('div');
-      header.className = "card-header";
-      header.textContent = "Queue Empty";
-      card.appendChild(header);
-      emptyMsg.appendChild(card);
-      container.appendChild(emptyMsg);
-      return;
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'queue-empty';
+        emptyDiv.innerHTML = `
+            <div class="queue-empty-icon">📭</div>
+            <div class="queue-empty-text">Queue Empty</div>
+        `;
+        container.appendChild(emptyDiv);
+        return;
     }
 
-    const tmpl = document.getElementById("sab-queue-item");
-    if (!tmpl) return;
+    // Sort: warnings first, then by progress
+    const sortedRecords = [...records].sort((a, b) => {
+        const aWarning = ['warning', 'error'].includes((a.trackedDownloadStatus || '').toLowerCase());
+        const bWarning = ['warning', 'error'].includes((b.trackedDownloadStatus || '').toLowerCase());
+        if (aWarning && !bWarning) return -1;
+        if (!aWarning && bWarning) return 1;
+        return 0;
+    });
 
-    records.forEach((item) => {
-      const clone = tmpl.content.cloneNode(true);
-      const itemEl = clone.firstElementChild; // Capture the actual element
-      itemEl.querySelector(".filename").textContent = item.title;
-      let percent = 0;
-      if (item.size > 0) {
-         percent = 100 - (item.sizeleft / item.size) * 100;
-      }
-      itemEl.querySelector(".percentage").textContent = `${Math.round(percent)}%`;
-      itemEl.querySelector(".progress-bar-fill").style.width = `${percent}%`;
-      itemEl.querySelector(".size").textContent = formatSize(item.sizeleft);
-      const statusEl = itemEl.querySelector(".status");
-      // Check for warning status
-      const tStatus = (item.trackedDownloadStatus || '').toLowerCase();
-      let isWarning = false;
-      if (tStatus === 'warning' || tStatus === 'error') {
-          isWarning = true;
-          statusEl.textContent = item.statusMessages && item.statusMessages.length > 0 
-              ? item.statusMessages[0].title // e.g. "Manual Import Needed"
-              : "Attention Needed";
-          statusEl.style.color = "#ff9800"; // Orange
-          statusEl.style.fontWeight = "bold";
-      } else {
-          statusEl.textContent = item.status;
-      }
-      
-      const delBtn = itemEl.querySelector(".delete-btn");
-      if(delBtn) {
-          // Standard Delete Button Logic (Menu)
-          delBtn.style.display = "block";
-          delBtn.textContent = "\u00D7"; // Standard X
-          
-          delBtn.onclick = (e) => {
-              e.stopPropagation();
-              
-              if (delBtn.dataset.confirming === "true") return; 
-              
+    sortedRecords.forEach((item) => {
+        const movie = item.movie || {};
+        const posterUrl = getPosterUrl(movie);
+        const tStatus = (item.trackedDownloadStatus || '').toLowerCase();
+        const isWarning = tStatus === 'warning' || tStatus === 'error';
+        
+        let percent = 0;
+        if (item.size > 0) {
+            percent = 100 - (item.sizeleft / item.size) * 100;
+        }
+        
+        // Determine status
+        let statusClass = 'downloading';
+        let statusText = item.status || 'Downloading';
+        let statusMessage = ''; // Tooltip text
 
+        if (isWarning) {
+            statusClass = tStatus;
+            if (item.statusMessages && item.statusMessages.length > 0) {
+                statusText = 'Attention Needed';
+                // Join all messages for the tooltip
+                statusMessage = item.statusMessages.map(m => m.title + (m.messages ? ': ' + m.messages.join(', ') : '')).join('\n');
+            }
+        } else if (item.status?.toLowerCase() === 'paused') {
+            statusClass = 'paused';
+        } else if (item.status?.toLowerCase() === 'queued') {
+            statusClass = 'queued';
+        }
 
-              // Create container for options
-              const optionsDiv = document.createElement('div');
-              optionsDiv.style.cssText = "display: flex; gap: 5px; margin-left: auto; align-items: center;";
-              
-              const btnRemove = document.createElement('button');
-              btnRemove.textContent = "🗑️";
-              btnRemove.title = "Remove from Client";
-              btnRemove.style.cssText = "background: #f44336; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;";
-              
-              const btnBlock = document.createElement('button');
-              btnBlock.textContent = "🚫🔎"; // Block & Search
-              btnBlock.title = "Remove, Blocklist & Search";
-              btnBlock.style.cssText = "background: #ff9800; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;";
-              
-              const cancel = document.createElement('button');
-              cancel.textContent = "\u00D7";
-              cancel.style.cssText = "background: #9e9e9e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;";
+        // Quality
+        const quality = item.quality?.quality?.name || '';
 
-              // Actions
-              btnRemove.onclick = async (ev) => {
-                  ev.stopPropagation();
-                  const confirmed = await showConfirmModal(
-                      'Remove from Queue',
-                      'Remove from queue?',
-                      'Remove',
-                      '#ffc107' // Radarr Gold
-                  );
+        // Create queue card
+        const card = document.createElement('div');
+        card.className = `queue-card${isWarning ? ' ' + tStatus : ''}`;
+        
+        card.innerHTML = `
+            <div class="queue-poster">
+                <img src="${posterUrl}" alt="" onerror="this.src='icons/icon48.png'">
+            </div>
+            <div class="queue-content">
+                <div class="queue-header">
+                    <div class="queue-title" title="${item.title || movie.title || 'Unknown'}">${item.title || movie.title || 'Unknown'}</div>
+                </div>
+                <div class="queue-subtitle">
+                    ${quality ? `<span class="queue-quality">${quality}</span>` : ''}
+                    ${movie.year ? `<span>${movie.year}</span>` : ''}
+                </div>
 
-                  if(!confirmed) return;
+                <div class="queue-progress-row">
+                    <div class="queue-progress-bar">
+                        <div class="queue-progress-fill" style="width: ${percent}%"></div>
+                    </div>
+                    <span class="queue-percentage">${Math.round(percent)}%</span>
+                </div>
 
-                  try {
-                      await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, false);
-                      // In a real app we'd remove the element or reload. For now, hide/reload via UI refresh loop usually happens or user triggers it.
-                      // Let's hide the row
-                      itemEl.remove(); 
-                      // The refresh interval will clean it up. We can just hide the buttons.
-                      delBtn.style.display = 'block';
-                      optionsDiv.remove();
-                      showNotification('Item removed from queue', 'success');
-                  } catch(e) { 
-                      if (e.message.includes('404')) {
-                          showNotification("Item not found (404)", 'error');
-                          itemEl.remove(); // Optimistically remove using element reference
-                      } else {
-                          showNotification("Error: " + e.message, 'error'); 
-                      }
-                  }
-                  // Auto-refresh after 3 seconds
-                  setTimeout(refreshQueue, 250);
-              };
+                <div style="font-size:10px; color:var(--text-secondary); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.8;" title="${item.title}">
+                    <span style="font-weight:600; opacity:0.7;">Release Name:</span> ${item.title}
+                </div>
 
-              btnBlock.onclick = async (ev) => {
-                  ev.stopPropagation();
-                  const confirmed = await showConfirmModal(
-                      'Remove & Blocklist',
-                      'Remove, Blocklist release and Search for new one?',
-                      'Blocklist',
-                      '#f44336' // Red for destructive block action
-                  );
+                <div class="queue-details">
+                    <span class="queue-size">${formatSize(item.sizeleft)} left</span>
+                    <span class="queue-status-chip ${statusClass}" title="${statusMessage}" style="cursor:help;">${statusText}</span>
+                </div>
+            </div>
+            <div class="queue-actions">
+                ${isWarning ? `<button class="queue-action-btn import-btn" title="Manual Import">🔧</button>` : '<div></div>'}
+                <button class="queue-action-btn delete-btn" title="Remove from Queue">×</button>
+            </div>
+        `;
 
-                  if(!confirmed) return;
-
-                  try {
-                    await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, true);
-                    delBtn.style.display = 'block';
+        // Event handlers
+        const delBtn = card.querySelector('.delete-btn');
+        if (delBtn) {
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                
+                // Check if options already shown
+                if (card.querySelector('.queue-delete-options')) return;
+                
+                const optionsDiv = document.createElement('div');
+                optionsDiv.className = 'queue-delete-options';
+                optionsDiv.innerHTML = `
+                    <button class="btn-remove" title="Remove from Client">🗑️</button>
+                    <button class="btn-block" title="Blocklist & Search">🚫</button>
+                    <button class="btn-cancel">×</button>
+                `;
+                
+                optionsDiv.querySelector('.btn-remove').onclick = async (ev) => {
+                    ev.stopPropagation();
+                    const confirmed = await showConfirmModal('Remove from Queue', 'Remove from queue?', 'Remove', '#ffc107');
+                    if (!confirmed) return;
+                    try {
+                        await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, false);
+                        card.remove();
+                        showNotification('Item removed from queue', 'success');
+                    } catch(e) {
+                        showNotification(e.message.includes('404') ? 'Item not found' : 'Error: ' + e.message, 'error');
+                        if (e.message.includes('404')) card.remove();
+                    }
+                    setTimeout(refreshQueue, 250);
+                };
+                
+                optionsDiv.querySelector('.btn-block').onclick = async (ev) => {
+                    ev.stopPropagation();
+                    const confirmed = await showConfirmModal('Remove & Blocklist', 'Remove, Blocklist and Search for new one?', 'Blocklist', '#f44336');
+                    if (!confirmed) return;
+                    try {
+                        await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, true);
+                        showNotification('Item blocked and searching for new release', 'success');
+                    } catch(e) {
+                        showNotification(e.message.includes('404') ? 'Item not found' : 'Error: ' + e.message, 'error');
+                        if (e.message.includes('404')) card.remove();
+                    }
+                    setTimeout(refreshQueue, 250);
+                };
+                
+                optionsDiv.querySelector('.btn-cancel').onclick = (ev) => {
+                    ev.stopPropagation();
                     optionsDiv.remove();
-                    showNotification('Item blocked and searching for new release', 'success');
-                  } catch(e) { 
-                      if (e.message.includes('404')) {
-                          showNotification("Item not found (404)", 'error');
-                          itemEl.remove();
-                      } else {
-                          showNotification("Error: " + e.message, 'error'); 
-                      }
-                  }
-                  // Auto-refresh after 3 seconds
-                  setTimeout(refreshQueue, 250);
-              };
+                };
+                
+                delBtn.style.display = 'none';
+                delBtn.parentNode.appendChild(optionsDiv);
+            };
+        }
 
-              cancel.onclick = (ev) => {
-                  ev.stopPropagation();
-                  delBtn.style.display = 'block';
-                  delBtn.style.visibility = 'visible'; // Ensure visible
-                  optionsDiv.remove();
-              };
-              
-              optionsDiv.appendChild(btnRemove);
-              optionsDiv.appendChild(btnBlock);
-              optionsDiv.appendChild(cancel);
-              
-              delBtn.style.display = "none";
-              delBtn.parentNode.insertBefore(optionsDiv, delBtn); 
-          };
+        // Manual import button
+        if (isWarning) {
+            const importBtn = card.querySelector('.import-btn');
+            if (importBtn) {
+                importBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    showManualImportDialog(item, state, card, refreshQueue);
+                };
+            }
+        }
 
-          // MANUAL IMPORT Button for warnings
-          if (isWarning) {
-              const importBtn = document.createElement('button');
-              importBtn.textContent = "🔧"; // Wrench icon
-              importBtn.title = "Manual Import";
-              importBtn.style.cssText = "background: none; border: none; color: #ff9800; cursor: pointer; font-size: 16px; margin-right: 8px;";
-              importBtn.onclick = (e) => {
-                  e.stopPropagation();
-                  showManualImportDialog(item, state, itemEl, refreshQueue);
-              };
-              // Insert BEFORE the delete button
-              delBtn.parentNode.insertBefore(importBtn, delBtn);
-          }
-      }
-
-
-      container.appendChild(clone);
+        container.appendChild(card);
     });
 }
 
@@ -694,7 +728,81 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         
         // Buttons
         const buttonsDiv = document.createElement('div');
-        buttonsDiv.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+        buttonsDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-top: 20px;';
+        
+        // Left side: Delete options
+        const leftActions = document.createElement('div');
+        leftActions.style.cssText = 'display: flex; align-items: center; gap: 5px;';
+        
+        const trashBtn = document.createElement('button');
+        trashBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+        trashBtn.title = "Remove from Queue";
+        trashBtn.style.cssText = 'background: #f44336; color: white; border: none; border-radius: 4px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;';
+        trashBtn.onmouseover = () => trashBtn.style.background = "#d32f2f";
+        trashBtn.onmouseout = () => trashBtn.style.background = "#f44336";
+        
+        trashBtn.onclick = (e) => {
+             e.stopPropagation();
+             // Expand options
+             leftActions.innerHTML = '';
+             
+             const btnRemove = document.createElement('button');
+             btnRemove.innerHTML = '🗑️ Remove';
+             btnRemove.title = "Remove from Client";
+             btnRemove.style.cssText = "background: #f44336; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-right: 5px;";
+             
+             const btnBlock = document.createElement('button');
+             btnBlock.innerHTML = '🚫 Blocklist';
+             btnBlock.title = "Remove, Blocklist & Search";
+             btnBlock.style.cssText = "background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-right: 5px;";
+             
+             const btnCancel = document.createElement('button');
+             btnCancel.textContent = "×";
+             btnCancel.style.cssText = "background: #9e9e9e; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;";
+             
+             btnRemove.onclick = async () => {
+                if(confirm('Confirm Remove from Queue?')) {
+                    try {
+                        await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, false);
+                        showNotification('Item removed', 'success');
+                        dialog.remove();
+                        backdrop.remove();
+                        if(refreshQueue) refreshQueue();
+                    } catch(err) {
+                        showNotification('Error removing: ' + err.message, 'error');
+                    }
+                }
+             };
+             
+             btnBlock.onclick = async () => {
+                 if(confirm('Confirm Blocklist release and search for new one?')) {
+                    try {
+                        await Radarr.deleteQueueItem(state.configs.radarrUrl, state.configs.radarrKey, item.id, true, true);
+                        showNotification('Item blocked and searching', 'success');
+                        dialog.remove();
+                        backdrop.remove();
+                        if(refreshQueue) refreshQueue();
+                    } catch(err) {
+                        showNotification('Error blocking: ' + err.message, 'error');
+                    }
+                 }
+             };
+             
+             btnCancel.onclick = () => {
+                 leftActions.innerHTML = '';
+                 leftActions.appendChild(trashBtn);
+             };
+             
+             leftActions.appendChild(btnRemove);
+             leftActions.appendChild(btnBlock);
+             leftActions.appendChild(btnCancel);
+        };
+        
+        leftActions.appendChild(trashBtn);
+        
+        // Right side: Import buttons
+        const rightActions = document.createElement('div');
+        rightActions.style.cssText = 'display: flex; gap: 10px;';
         
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = 'Cancel';
@@ -745,8 +853,10 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
             }
         };
         
-        buttonsDiv.appendChild(cancelBtn);
-        buttonsDiv.appendChild(importBtn);
+        buttonsDiv.appendChild(leftActions);
+        rightActions.appendChild(cancelBtn);
+        rightActions.appendChild(importBtn);
+        buttonsDiv.appendChild(rightActions);
         dialog.appendChild(buttonsDiv);
         
     } catch (error) {
@@ -1066,10 +1176,14 @@ function renderRadarrMissing(records, state) {
     countBadge.style.cssText = "font-weight: bold; color: var(--text-secondary); font-size: 0.9em;";
     
     const refreshBtn = document.createElement('button');
-    refreshBtn.textContent = "↻ Refresh Cache";
-    refreshBtn.style.cssText = "background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em; transition: all 0.2s;";
-    refreshBtn.onmouseover = () => refreshBtn.style.background = "rgba(255,255,255,0.2)";
-    refreshBtn.onmouseout = () => refreshBtn.style.background = "rgba(255,255,255,0.1)";
+    refreshBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>`;
+    refreshBtn.title = "Refresh Cache";
+    refreshBtn.classList.add("icon-btn");
+    refreshBtn.style.cssText = "background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 0; border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;";
+    
+    refreshBtn.onmouseover = () => { refreshBtn.style.background = "rgba(255,255,255,0.1)"; refreshBtn.style.color = "var(--accent-radarr)"; };
+    refreshBtn.onmouseout = () => { refreshBtn.style.background = "rgba(255,255,255,0.05)"; refreshBtn.style.color = "var(--text-primary)"; };
+    
     refreshBtn.onclick = () => {
         loadRadarrMissing(state.configs.radarrUrl, state.configs.radarrKey, state, true);
     };
@@ -1162,19 +1276,20 @@ function renderRadarrMissing(records, state) {
 
         // Search Button
         const searchBtn = document.createElement("div");
-        searchBtn.textContent = "🔍";
+        searchBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
         searchBtn.title = "Search for Movie";
         searchBtn.style.cssText = `
             position: absolute; top: 5px; right: 5px; 
-            width: 24px; height: 24px; 
+            width: 28px; height: 28px; 
             background: rgba(0,0,0,0.6); border-radius: 50%; 
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 14px; color: white;
-            border: 1px solid rgba(255,255,255,0.3);
-            transition: background 0.2s;
+            cursor: pointer; color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
         `;
-        searchBtn.onmouseover = () => searchBtn.style.background = "#2196f3";
-        searchBtn.onmouseout = () => searchBtn.style.background = "rgba(0,0,0,0.6)";
+        searchBtn.onmouseover = () => { searchBtn.style.background = "var(--accent-radarr)"; searchBtn.style.borderColor = "var(--accent-radarr)"; };
+        searchBtn.onmouseout = () => { searchBtn.style.background = "rgba(0,0,0,0.6)"; searchBtn.style.borderColor = "rgba(255,255,255,0.2)"; };
 
         searchBtn.onclick = async (e) => {
              e.stopPropagation();

@@ -1,11 +1,13 @@
 /* Radarr Styles */
 /* Tab styles are now in css/tabs.css */
 
-#radarr-view .progress-bar-fill {
-  background: var(--accent-radarr);
+#radarr-view .progress-bar-fill,
+#radarr-view .queue-progress-fill {
+  background: linear-gradient(90deg, var(--accent-radarr), #ff9800);
 }
 
 #radarr-view .date-header {
   border-left-color: var(--accent-radarr);
   color: var(--accent-radarr);
 }
+

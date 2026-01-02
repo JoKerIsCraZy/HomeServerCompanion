@@ -1,11 +1,13 @@
 /* Sonarr Styles */
 /* Tab styles are now in css/tabs.css */
 
-#sonarr-view .progress-bar-fill {
-  background: var(--accent-sonarr);
+#sonarr-view .progress-bar-fill,
+#sonarr-view .queue-progress-fill {
+  background: linear-gradient(90deg, var(--accent-sonarr), #64b5f6);
 }
 
 #sonarr-view .date-header {
   border-left-color: var(--accent-sonarr);
   color: var(--accent-sonarr);
 }
+

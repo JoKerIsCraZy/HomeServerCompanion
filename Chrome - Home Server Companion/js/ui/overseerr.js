@@ -63,6 +63,82 @@ export async function initOverseerr(url, key, state) {
         trendingFilterSelect.dataset.listenerAttached = "true";
     }
 
+    // Setup Trending Refresh Listener
+    const trendingRefreshBtn = document.getElementById('overseerr-trending-refresh');
+    if (trendingRefreshBtn && !trendingRefreshBtn.dataset.listenerAttached) {
+        trendingRefreshBtn.addEventListener('click', () => {
+             // Add spinning animation
+             const icon = trendingRefreshBtn.querySelector('svg');
+             if(icon) {
+                 icon.style.transition = 'transform 1s linear';
+                 icon.style.transform = 'rotate(360deg)';
+                 const spinInterval = setInterval(() => {
+                    icon.style.transform = `rotate(${360 + 360}deg)`; // Mock spin
+                 }, 1000);
+                 
+                 // Stop generic spinning class if used, but manual rotation is fine for simple feedback
+                 trendingRefreshBtn.disabled = true;
+                 
+                  const trendingFilter = document.getElementById('overseerr-trending-filter')?.value || 'both';
+                  loadTrending(url, key, trendingFilter).finally(() => {
+                     clearInterval(spinInterval);
+                     icon.style.transform = 'none';
+                     trendingRefreshBtn.disabled = false;
+                 });
+             } else {
+                 // Fallback without icon animation
+                 const trendingFilter = document.getElementById('overseerr-trending-filter')?.value || 'both';
+                 loadTrending(url, key, trendingFilter);
+             }
+        });
+        
+        // Add simple hover effect
+        trendingRefreshBtn.onmouseover = () => { trendingRefreshBtn.style.background = "rgba(255,255,255,0.1)"; trendingRefreshBtn.style.color = "#fff"; };
+        trendingRefreshBtn.onmouseout = () => { trendingRefreshBtn.style.background = "transparent"; trendingRefreshBtn.style.color = "#ddd"; };
+        
+        trendingRefreshBtn.dataset.listenerAttached = "true";
+        trendingRefreshBtn.dataset.listenerAttached = "true";
+    }
+
+    // Logic for swapping Header Toolbars (Requests Filter vs Trending Filter)
+    const toolbarTrending = document.getElementById('overseerr-trending-toolbar');
+    const toolbarRequests = document.getElementById('overseerr-filter-container'); 
+    
+    const updateToolbars = (targetId) => {
+        if (!toolbarTrending || !toolbarRequests) return;
+        
+        if (targetId === 'overseerr-trending-tab') {
+            toolbarTrending.classList.remove('hidden');
+            toolbarRequests.classList.add('hidden');
+        } else if (targetId === 'overseerr-requests-tab') {
+            toolbarTrending.classList.add('hidden');
+            toolbarRequests.classList.remove('hidden');
+        } else {
+             // Search tab or others -> hide both
+             toolbarTrending.classList.add('hidden');
+             toolbarRequests.classList.add('hidden');
+        }
+    };
+
+    // Attach listeners to Overseerr tabs
+    // Note: We use a generic approach to find the buttons
+    const overseerrTabBtns = document.querySelectorAll('.sub-tab-btn[data-target^="overseerr-"]');
+    overseerrTabBtns.forEach(btn => {
+        // Avoid duplicate listeners if possible, but click listeners stack safely mostly if idempotent
+         if (!btn.dataset.toolbarListenerAttached) {
+            btn.addEventListener('click', () => {
+                updateToolbars(btn.dataset.target);
+            });
+            btn.dataset.toolbarListenerAttached = "true";
+         }
+    });
+
+    // Initial Toolbar State
+    const activeOverseerrTab = document.querySelector('.sub-tab-btn.active[data-target^="overseerr-"]');
+    if (activeOverseerrTab) {
+        updateToolbars(activeOverseerrTab.dataset.target);
+    }
+
     // Setup Tab Listeners for auto-reload
     const trendingBtn = document.querySelector('.sub-tab-btn[data-target="overseerr-trending-tab"]');
     if (trendingBtn && !trendingBtn.dataset.listenerAttached) {

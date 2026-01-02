@@ -393,8 +393,9 @@ export async function checkAndShowChangelog() {
     if (result.last_run_version !== version) {
         // Create changelog content safely using DOM API
         const changelogItems = [
-            { title: 'Settings Rework:', desc: 'Completely redesigned Options/Settings page with modern glassmorphism UI.' },
-            { title: 'UI Improvements:', desc: 'Various small UI fixes and visual enhancements throughout the extension.' }
+            { title: 'Overseerr Trending:', desc: 'Added Refresh button and moved filter options to the header for easier access.' },
+            { title: 'UI Enhancement:', desc: 'Updated calendar redirect icons and missing-view search/refresh icons to modern SVG style.' },
+            { title: 'Bugfixes:', desc: 'Fixed layout issues causing missing views for Prowlarr/Wizarr and improved overall stability.' }
         ];
         
         // Create modal with DOM

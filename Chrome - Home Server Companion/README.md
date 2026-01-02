@@ -21,24 +21,8 @@ This is the original Chrome version of the Home Server Companion extension.
 
 - This version uses Manifest V3.
 
-### New in v3.6
+### New in v3.7
 
-- **Settings Rework**: Completely redesigned Options/Settings page with modern glassmorphism UI
-- **UI Improvements**: Various small UI fixes and visual enhancements throughout the extension
-
-### v3.5
-
-- **Ctrl+S Shortcut**: Press `Ctrl+S` anywhere to instantly open the Unified Search with focus ready for typing
-- **Fullscreen Mode Overhaul**: Comprehensive redesign for fullscreen/tab mode
-  - Larger sidebar with bigger icons (80px width, 36px icons)
-  - Grid layouts for all services (SABnzbd, Sonarr, Radarr, Tautulli, Unraid, Prowlarr, Overseerr, Wizarr)
-  - Responsive breakpoints for different screen sizes
-- **Service-Specific Fullscreen Improvements**:
-  - **Prowlarr**: Larger indexer cards (350px min), bigger text, enhanced search elements
-  - **Search Modal**: Wider modal (800px), larger inputs and results
-  - **Unraid**: Larger system stats, CPU ring (80px), storage elements enhanced
-  - **Wizarr**: 2-column layout, larger invitations, wider modal (600px)
-- **Unified Search**: Centralized search bar (Omnibox) to quickly find content across services.
-- **Code Quality**: Network timeout wrapper, XSS fix, shared HTTP utility, CSS consolidation
-- **Accessibility**: Added ARIA labels throughout the extension
-- **Performance**: Targeted DOM updates, staggered refresh intervals, badge error handling
+- **Overseerr Trending**: Added Refresh button and moved filter options to the header for easier access
+- **UI Enhancement**: Updated calendar redirect icons and missing-view search/refresh icons to modern SVG style
+- **Bugfixes**: Fixed layout issues causing missing views for Prowlarr/Wizarr and improved overall stability
