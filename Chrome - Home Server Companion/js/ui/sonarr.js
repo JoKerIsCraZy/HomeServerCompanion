@@ -332,7 +332,7 @@ function renderSonarrQueue(records, state) {
         emptyDiv.className = 'queue-empty';
         emptyDiv.innerHTML = `
             <div class="queue-empty-icon">📭</div>
-            <div class="queue-empty-text">Queue Empty</div>
+            <div class="queue-empty-text">Queue is empty</div>
         `;
         container.appendChild(emptyDiv);
         return;

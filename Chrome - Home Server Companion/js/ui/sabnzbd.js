@@ -21,19 +21,21 @@ function renderSabnzbdQueue(queue, state, url, key) {
   if (!container) return;
 
   if (queue.length === 0) {
-    if (!container.querySelector('.empty-state')) {
+    if (!container.querySelector('.queue-empty')) {
         container.textContent = "";
-        const emptyState = document.createElement('div');
-        emptyState.className = 'empty-state';
-        emptyState.style.cssText = 'padding:20px; text-align:center; color:var(--text-secondary);';
-        emptyState.textContent = 'Queue is empty';
-        container.appendChild(emptyState);
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'queue-empty';
+        emptyDiv.innerHTML = `
+            <div class="queue-empty-icon">📭</div>
+            <div class="queue-empty-text">Queue is empty</div>
+        `;
+        container.appendChild(emptyDiv);
     }
     return;
   }
 
   // Check if we are currently showing empty state
-  if (container.querySelector('.empty-state')) {
+  if (container.querySelector('.queue-empty')) {
       container.textContent = '';
   }
 
@@ -185,13 +187,15 @@ function renderSabnzbdHistory(history, state, url, key) {
   container.textContent = "";
 
   if (!history || history.length === 0) {
-      if (!container.querySelector('.empty-state')) {
+      if (!container.querySelector('.queue-empty')) {
           container.textContent = "";
-          const emptyState = document.createElement('div');
-          emptyState.className = 'empty-state';
-          emptyState.style.cssText = 'padding:20px; text-align:center; color:var(--text-secondary);';
-          emptyState.textContent = 'History is empty';
-          container.appendChild(emptyState);
+          const emptyDiv = document.createElement('div');
+          emptyDiv.className = 'queue-empty';
+          emptyDiv.innerHTML = `
+              <div class="queue-empty-icon">📭</div>
+              <div class="queue-empty-text">History is empty</div>
+          `;
+          container.appendChild(emptyDiv);
       }
       return;
   }
