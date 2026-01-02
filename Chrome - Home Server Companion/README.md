@@ -21,7 +21,12 @@ This is the original Chrome version of the Home Server Companion extension.
 
 - This version uses Manifest V3.
 
-### New in v3.5
+### New in v3.6
+
+- **Settings Rework**: Completely redesigned Options/Settings page with modern glassmorphism UI
+- **UI Improvements**: Various small UI fixes and visual enhancements throughout the extension
+
+### v3.5
 
 - **Ctrl+S Shortcut**: Press `Ctrl+S` anywhere to instantly open the Unified Search with focus ready for typing
 - **Fullscreen Mode Overhaul**: Comprehensive redesign for fullscreen/tab mode

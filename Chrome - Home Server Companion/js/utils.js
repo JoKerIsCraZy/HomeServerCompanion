@@ -393,11 +393,8 @@ export async function checkAndShowChangelog() {
     if (result.last_run_version !== version) {
         // Create changelog content safely using DOM API
         const changelogItems = [
-            { title: 'Ctrl+S Shortcut:', desc: 'Press Ctrl+S anywhere to instantly open Unified Search.' },
-            { title: 'Unified Search:', desc: 'Centralized search bar to quickly find content across services.' },
-            { title: 'Fullscreen Mode:', desc: 'Redesigned fullscreen dashboard with grid layouts.' },
-            { title: 'Tautulli:', desc: 'IP Geolocation lookup with country flags and maps.' },
-            { title: 'Wizarr Integration:', desc: 'Manage Plex invitations directly from the extension.' }
+            { title: 'Settings Rework:', desc: 'Completely redesigned Options/Settings page with modern glassmorphism UI.' },
+            { title: 'UI Improvements:', desc: 'Various small UI fixes and visual enhancements throughout the extension.' }
         ];
         
         // Create modal with DOM
