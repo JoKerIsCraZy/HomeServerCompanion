@@ -1,4 +1,278 @@
-const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'prowlarr', 'wizarr'];
+const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'prowlarr', 'wizarr', 'portainer'];
+
+// ==================== PORTAINER MULTI-INSTANCE ====================
+let portainerInstances = [];
+let currentPortainerInstanceId = null;
+
+function generateId() {
+    return 'p_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+function renderPortainerTabs() {
+    const container = document.getElementById('portainer-instance-tabs');
+    if (!container) return;
+    container.innerHTML = '';
+
+    portainerInstances.forEach((inst, idx) => {
+        const tab = document.createElement('button');
+        tab.type = 'button';
+        tab.className = 'instance-tab' + (inst.id === currentPortainerInstanceId ? ' active' : '');
+
+        if (inst.icon) {
+            const iconImg = document.createElement('img');
+            iconImg.src = inst.icon;
+            iconImg.className = 'instance-tab-icon';
+            tab.appendChild(iconImg);
+        }
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = inst.name || `Instance ${idx + 1}`;
+        tab.appendChild(nameSpan);
+
+        tab.onclick = () => selectPortainerInstance(inst.id);
+        container.appendChild(tab);
+    });
+
+    // "New" button
+    const newTab = document.createElement('button');
+    newTab.type = 'button';
+    newTab.className = 'instance-tab instance-tab-new';
+    newTab.textContent = '+ New';
+    newTab.onclick = addPortainerInstance;
+    container.appendChild(newTab);
+}
+
+function selectPortainerInstance(id) {
+    currentPortainerInstanceId = id;
+    const inst = portainerInstances.find(i => i.id === id);
+    if (!inst) return;
+
+    // Populate form
+    document.getElementById('portainerInstanceName').value = inst.name || '';
+
+    const fullUrl = inst.url || '';
+    let protocol = 'http://';
+    let urlVal = fullUrl;
+    if (fullUrl.startsWith('https://')) {
+        protocol = 'https://';
+        urlVal = fullUrl.substring(8);
+    } else if (fullUrl.startsWith('http://')) {
+        urlVal = fullUrl.substring(7);
+    }
+    document.getElementById('portainerProtocol').value = protocol;
+    document.getElementById('portainerUrl').value = urlVal;
+    document.getElementById('portainerKey').value = inst.key || '';
+
+    // Icon preview
+    const iconImg = document.getElementById('portainerIconImg');
+    const iconPlaceholder = document.getElementById('portainerIconPlaceholder');
+    const iconClearBtn = document.getElementById('portainerIconClear');
+
+    if (inst.icon) {
+        iconImg.src = inst.icon;
+        iconImg.style.display = 'block';
+        iconPlaceholder.style.display = 'none';
+        iconClearBtn.style.display = 'inline-flex';
+    } else {
+        iconImg.style.display = 'none';
+        iconPlaceholder.style.display = 'block';
+        iconClearBtn.style.display = 'none';
+    }
+
+    // Update delete button visibility (can't delete if only 1 instance)
+    const deleteBtn = document.getElementById('deletePortainerInstance');
+    if (deleteBtn) {
+        deleteBtn.style.display = portainerInstances.length > 1 ? 'inline-flex' : 'none';
+    }
+
+    renderPortainerTabs();
+}
+
+function addPortainerInstance() {
+    const newInst = {
+        id: generateId(),
+        name: '',
+        url: '',
+        key: '',
+        icon: ''
+    };
+    portainerInstances.push(newInst);
+    selectPortainerInstance(newInst.id);
+}
+
+function deletePortainerInstance() {
+    if (portainerInstances.length <= 1) {
+        showStatus('Portainer', 'Cannot delete the last instance!', 'error');
+        return;
+    }
+
+    const idx = portainerInstances.findIndex(i => i.id === currentPortainerInstanceId);
+    if (idx === -1) return;
+
+    portainerInstances.splice(idx, 1);
+
+    // Select next available instance
+    const nextInst = portainerInstances[Math.min(idx, portainerInstances.length - 1)];
+    selectPortainerInstance(nextInst.id);
+
+    // Save immediately
+    chrome.storage.sync.set({ portainerInstances }, () => {
+        showStatus('Portainer', 'Instance deleted!', 'success');
+    });
+}
+
+function savePortainerInstance() {
+    const inst = portainerInstances.find(i => i.id === currentPortainerInstanceId);
+    if (!inst) return;
+
+    const name = document.getElementById('portainerInstanceName').value.trim();
+    const protocol = document.getElementById('portainerProtocol').value;
+    const urlVal = document.getElementById('portainerUrl').value.trim().replace(/\/$/, '').replace(/^https?:\/\//, '');
+    const key = document.getElementById('portainerKey').value.trim();
+    const iconImg = document.getElementById('portainerIconImg');
+
+    // Validate
+    if (!urlVal) {
+        showStatus('Portainer', 'Please enter a URL!', 'error');
+        return;
+    }
+    if (!key || key.length < 10) {
+        showStatus('Portainer', 'Access Token is required (min 10 chars)!', 'error');
+        return;
+    }
+
+    const fullUrl = protocol + urlVal;
+    try {
+        new URL(fullUrl);
+    } catch (e) {
+        showStatus('Portainer', 'Invalid URL format!', 'error');
+        return;
+    }
+
+    // Update instance
+    inst.name = name || 'Portainer';
+    inst.url = fullUrl;
+    inst.key = key;
+    inst.icon = iconImg.style.display !== 'none' ? iconImg.src : '';
+
+    // Request permission for URL
+    const urlObj = new URL(fullUrl);
+    chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, (granted) => {
+        chrome.storage.sync.set({ portainerInstances }, () => {
+            showStatus('Portainer', 'Instance saved!', 'success');
+            renderPortainerTabs();
+
+            // Notify background to update rules
+            chrome.runtime.sendMessage({ action: 'UPDATE_PORTAINER_RULES' });
+        });
+    });
+}
+
+function loadPortainerInstances() {
+    chrome.storage.sync.get(['portainerInstances', 'portainerUrl', 'portainerKey'], (items) => {
+        if (items.portainerInstances && items.portainerInstances.length > 0) {
+            portainerInstances = items.portainerInstances;
+        } else if (items.portainerUrl || items.portainerKey) {
+            // Migrate from old single-instance format
+            portainerInstances = [{
+                id: generateId(),
+                name: 'Portainer',
+                url: items.portainerUrl || '',
+                key: items.portainerKey || '',
+                icon: ''
+            }];
+            // Save migrated data
+            chrome.storage.sync.set({ portainerInstances });
+        } else {
+            // Create default empty instance
+            portainerInstances = [{
+                id: generateId(),
+                name: '',
+                url: '',
+                key: '',
+                icon: ''
+            }];
+        }
+
+        currentPortainerInstanceId = portainerInstances[0].id;
+        selectPortainerInstance(currentPortainerInstanceId);
+    });
+}
+
+function setupPortainerIconUpload() {
+    const uploadBtn = document.getElementById('portainerIconBtn');
+    const uploadInput = document.getElementById('portainerIconUpload');
+    const clearBtn = document.getElementById('portainerIconClear');
+    const iconImg = document.getElementById('portainerIconImg');
+    const iconPlaceholder = document.getElementById('portainerIconPlaceholder');
+
+    if (uploadBtn) {
+        uploadBtn.onclick = () => uploadInput.click();
+    }
+
+    if (uploadInput) {
+        uploadInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showStatus('Portainer', 'Please select an image file!', 'error');
+                return;
+            }
+
+            if (file.size > 100 * 1024) {
+                showStatus('Portainer', 'Image too large (max 100KB)!', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Resize if needed
+                    const maxSize = 64;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxSize || height > maxSize) {
+                        if (width > height) {
+                            height = (height / width) * maxSize;
+                            width = maxSize;
+                        } else {
+                            width = (width / height) * maxSize;
+                            height = maxSize;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const dataUrl = canvas.toDataURL('image/png', 0.8);
+                    iconImg.src = dataUrl;
+                    iconImg.style.display = 'block';
+                    iconPlaceholder.style.display = 'none';
+                    clearBtn.style.display = 'inline-flex';
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+            uploadInput.value = '';
+        };
+    }
+
+    if (clearBtn) {
+        clearBtn.onclick = () => {
+            iconImg.src = '';
+            iconImg.style.display = 'none';
+            iconPlaceholder.style.display = 'block';
+            clearBtn.style.display = 'none';
+        };
+    }
+}
+// ==================== END PORTAINER MULTI-INSTANCE ====================
 
 // --- UI Navigation ---
 // --- UI Navigation ---
@@ -442,6 +716,9 @@ const testConnection = async (service) => {
         case 'wizarr':
             testUrl = `${url}/api/status`;
             break;
+        case 'portainer':
+            testUrl = `${url}/api/status`;
+            break;
         case 'plex':
             // Plex uses X-Plex-Token in query param
             const plexToken = document.getElementById('plexToken')?.value || '';
@@ -483,6 +760,13 @@ const testConnection = async (service) => {
              };
         }
 
+        if (service === 'portainer') {
+             options.headers = {
+                 'X-API-Key': apiKey,
+                 'accept': 'application/json'
+             };
+        }
+
         const response = await fetch(testUrl, options);
         
         clearTimeout(timeoutId);
@@ -512,6 +796,22 @@ document.addEventListener('DOMContentLoaded', () => {
     loadOptions();
     renderOrderList();
 
+    // Portainer Multi-Instance Setup
+    loadPortainerInstances();
+    setupPortainerIconUpload();
+
+    // Portainer Save Button (override default)
+    const savePortainerBtn = document.getElementById('savePortainer');
+    if (savePortainerBtn) {
+        savePortainerBtn.onclick = savePortainerInstance;
+    }
+
+    // Portainer Delete Button
+    const deletePortainerBtn = document.getElementById('deletePortainerInstance');
+    if (deletePortainerBtn) {
+        deletePortainerBtn.onclick = deletePortainerInstance;
+    }
+
     // General Save Button
     const saveOrderBtn = document.getElementById('saveOrder');
     if (saveOrderBtn) {
@@ -520,9 +820,9 @@ document.addEventListener('DOMContentLoaded', () => {
              const currentOrder = window.currentOrder;
              const startPage = document.getElementById('startPage').value;
              const badgeCheckInterval = parseInt(document.getElementById('badgeCheckInterval').value) || 5000;
-             
-             chrome.storage.sync.set({ 
-                 serviceOrder: window.currentOrder || currentOrder, 
+
+             chrome.storage.sync.set({
+                 serviceOrder: window.currentOrder || currentOrder,
                  startPage: startPage,
                  // enablePersistence: true // We can keep this true internally or deprecate it. Let's rely on StartPage value.
                  badgeCheckInterval: badgeCheckInterval

@@ -700,9 +700,23 @@ function renderUnraidDocker(containers, url, key) {
 
     // FILTERING LOGIC
     const searchInput = document.getElementById("unraid-docker-search");
-    if (searchInput && searchInput.value) {
-        const term = searchInput.value.toLowerCase();
+    const filterValue = searchInput ? searchInput.value : "";
+    if (filterValue) {
+        const term = filterValue.toLowerCase();
         containers = containers.filter(c => c.name.toLowerCase().includes(term));
+    }
+
+    // Empty state after filtering
+    if (containers.length === 0) {
+        list.textContent = "";
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'queue-empty';
+        emptyDiv.innerHTML = `
+            <div class="queue-empty-icon">🐳</div>
+            <div class="queue-empty-text">${filterValue ? 'No containers match filter' : 'No containers found'}</div>
+        `;
+        list.appendChild(emptyDiv);
+        return;
     }
 
     // SORTING LOGIC

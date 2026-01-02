@@ -1,0 +1,449 @@
+/* Portainer Service Styles */
+:root {
+  --accent-portainer: #13bef9;
+}
+
+/* Instance Selector */
+.instance-selector {
+  margin-bottom: 12px;
+  padding: 0 5px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.instance-selector select {
+  width: 100%;
+  padding: 10px 14px;
+  background: #252525;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23a0aec0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: all 0.2s;
+}
+
+.instance-selector select:hover {
+  border-color: var(--accent-portainer);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.instance-selector select:focus {
+  outline: none;
+  border-color: var(--accent-portainer);
+  box-shadow: 0 0 0 3px rgba(19, 190, 249, 0.15);
+}
+
+.instance-selector select option {
+  background: #1e1e1e;
+  color: var(--text-primary);
+  padding: 10px;
+}
+
+/* Container List */
+#portainer-view .container-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 5px;
+}
+
+/* Container Card */
+.portainer-container-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 16px;
+  background: var(--card-bg);
+  border-radius: 10px;
+  border-left: 3px solid var(--accent-portainer);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.portainer-container-card:hover {
+  transform: translateX(3px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.portainer-container-card.stopped {
+  border-left-color: #9e9e9e;
+  opacity: 0.8;
+}
+
+.portainer-container-card.paused {
+  border-left-color: #ff9800;
+}
+
+/* Status Dot */
+.portainer-container-card .status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.portainer-container-card .status-dot.running {
+  background: #4caf50;
+  box-shadow: 0 0 6px #4caf50;
+}
+
+.portainer-container-card .status-dot.stopped {
+  background: #9e9e9e;
+}
+
+.portainer-container-card .status-dot.paused {
+  background: #ff9800;
+  box-shadow: 0 0 6px #ff9800;
+}
+
+/* Container Info */
+.portainer-container-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.portainer-container-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.95em;
+}
+
+.portainer-container-image {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.portainer-container-status {
+  font-size: 0.75em;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+/* Container Actions */
+.portainer-container-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.portainer-container-actions button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portainer-container-actions button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--accent-portainer);
+}
+
+.portainer-container-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading state - keep actions visible */
+.portainer-container-card.loading .portainer-container-actions {
+  opacity: 1;
+}
+
+/* Loading Button Spinner Animation */
+.portainer-container-actions button.btn-loading {
+  position: relative;
+  pointer-events: none;
+  color: transparent !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.portainer-container-actions button.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: portainerBtnSpinner 0.6s linear infinite;
+}
+
+@keyframes portainerBtnSpinner {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Stack Cards */
+.portainer-stack-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  background: var(--card-bg);
+  border-radius: 10px;
+  border-left: 3px solid var(--accent-portainer);
+  margin-bottom: 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.portainer-stack-card:hover {
+  transform: translateX(3px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.portainer-stack-card.stopped {
+  border-left-color: #9e9e9e;
+  opacity: 0.8;
+}
+
+/* Stack Status Dot */
+.portainer-stack-card .status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.portainer-stack-card .status-dot.running {
+  background: #4caf50;
+  box-shadow: 0 0 6px #4caf50;
+}
+
+.portainer-stack-card .status-dot.stopped {
+  background: #9e9e9e;
+}
+
+.portainer-stack-card .status-dot.paused {
+  background: #ff9800;
+  box-shadow: 0 0 6px #ff9800;
+}
+
+.portainer-stack-card .stack-icon {
+  width: 36px;
+  height: 36px;
+  background: rgba(19, 190, 249, 0.15);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.portainer-stack-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.portainer-stack-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95em;
+}
+
+.portainer-stack-status {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Stack Actions */
+.portainer-stack-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.portainer-stack-actions button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portainer-stack-actions button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--accent-portainer);
+}
+
+/* Loading state for stacks */
+.portainer-stack-card.loading .portainer-stack-actions {
+  opacity: 1;
+}
+
+.portainer-stack-actions button.btn-loading {
+  position: relative;
+  pointer-events: none;
+  color: transparent !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.portainer-stack-actions button.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: portainerBtnSpinner 0.6s linear infinite;
+}
+
+/* Tabs - Aligned with css/tabs.css */
+#portainer-view .tabs {
+  position: relative;
+  display: inline-flex;
+  gap: 5px;
+  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 5px;
+}
+
+#portainer-view .tab-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 24px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: color 0.2s;
+  position: relative;
+  z-index: 1;
+}
+
+#portainer-view .tab-btn:focus {
+  outline: none;
+}
+
+#portainer-view .tab-btn.active {
+  color: #fff;
+  font-weight: 700;
+}
+
+#portainer-view .tab-btn:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+#portainer-view .tab-glider {
+  position: absolute;
+  height: calc(100% - 10px);
+  background: linear-gradient(135deg, #13bef9, #0a8cc7);
+  box-shadow: 0 2px 5px rgba(19, 190, 249, 0.3);
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  top: 5px;
+  left: 5px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Empty State */
+#portainer-view .queue-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+#portainer-view .queue-empty-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+#portainer-view .queue-empty-text {
+  font-size: 1em;
+  opacity: 0.8;
+}
+
+/* Toolbar */
+#portainer-view .toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+  padding: 0 5px;
+  gap: 8px;
+}
+
+#portainer-view .toolbar button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#portainer-view .toolbar button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--accent-portainer);
+}
+
+#portainer-view .refresh-btn.spinning svg {
+  animation: spin 1s linear infinite;
+}
+
+/* Search/Filter */
+#portainer-view .filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 0 10px;
+}
+
+#portainer-view .filter-bar input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.9em;
+}
+
+#portainer-view .filter-bar input:focus {
+  outline: none;
+  border-color: var(--accent-portainer);
+}
+
+#portainer-view .filter-bar input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}

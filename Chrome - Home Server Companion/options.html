@@ -663,6 +663,63 @@
         0% { transform: translateX(-100%); }
         100% { transform: translateX(100%); }
       }
+
+      /* ===== Instance Tabs ===== */
+      .instance-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 8px;
+        background: #252525;
+        border-radius: 12px;
+        border: 1px solid var(--glass-border);
+      }
+
+      .instance-tab {
+        padding: 8px 16px;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition-smooth);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .instance-tab:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+      }
+
+      .instance-tab.active {
+        background: var(--accent-gradient);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+      }
+
+      .instance-tab-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        object-fit: cover;
+      }
+
+      .instance-tab-new {
+        padding: 8px 12px;
+        background: rgba(72, 187, 120, 0.1);
+        border: 1px dashed rgba(72, 187, 120, 0.4);
+        color: var(--success);
+      }
+
+      .instance-tab-new:hover {
+        background: rgba(72, 187, 120, 0.2);
+        border-color: var(--success);
+      }
     </style>
   </head>
   <body>
@@ -686,6 +743,7 @@
             <button class="tab-btn" data-target="overseerr">Overseerr</button>
             <button class="tab-btn" data-target="prowlarr">Prowlarr</button>
             <button class="tab-btn" data-target="wizarr">Wizarr</button>
+            <button class="tab-btn" data-target="portainer">Portainer</button>
           </div>
 
           <div class="header-links">
@@ -1262,6 +1320,101 @@
             </button>
           </div>
           <div id="statusWizarr" class="status"></div>
+        </div>
+
+        <!-- Portainer Section -->
+        <div id="portainer" class="section">
+          <h2>Portainer Settings</h2>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; cursor: pointer">
+              <input
+                type="checkbox"
+                id="portainerEnabled"
+                style="width: auto; margin-right: 10px"
+              />
+              Enable Portainer
+            </label>
+            <div class="help-text">
+                Disabling the service will remove it from the sidebar and navigation.
+            </div>
+          </div>
+
+          <!-- Instance Tabs -->
+          <div class="form-group">
+            <label>Instances</label>
+            <div class="instance-tabs" id="portainer-instance-tabs">
+              <!-- Tabs populated by JS -->
+            </div>
+          </div>
+
+          <!-- Instance Settings (shown per instance) -->
+          <div id="portainer-instance-settings">
+            <div class="form-group">
+              <label for="portainerInstanceName">Instance Name</label>
+              <input
+                type="text"
+                id="portainerInstanceName"
+                placeholder="My Portainer"
+                maxlength="20"
+              />
+              <div class="help-text">A friendly name for this instance (shown in sidebar)</div>
+            </div>
+            <div class="form-group">
+              <label for="portainerUrl">Server URL</label>
+              <div class="input-group" style="display: flex">
+                <select id="portainerProtocol" style="width: auto">
+                  <option value="http://">http://</option>
+                  <option value="https://">https://</option>
+                </select>
+                <input
+                  type="text"
+                  id="portainerUrl"
+                  placeholder="portainer.local:9000"
+                  style="flex: 1"
+                />
+              </div>
+              <div class="help-text">
+                Enter host and port, e.g., 192.168.1.10:9000
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="portainerKey">Access Token</label>
+              <input type="password" id="portainerKey" />
+              <div class="help-text">
+                Generate an Access Token in Portainer: My account → Access tokens
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Custom Icon</label>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div id="portainerIconPreview" style="width: 40px; height: 40px; border-radius: 8px; background: #252525; border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                  <img id="portainerIconImg" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+                  <span id="portainerIconPlaceholder" style="font-size: 20px;">🐳</span>
+                </div>
+                <input type="file" id="portainerIconUpload" accept="image/*" style="display: none;" />
+                <button type="button" id="portainerIconBtn" class="btn-secondary" style="padding: 8px 16px;">
+                  Upload Icon
+                </button>
+                <button type="button" id="portainerIconClear" class="btn-secondary" style="padding: 8px 12px; display: none;">
+                  Clear
+                </button>
+              </div>
+              <div class="help-text">Upload a custom icon for this instance (max 128x128px, PNG/JPG)</div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="savePortainer" class="btn-primary">
+              Save Instance
+            </button>
+            <button id="testPortainer" class="btn-secondary">
+              Test Connection
+            </button>
+            <button id="deletePortainerInstance" class="btn-secondary" style="background: rgba(244, 67, 54, 0.1); color: #f44336; border-color: rgba(244, 67, 54, 0.3);">
+              Delete Instance
+            </button>
+          </div>
+          <div id="statusPortainer" class="status"></div>
         </div>
 
       </div>

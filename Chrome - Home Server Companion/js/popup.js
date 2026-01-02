@@ -7,7 +7,46 @@ import { initUnraid } from "./ui/unraid.js";
 import { initProwlarr } from "./ui/prowlarr.js";
 import { initWizarr } from "./ui/wizarr.js";
 import { initDashboard } from "./ui/dashboard.js";
+import { initPortainer } from "./ui/portainer.js";
 import { checkAndShowChangelog } from "./utils.js";
+
+/**
+ * Updates the Portainer sidebar item with custom name and icon from instances.
+ */
+function updatePortainerSidebarDisplay(items) {
+    const navItem = document.querySelector('.nav-item[data-target="portainer"]');
+    if (!navItem) return;
+
+    let instances = [];
+    if (items.portainerInstances && items.portainerInstances.length > 0) {
+        instances = items.portainerInstances.filter(i => i.url && i.key);
+    }
+
+    if (instances.length === 0) return;
+
+    // Get selected instance or first one
+    const selectedId = localStorage.getItem('portainer_selected_instance');
+    const selectedInst = instances.find(i => i.id === selectedId) || instances[0];
+
+    // Update title attribute and text
+    const customName = selectedInst.name || 'Portainer';
+    navItem.setAttribute('title', customName);
+
+    // Update the span text if it exists
+    const nameSpan = navItem.querySelector('span');
+    if (nameSpan) {
+        nameSpan.textContent = customName;
+    }
+
+    // Update icon if custom icon exists
+    if (selectedInst.icon) {
+        const iconContainer = navItem.querySelector('.nav-icon');
+        if (iconContainer) {
+            // Replace default icon with custom one
+            iconContainer.innerHTML = `<img src="${selectedInst.icon}" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;" />`;
+        }
+    }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   // Check for updates first
@@ -84,6 +123,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (el) el.style.display = "none";
       }
     });
+
+    // Update Portainer name and icon from instances
+    updatePortainerSidebarDisplay(items);
 
     // Re-calculate visible order for defaulting
     const visibleOrder = order.filter((s) => items[`${s}Enabled`] !== false);
@@ -210,6 +252,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       { id: "sonarr", module: "./ui/sonarr.js", badgeFn: "updateSonarrBadge" },
       { id: "radarr", module: "./ui/radarr.js", badgeFn: "updateRadarrBadge" },
       { id: "tautulli", module: "./ui/tautulli.js", badgeFn: "updateTautulliBadge" },
+      { id: "portainer", module: "./ui/portainer.js", badgeFn: "updatePortainerBadge_Dashboard" },
     ];
 
     // Track consecutive failures per service (for error indication)
@@ -701,7 +744,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Update Header
     if (headerTitle) {
-        headerTitle.textContent = service.charAt(0).toUpperCase() + service.slice(1);
+        // Special case: use custom Portainer instance name
+        if (service === 'portainer') {
+            const instances = state.configs.portainerInstances || [];
+            const selectedId = localStorage.getItem('portainer_selected_instance');
+            const selectedInst = instances.find(i => i.id === selectedId) || instances[0];
+            headerTitle.textContent = (selectedInst && selectedInst.name) || 'Portainer';
+        } else {
+            headerTitle.textContent = service.charAt(0).toUpperCase() + service.slice(1);
+        }
     }
 
     if (service !== "dashboard" && service !== "unraid" && service !== "wizarr" && (!url || !key)) {
@@ -741,6 +792,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           break;
         case "wizarr":
           await initWizarr(url || '', key || '', state);
+          break;
+        case "portainer":
+          await initPortainer(url, key, state);
           break;
       }
     } catch (error) {

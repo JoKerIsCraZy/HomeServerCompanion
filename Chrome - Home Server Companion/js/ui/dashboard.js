@@ -1,4 +1,4 @@
-﻿export async function initDashboard(state) {
+export async function initDashboard(state) {
     const container = document.getElementById('dashboard-view');
     // Clear existing content (or reuse if we implement diffing later)
     container.textContent = '';
@@ -90,6 +90,7 @@ import * as Overseerr from "../../services/overseerr.js";
 import * as Unraid from "../../services/unraid.js";
 import * as Prowlarr from "../../services/prowlarr.js";
 import * as Wizarr from "../../services/wizarr.js";
+import * as Portainer from "../../services/portainer.js";
 
 async function renderServiceGrid(container, state, isUpdate = false) {
     // Only clear if NOT updating
@@ -179,6 +180,30 @@ async function renderServiceGrid(container, state, isUpdate = false) {
                await Wizarr.getInvitations(url, key);
                return { status: 'online', metric: 'OK', label: 'Status' };
             }
+        },
+        {
+            id: 'portainer',
+            name: 'Portainer',
+            icon: 'portainer.png',
+            check: async (url, key) => {
+                // Fetch endpoints first
+                const endpoints = await Portainer.getEndpoints(url, key);
+                const endpointId = (endpoints && endpoints.length > 0) ? endpoints[0].Id : 1;
+                const containers = await Portainer.getContainers(url, key, endpointId);
+                const running = containers.filter(c => c.State === 'running').length;
+                return { status: 'online', metric: running, label: 'Running' };
+            },
+            // Dynamic name/icon for multi-instance support
+            getDynamicProps: (configs) => {
+                const instances = configs.portainerInstances || [];
+                if (instances.length === 0) return {};
+                const selectedId = localStorage.getItem('portainer_selected_instance');
+                const selectedInst = instances.find(i => i.id === selectedId) || instances[0];
+                return {
+                    name: selectedInst.name || 'Portainer',
+                    customIcon: selectedInst.icon || null
+                };
+            }
         }
     ];
 
@@ -200,6 +225,11 @@ async function renderServiceGrid(container, state, isUpdate = false) {
     // Create placeholders ONLY if not updating
     if (!isUpdate) {
         enabledServices.forEach(svc => {
+            // Get dynamic props (for services like Portainer with custom names/icons)
+            const dynamicProps = svc.getDynamicProps ? svc.getDynamicProps(state.configs) : {};
+            const displayName = dynamicProps.name || svc.name;
+            const customIcon = dynamicProps.customIcon || null;
+
             const card = document.createElement('div');
             card.className = 'service-card';
             card.id = `card-${svc.id}`;
@@ -210,32 +240,36 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             // Build card with DOM API
             const cardHeader = document.createElement('div');
             cardHeader.className = 'service-card-header';
-            
+
             const iconImg = document.createElement('img');
-            iconImg.src = 'icons/' + svc.icon;
+            // Use custom icon (base64) if available, otherwise default
+            iconImg.src = customIcon || ('icons/' + svc.icon);
             iconImg.className = 'service-icon';
-            iconImg.alt = svc.name;
+            iconImg.alt = displayName;
+            if (customIcon) {
+                iconImg.style.borderRadius = '6px';
+            }
             cardHeader.appendChild(iconImg);
-            
+
             const statusDot = document.createElement('div');
             statusDot.className = 'status-dot casting-shadow';
             statusDot.id = 'status-' + svc.id;
             cardHeader.appendChild(statusDot);
-            
+
             const serviceName = document.createElement('div');
             serviceName.className = 'service-name';
-            serviceName.textContent = svc.name;
-            
+            serviceName.textContent = displayName;
+
             const serviceMetric = document.createElement('div');
             serviceMetric.className = 'service-metric';
             serviceMetric.id = 'metric-' + svc.id;
             serviceMetric.textContent = '--';
-            
+
             const serviceLabel = document.createElement('div');
             serviceLabel.className = 'service-metric-label';
             serviceLabel.id = 'label-' + svc.id;
             serviceLabel.textContent = 'Checking...';
-            
+
             card.appendChild(cardHeader);
             card.appendChild(serviceName);
             card.appendChild(serviceMetric);

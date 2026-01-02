@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="css/services/unraid.css" />
     <link rel="stylesheet" href="css/services/prowlarr.css" />
     <link rel="stylesheet" href="css/services/wizarr.css" />
+    <link rel="stylesheet" href="css/services/portainer.css" />
     <link rel="stylesheet" href="css/fullscreen.css" />
   </head>
   <body class="dark-mode">
@@ -153,6 +154,21 @@
         >
           <img
             src="icons/wizarr.png"
+            class="nav-icon"
+            alt=""
+            aria-hidden="true"
+          />
+        </div>
+        <div
+          class="nav-item"
+          data-target="portainer"
+          title="Portainer"
+          role="button"
+          tabindex="0"
+          aria-label="Portainer"
+        >
+          <img
+            src="icons/portainer.png"
             class="nav-icon"
             alt=""
             aria-hidden="true"
@@ -1137,6 +1153,21 @@
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+
+        <!-- Portainer View -->
+        <div id="portainer-view" class="view hidden">
+          <div class="tabs">
+            <div class="tab-glider"></div>
+            <button class="tab-btn active" data-tab="containers">Containers</button>
+            <button class="tab-btn" data-tab="stacks">Stacks</button>
+          </div>
+          <div id="portainer-containers" class="sub-view active">
+            <!-- Container list populated by JS -->
+          </div>
+          <div id="portainer-stacks" class="sub-view hidden">
+            <!-- Stacks list populated by JS -->
           </div>
         </div>
       </main>
