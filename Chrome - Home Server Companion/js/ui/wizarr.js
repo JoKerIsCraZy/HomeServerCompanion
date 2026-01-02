@@ -416,15 +416,12 @@ async function loadInvitations() {
             
             const copyBtn = document.createElement('button');
             copyBtn.className = 'wizarr-copy-btn';
-                    const copyIcon = document.createElement('span');
-            copyIcon.textContent = 'ðŸ“‹';
-            copyBtn.appendChild(copyIcon);
-            copyBtn.appendChild(document.createTextNode(' Copy'));
+            copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy`;
             copyBtn.addEventListener('click', () => copyInviteLink(invite.code, copyBtn));
             
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'wizarr-delete-btn';
-            deleteBtn.textContent = 'ðŸ—‘ï¸';
+            deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
             deleteBtn.title = 'Delete invitation';
             deleteBtn.addEventListener('click', () => deleteInvite(invite.id));
             
