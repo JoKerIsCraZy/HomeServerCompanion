@@ -429,7 +429,10 @@ export async function initSabnzbd(url, key, state) {
             const mainBtn = document.getElementById("sab-pause-main");
             const isPaused = queue.paused;
             if (mainBtn) {
-                 mainBtn.textContent = isPaused ? "▶️" : "⏸️";
+                 // Play icon (triangle) for paused state, Pause icon (two bars) for active state
+                 const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+                 const pauseIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`;
+                 mainBtn.innerHTML = isPaused ? playIcon : pauseIcon;
                  mainBtn.title = isPaused ? "Resume Queue" : "Pause Queue";
                  if (isPaused) mainBtn.classList.add("paused");
                  else mainBtn.classList.remove("paused");

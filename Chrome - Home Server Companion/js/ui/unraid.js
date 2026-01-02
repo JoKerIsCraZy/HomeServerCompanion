@@ -573,7 +573,6 @@ function renderUnraidStorage(data) {
              if (group.type === 'pool') iconChar = '⚡'; 
 
              if (!card) {
-                 // CREATE NEW - XSS FIX: Use DOM API instead of innerHTML
                  card = document.createElement('div');
                  card.className = 'storage-card';
                  card.id = diskId;

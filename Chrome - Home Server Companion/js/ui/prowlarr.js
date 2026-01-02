@@ -1,4 +1,4 @@
-import * as Prowlarr from "../../services/prowlarr.js";
+﻿import * as Prowlarr from "../../services/prowlarr.js";
 import { showNotification } from "../utils.js";
 
 // --- PROWLARR UI LOGIC ---
@@ -57,7 +57,6 @@ const loadProwlarrData = async (url, apiKey) => {
     }
 
     try {
-        // 2. NETWORK FETCH
         // 2. NETWORK FETCH
         // Parallel Fetch with partial failure handling
         const results = await Promise.allSettled([
@@ -452,9 +451,6 @@ const renderStats = (stats, indexers = []) => {
                      const parseVal = (v) => {
                         if (v === "-" || v === "N/A") return -1;
                         if (typeof v === 'string') {
-                            // Remove dots AND commas to handle 1.000 (DE) vs 1,000 (EN)
-                            // Also remove " ms" unit
-                            // We assume integer statistics here (Queries, Grabs, Time)
                             let clean = v.replace(/[.,]/g, "").replace(" ms", "");
                             let num = parseFloat(clean);
                             return isNaN(num) ? v.toLowerCase() : num;
@@ -501,7 +497,7 @@ const renderStats = (stats, indexers = []) => {
             ths.forEach((th, idx) => {
                 th.textContent = headers[idx]; // Reset text
                 if (idx === sortCol) {
-                    th.textContent += sortAsc ? " ▲" : " ▼";
+                    th.textContent += sortAsc ? " â–²" : " â–¼";
                 }
             });
         };
@@ -584,16 +580,9 @@ async function initProwlarrSearch(url, apiKey) {
         const currentCategory = categorySelect ? categorySelect.value : "";
         let currentIndexerIds = null;
         
-        // Handle "All" checkbox logic for state saving
-        // Note: The "All" checkbox ID is dynamically generated in populateProwlarrIndexers, 
-        // so we check if ANY specific indexer is unchecked or if we just grab checked ones.
-        // Actually simpler: just grab checked specific indexers.
         if (indexerOptions) {
              const checked = Array.from(indexerOptions.querySelectorAll(".indexer-checkbox:checked"));
              if (checked.length > 0) {
-                 // Check if "All" is active (meaning no specific filter). 
-                 // But wait, our UI logic is: if All is checked, specific ones are NOT checked.
-                 // So if specific ones ARE checked, then All is NOT checked.
                  currentIndexerIds = checked.map(cb => cb.value);
              }
         }
@@ -667,9 +656,6 @@ async function initProwlarrSearch(url, apiKey) {
                             }
                         });
                         
-                        // Handle "All" checkbox if it exists (it's created dynamically)
-                        // This is tricky because populate might happen later or async?
-                        // Actually populate happens below synchronously-ish (await inside if called properly, but here handled via export)
                         const allCb = indexerOptions.querySelector("input[type='checkbox']:not(.indexer-checkbox)"); // heuristic
                         if (allCb) {
                             allCb.checked = !hasChecked;
@@ -754,15 +740,8 @@ async function initProwlarrSearch(url, apiKey) {
         populateProwlarrIndexers(url, apiKey, indexerOptions, indexerTrigger);
     }
 
-    
-    // Restore Search Data if enabled and data exists (Post-load)
-    // Re-select elements just in case, or rely on closure if valid.
-    // The error suggests keepSearchCheckbox is not in scope or undefined.
-    // Use optional chaining or re-query to be safe.
     const keepSearchCheckboxRef = document.getElementById("prowlarr-keep-search");
     if (keepSearchCheckboxRef && keepSearchCheckboxRef.checked) {
-         // We do this check again here because Indexers/Categories might have just finished populating
-         // Wait a moment for DOM to accept values
          setTimeout(() => {
             const savedState = localStorage.getItem(STORAGE_KEY_STATE);
             if (savedState) {
@@ -946,7 +925,6 @@ export function renderSearchResults(results, customContainer = null) {
         if (res.infoUrl || (res.guid && res.guid.startsWith("http"))) {
             const link = res.infoUrl || res.guid;
             
-            // XSS FIX: Use DOM API instead of innerHTML
             const a = document.createElement('a');
             a.href = link;
             a.target = '_blank';
@@ -1190,8 +1168,7 @@ export function populateProwlarrIndexers(url, apiKey, indexerOptions, indexerTri
                     indexers.forEach(idx => {
                         const div = document.createElement("div");
                         div.className = "dropdown-item";
-                        // XSS FIX: Use DOM API instead of innerHTML
-                        const checkbox = document.createElement('input');
+                                    const checkbox = document.createElement('input');
                         checkbox.type = 'checkbox';
                         checkbox.value = idx.id;
                         checkbox.className = 'indexer-checkbox';

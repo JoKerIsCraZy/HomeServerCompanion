@@ -522,13 +522,6 @@ function renderRadarrQueue(records, state) {
  * @param {HTMLElement} itemEl - The queue item element
  * @param {Function} refreshQueue - Function to refresh the queue after import
  */
-/**
- * Shows a dialog for manual import of a queue item
- * @param {Object} item - Queue item with warning/error status
- * @param {Object} state - App state with configs
- * @param {HTMLElement} itemEl - The queue item element
- * @param {Function} refreshQueue - Function to refresh the queue after import
- */
 async function showManualImportDialog(item, state, itemEl, refreshQueue) {
     // Remove any existing dialog
     const existingDialog = document.querySelector('.manual-import-dialog');
@@ -1137,20 +1130,12 @@ async function loadRadarrMissing(url, key, state, forceRefresh = false) {
     }
 }
 
-/**
- * Renders missing movies as a Poster Grid.
- * Filters for Released movies only (Physical/Digital release date <= Today OR status='released').
- */
 function renderRadarrMissing(records, state) {
     const container = document.getElementById("radarr-missing");
     if (!container) return;
     container.textContent = '';
     
     const now = new Date();
-    // Filter logic:
-    // 1. Is Available? (Radarr's 'isAvailable' flag is useful if populated, usually strictly follows delay profiles)
-    // 2. Or explicit check on release dates.
-    // User requested: "missing die schon released wurden"
     const filtered = records.filter(m => {
         if (m.status === 'released') return true;
         if (m.digitalRelease && new Date(m.digitalRelease) <= now) return true;

@@ -1,6 +1,5 @@
 import { aggregatedSearch, warmUpSearchCache } from "../utils/search.js";
 import { showNotification } from "../utils.js";
-// Imports for "Add" actions if needed, or just leverage Overseerr logic
 import * as Overseerr from "../../services/overseerr.js";
 import * as ProwlarrService from "../../services/prowlarr.js";
 import { renderSearchResults as renderProwlarrResults, populateProwlarrCategories, populateProwlarrIndexers } from "./prowlarr.js";
@@ -18,7 +17,6 @@ export async function initSearchUI(state) {
         overlay.id = 'unified-search-overlay';
         overlay.className = 'search-overlay hidden';
 
-        // XSS FIX: Build DOM structure using DOM API instead of innerHTML
         const modal = document.createElement('div');
         modal.className = 'search-modal';
 
@@ -81,7 +79,40 @@ export async function initSearchUI(state) {
         indexerOptions.setAttribute('role', 'listbox');
 
         indexerDropdown.append(indexerTrigger, indexerOptions);
-        filters.append(catSelect, indexerDropdown);
+
+        // Persistence Toggle (only for Prowlarr searches)
+        const persistenceWrapper = document.createElement('div');
+        persistenceWrapper.className = 'persistence-toggle-wrapper';
+        persistenceWrapper.title = 'Keep search results when closing extension';
+        
+        const persistenceLabel = document.createElement('label');
+        persistenceLabel.className = 'persistence-toggle';
+        
+        const persistenceCheckbox = document.createElement('input');
+        persistenceCheckbox.type = 'checkbox';
+        persistenceCheckbox.id = 'unified-search-persistence';
+        persistenceCheckbox.checked = localStorage.getItem('searchPersistenceEnabled') === 'true';
+        
+        const persistenceSlider = document.createElement('span');
+        persistenceSlider.className = 'persistence-slider';
+        
+        const persistenceText = document.createElement('span');
+        persistenceText.className = 'persistence-text';
+        persistenceText.textContent = '📌';
+        
+        persistenceCheckbox.addEventListener('change', () => {
+            localStorage.setItem('searchPersistenceEnabled', persistenceCheckbox.checked);
+            if (!persistenceCheckbox.checked) {
+                // Clear saved state when disabled
+                localStorage.removeItem('savedSearchQuery');
+                localStorage.removeItem('savedSearchResults');
+            }
+        });
+        
+        persistenceLabel.append(persistenceCheckbox, persistenceSlider);
+        persistenceWrapper.append(persistenceLabel, persistenceText);
+        
+        filters.append(catSelect, indexerDropdown, persistenceWrapper);
 
         // Search Results
         const results = document.createElement('div');
@@ -182,8 +213,10 @@ export async function initSearchUI(state) {
 
         // Keydown Logic (Enter & ESC)
         document.addEventListener('keydown', (e) => {
-            // ESC to close
+            // ESC to close search (prevent closing the entire extension popup)
             if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
+                e.preventDefault();
+                e.stopPropagation();
                 closeSearch();
             }
             // Enter to search (Force trigger mostly for Prowlarr)
@@ -201,23 +234,73 @@ export async function initSearchUI(state) {
 export function openSearch() {
     const overlay = document.getElementById('unified-search-overlay');
     const input = document.getElementById('unified-search-input');
+    const filtersDiv = document.getElementById('unified-prowlarr-filters');
+    
     if (overlay) {
         overlay.classList.remove('hidden');
-        input.value = '';
-        const resultsContainer = document.getElementById('unified-search-results');
-        resultsContainer.textContent = '';
-        const placeholder = document.createElement('div');
-        placeholder.className = 'search-placeholder';
-        const p = document.createElement('p');
-        p.textContent = 'Type to search...';
-        placeholder.appendChild(p);
-        resultsContainer.appendChild(placeholder);
+        
+        // Check if persistence is enabled and we have saved state
+        const persistenceEnabled = localStorage.getItem('searchPersistenceEnabled') === 'true';
+        const savedQuery = localStorage.getItem('savedSearchQuery');
+        const savedResultsHtml = localStorage.getItem('savedSearchResults');
+        
+        if (persistenceEnabled && savedQuery && savedResultsHtml) {
+            // Restore saved search state
+            input.value = savedQuery;
+            const resultsContainer = document.getElementById('unified-search-results');
+            resultsContainer.innerHTML = savedResultsHtml;
+            
+            // Show/hide Prowlarr filters based on query type
+            if (/^n[;:]/i.test(savedQuery)) {
+                if (filtersDiv) filtersDiv.classList.remove('hidden');
+            } else {
+                if (filtersDiv) filtersDiv.classList.add('hidden');
+            }
+            
+            // Focus at end of input
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        } else {
+            // Default behavior - clear everything and hide filters
+            input.value = '';
+            if (filtersDiv) filtersDiv.classList.add('hidden');
+            
+            const resultsContainer = document.getElementById('unified-search-results');
+            resultsContainer.textContent = '';
+            const placeholder = document.createElement('div');
+            placeholder.className = 'search-placeholder';
+            const p = document.createElement('p');
+            p.textContent = 'Type to search...';
+            placeholder.appendChild(p);
+            resultsContainer.appendChild(placeholder);
+        }
     }
 }
 
 function closeSearch() {
     const overlay = document.getElementById('unified-search-overlay');
-    if (overlay) overlay.classList.add('hidden');
+    if (overlay) {
+        // Save state if persistence is enabled
+        const persistenceEnabled = localStorage.getItem('searchPersistenceEnabled') === 'true';
+        if (persistenceEnabled) {
+            const input = document.getElementById('unified-search-input');
+            const resultsContainer = document.getElementById('unified-search-results');
+            if (input && input.value.trim()) {
+                localStorage.setItem('savedSearchQuery', input.value);
+                localStorage.setItem('savedSearchResults', resultsContainer.innerHTML);
+            }
+        }
+        overlay.classList.add('hidden');
+    }
+}
+
+// Helper function to save search state
+function saveSearchState(query, container) {
+    const persistenceEnabled = localStorage.getItem('searchPersistenceEnabled') === 'true';
+    if (persistenceEnabled && query && query.trim()) {
+        localStorage.setItem('savedSearchQuery', query);
+        localStorage.setItem('savedSearchResults', container.innerHTML);
+    }
 }
 
 async function performSearch(query, state) {
@@ -236,7 +319,6 @@ async function performSearch(query, state) {
             }
             const cleanQuery = query.substring(2).trim();
             if (cleanQuery.length < 2) {
-                // XSS FIX: Use DOM API instead of innerHTML
                 container.textContent = '';
                 const typingDiv = document.createElement('div');
                 typingDiv.className = 'no-results';
@@ -253,27 +335,10 @@ async function performSearch(query, state) {
                 categories = catSelect.value;
             }
             
-            // Indexers: check "All" or gather checkboxes
-            // The structure is #unified-prowlarr-indexer-dropdown-options .indexer-checkbox
-            // But checking the Prowlarr logic, if "All" is checked or none specific, we send null (which means all).
-            // Actually, we can check the checkboxes inside our specific container.
             const idxContainer = document.getElementById('unified-prowlarr-indexer-dropdown-options');
             if (idxContainer) {
                  const checked = Array.from(idxContainer.querySelectorAll(".indexer-checkbox:checked"));
                  if (checked.length > 0) {
-                     // Check if "All" is selected? Logic in prowlarr.js handles UI, here we just read vals.
-                     // Wait, in populateProwlarrIndexers we have an 'All' checkbox too. 
-                     // We should check if 'All' is NOT checked before sending IDs.
-                     // But the 'All' checkbox doesn't have a specific ID we can easily grab unless we search for it.
-                     // The population logic adds a checkbox with local variable 'allCheckbox'.
-                     // However, the rule typically is: if specific IDs are provided, they are used. If null/empty, all are used.
-                     // So just gathering the checked values of `.indexer-checkbox` (which are the specific ones) is enough?
-                     // Let's verify population logic:
-                     // The specific indexers have class `indexer-checkbox`. The "All" checkbox does NOT have that class?
-                     // Let's check populateProwlarrIndexers again...
-                     // Yes: `checkbox.className = 'indexer-checkbox';` for specific ones.
-                     // `allCheckbox` does NOT have that class. Good.
-                     
                      indexerIds = checked.map(cb => cb.value);
                  }
             }
@@ -286,11 +351,13 @@ async function performSearch(query, state) {
                 indexerIds
             );
             renderProwlarrResults(results, container);
+            saveSearchState(query, container);
             return;
         }
 
         const results = await aggregatedSearch(query, state.configs);
         renderResults(results, container, state);
+        saveSearchState(query, container);
     } catch (e) {
         container.textContent = '';
         const errDiv = document.createElement('div');
@@ -304,7 +371,6 @@ function createPosterPlaceholder() {
     const placeholder = document.createElement('div');
     placeholder.className = 'no-poster-placeholder';
     
-    // Film/image icon SVG - XSS FIX: Use DOM API instead of innerHTML
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
     svg.setAttribute('fill', 'currentColor');
@@ -322,7 +388,6 @@ function createPosterPlaceholder() {
 }
 
 function renderResults(results, container, state) {
-    // XSS FIX: Use replaceChildren instead of innerHTML = ''
     container.replaceChildren();
     
     if (results.length === 0) {
@@ -469,7 +534,6 @@ function renderResults(results, container, state) {
                      const radarrBtn = document.createElement('button');
                      radarrBtn.className = 'service-link-btn';
                      radarrBtn.title = 'Open in Radarr';
-                     // XSS FIX: Use DOM API instead of innerHTML
                      const radarrImg = document.createElement('img');
                      radarrImg.src = 'https://favicone.com/radarr.video?s=32';
                      radarrImg.alt = 'Radarr';
@@ -489,7 +553,6 @@ function renderResults(results, container, state) {
                      const sonarrBtn = document.createElement('button');
                      sonarrBtn.className = 'service-link-btn';
                      sonarrBtn.title = 'Open in Sonarr';
-                     // XSS FIX: Use DOM API instead of innerHTML
                      const sonarrImg = document.createElement('img');
                      sonarrImg.src = 'https://favicone.com/sonarr.tv?s=32';
                      sonarrImg.alt = 'Sonarr';
@@ -515,7 +578,6 @@ function renderResults(results, container, state) {
                      const plexBtn = document.createElement('button');
                      plexBtn.className = 'plex-play-btn';
                      plexBtn.title = 'Open in Plex';
-                     // XSS FIX: Use DOM API instead of innerHTML
                      const plexImg = document.createElement('img');
                      plexImg.src = 'https://favicone.com/plex.tv?s=32';
                      plexImg.alt = 'Plex';

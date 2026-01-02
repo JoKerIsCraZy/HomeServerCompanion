@@ -1,4 +1,4 @@
-export async function initDashboard(state) {
+﻿export async function initDashboard(state) {
     const container = document.getElementById('dashboard-view');
     // Clear existing content (or reuse if we implement diffing later)
     container.textContent = '';
@@ -103,7 +103,6 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             icon: 'unraid.png',
             check: async (url, key) => {
                 const data = await Unraid.getSystemData(url, key);
-                // metrics: cpu, ram - XSS FIX: Return structured object instead of HTML
                 const cpu = Math.round(data.cpu || 0);
                 const ram = Math.round(data.ram || 0);
                 return {
@@ -273,8 +272,6 @@ async function renderServiceGrid(container, state, isUpdate = false) {
                          setTimeout(() => {
                              const view = document.getElementById(`${svc.id}-view`);
                              if (view) {
-                                 // Try standard tab-btn or sub-tab-btn depending on layout. 
-                                 // Sonarr/Radarr usually use standard tabs for Queue
                                  const queueBtn = view.querySelector(`.tab-btn[data-tab="queue"]`);
                                  if (queueBtn) queueBtn.click();
                              }
@@ -282,9 +279,6 @@ async function renderServiceGrid(container, state, isUpdate = false) {
                     };
                 }
             } else if (svc.id === 'sabnzbd' && parseInt(result.metric) > 0) {
-                 // Optional: Doing the same for SABnzbd if user wants? 
-                 // User only asked for Sonarr/Radarr, but logic implies "if something hangs in queue".
-                 // Let's stick to Sonarr/Radarr as requested explicitly, but this pattern is extensible.
             }
             
         } catch (e) {
@@ -305,7 +299,6 @@ function updateCard(id, status, metric, label) {
         if (status === 'online') dot.classList.add('pulse');
     }
     if (metricEl) {
-        // XSS FIX: Use DOM API instead of innerHTML
         metricEl.textContent = '';
         if (typeof metric === 'object' && metric !== null) {
             // Structured metric (e.g., Unraid with cpu/ram)

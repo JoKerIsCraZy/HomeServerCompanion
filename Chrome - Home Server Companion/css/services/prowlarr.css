@@ -3,8 +3,6 @@
   --accent-prowlarr: #e66100;
 }
 
-/* .progress-bar-fill removed - unused */
-
 /* Prowlarr Modern Tabs (Glider) */
 #prowlarr-view .tabs {
   position: relative;

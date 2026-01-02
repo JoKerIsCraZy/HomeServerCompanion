@@ -603,13 +603,8 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         originalNameLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); margin-bottom: 5px; font-size: 0.9em;';
         const originalNameValue = document.createElement('div');
         
-        // Use relativePath (just the filename usually) or path
         let videoFileName = fileOption.relativePath || fileOption.path || 'Unknown';
-        // If it's a full path, try to show just the filename for better readability?
-        // Actually user said "Original benennung der nzb file angezeigt werden" initially, 
-        // but now "dateinamen der videofile". 
-        // Let's show the relative path which is usually "Subtitle.mkv" or "Show.S01E01.mkv".
-        
+       
         originalNameValue.textContent = videoFileName; 
         originalNameValue.style.cssText = 'color: var(--text-primary); padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; font-family: monospace; font-size: 1.1em; word-break: break-all; line-height: 1.4;';
         originalNameDiv.appendChild(originalNameLabel);
@@ -638,26 +633,18 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         episodeNameDiv.appendChild(episodeValue);
         dialog.appendChild(episodeNameDiv);
         
-        // Quality dropdown
         const qualityDiv = document.createElement('div');
         qualityDiv.style.cssText = 'margin-bottom: 15px;';
         const qualityLabel = document.createElement('label');
         qualityLabel.textContent = 'Quality:';
         qualityLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px; font-size: 0.9em;';
         const qualitySelect = document.createElement('select');
-        // Force dark background and light text for visibility
         qualitySelect.style.cssText = 'width: 100%; padding: 8px; background-color: #2b2b2b; color: #eeeeee; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
         
-        // Populate ALL valid qualities
-        // Current quality from file detection
-        // Populate ALL valid qualities
-        // Current quality from file detection
+
         const detectedQualityId = fileOption.quality?.quality?.id;
         const detectedQualityName = fileOption.quality?.quality?.name; // e.g. "WEBDL-1080p"
         
-        // Find the BEST matching quality definition
-        // 1. Try matching by Name (most accurate visually)
-        // 2. Fallback to ID match
         let targetQuality = allQualities.find(q => detectedQualityName && (q.title === detectedQualityName || q.name === detectedQualityName));
         if (!targetQuality) {
             targetQuality = allQualities.find(q => q.id == detectedQualityId);
@@ -699,19 +686,15 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         qualityDiv.appendChild(qualitySelect);
         dialog.appendChild(qualityDiv);
         
-        // Language dropdown
         const languageDiv = document.createElement('div');
         languageDiv.style.cssText = 'margin-bottom: 20px;';
         const languageLabel = document.createElement('label');
         languageLabel.textContent = 'Language:';
         languageLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); display: block; margin-bottom: 5px; font-size: 0.9em;';
         const languageSelect = document.createElement('select');
-        // Force dark background and light text here too
+
         languageSelect.style.cssText = 'width: 100%; padding: 8px; background-color: #2b2b2b; color: #eeeeee; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
         
-        // Populate ALL languages
-        // Current language from file detection
-        // fileOption.languages is an array, usually has 1 main language
         const detectedLangId = (fileOption.languages && fileOption.languages.length > 0) ? fileOption.languages[0].id : null;
 
         allLanguages.sort((a,b) => a.name.localeCompare(b.name)).forEach(lang => {
@@ -907,10 +890,6 @@ function renderSonarrHistory(records, state) {
             const prev = currentGroup[0];
             const curr = rawFiltered[i];
             
-            // Check if same series (by titleSlug or id)
-            // And also check if same season? Usually safer to group by season too, 
-            // otherwise S01E24 and S02E01 might look weird as S01E24-01 without season handling.
-            // Let's assume strict grouping: Same Series AND Same Season.
             const sameSeries = (prev.series && curr.series && prev.series.id === curr.series.id);
             const prevSeason = prev.episode ? prev.episode.seasonNumber : -1;
             const currSeason = curr.episode ? curr.episode.seasonNumber : -2;
@@ -958,13 +937,6 @@ function renderSonarrHistory(records, state) {
           const count = group.length;
           
           const sNum = String(mainItem.episode.seasonNumber || 0).padStart(2, '0');
-          // e.g. S12E10-14
-          // Note: Logic assumes continuous range, but even if S12E10 and S12E12 (gap), showing E10-12 might be acceptable or specific list "E10, E12".
-          // User requested "S12E10-14". Let's stick to Range if > 2, or Comma if 2? 
-          // Re-reading: "S12E10-14 z.B." (Range).
-          
-          // Check if contiguous? 
-          // Ideally yes, but "imported" events usually happen in batches.
           
           epString = `S${sNum}E${minEp}-${maxEp}`;
           
@@ -1159,9 +1131,6 @@ async function updateSonarrBadge(url, key, existingQueue = null) {
 }
 
 /**
- * Loads missing episodes
- */
-/**
  * Loads missing episodes with Caching (15 min)
  */
 async function loadSonarrMissing(url, key, state, forceRefresh = false) {
@@ -1228,7 +1197,6 @@ function renderSonarrMissing(records, state) {
         return new Date(item.airDateUtc) <= now;
     });
 
-    // Sort by Date Descending
     // Sort by Date Descending
     filtered.sort((a, b) => new Date(b.airDateUtc) - new Date(a.airDateUtc));
 
@@ -1330,9 +1298,6 @@ function renderSonarrMissing(records, state) {
         infoDiv.appendChild(epInfo);
         infoDiv.appendChild(dateDiv);
 
-        // Search Button (overlay on hover or persistent small icon)
-        // User requested "Design from Calendar", calendar has click to open. 
-        // We add a search icon at top right.
         const searchBtn = document.createElement("div");
         searchBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
         searchBtn.title = "Search for Episode";

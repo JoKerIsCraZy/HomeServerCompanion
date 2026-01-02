@@ -425,7 +425,16 @@
                       class="split-btn-main"
                       title="Pause/Resume"
                     >
-                      ⏸️
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <rect x="6" y="4" width="4" height="16" rx="1" />
+                        <rect x="14" y="4" width="4" height="16" rx="1" />
+                      </svg>
                     </button>
                   </div>
                   <div id="sab-pause-menu" class="dropdown-menu hidden">
@@ -558,96 +567,92 @@
             <div
               id="overseerr-trending-toolbar"
               class="trending-filter-bar hidden"
-              style="
-                display: flex;
-                align-items: center;
-                gap: 10px;
-              "
+              style="display: flex; align-items: center; gap: 10px"
             >
-                <div
-                  class="trending-filter-wrapper"
-                  style="
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    background: rgba(171, 71, 188, 0.1);
-                    padding: 6px 12px;
-                    border-radius: 20px;
-                    border: 1px solid rgba(171, 71, 188, 0.3);
-                  "
+              <div
+                class="trending-filter-wrapper"
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  background: rgba(171, 71, 188, 0.1);
+                  padding: 6px 12px;
+                  border-radius: 20px;
+                  border: 1px solid rgba(171, 71, 188, 0.3);
+                "
+              >
+                <span style="font-size: 12px; color: #ab47bc; font-weight: 600"
+                  >🎬 Filter:</span
                 >
-                  <span style="font-size: 12px; color: #ab47bc; font-weight: 600"
-                    >🎬 Filter:</span
-                  >
-                  <select
-                    id="overseerr-trending-filter"
-                    style="
-                      padding: 4px 24px 4px 8px;
-                      border-radius: 8px;
-                      border: none;
-                      background: #7e57c2;
-                      color: #fff;
-                      font-size: 12px;
-                      font-weight: 600;
-                      cursor: pointer;
-                      outline: none;
-                      appearance: none;
-                      -webkit-appearance: none;
-                      background-image: url('data:image/svg+xml;utf8,%3Csvg fill%3D%22white%22 height%3D%2224%22 viewBox%3D%220 0 24 24%22 width%3D%2224%22 xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath d%3D%22M7 10l5 5 5-5z%22%2F%3E%3C%2Fsvg%3E');
-                      background-repeat: no-repeat;
-                      background-position: right 4px center;
-                      background-size: 16px;
-                    "
-                  >
-                    <option value="both" style="background: #2d2d2d; color: #fff">
-                      Both
-                    </option>
-                    <option
-                      value="movie"
-                      style="background: #2d2d2d; color: #fff"
-                    >
-                      Movies
-                    </option>
-                    <option value="tv" style="background: #2d2d2d; color: #fff">
-                      Series
-                    </option>
-                  </select>
-                </div>
-                <button
-                  id="overseerr-trending-refresh"
-                  title="Refresh List"
-                  class="icon-btn"
+                <select
+                  id="overseerr-trending-filter"
                   style="
-                    background: transparent;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    color: #ddd;
+                    padding: 4px 24px 4px 8px;
                     border-radius: 8px;
-                    width: 32px;
-                    height: 32px;
-                    padding: 0;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                    border: none;
+                    background: #7e57c2;
+                    color: #fff;
+                    font-size: 12px;
+                    font-weight: 600;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    outline: none;
+                    appearance: none;
+                    -webkit-appearance: none;
+                    background-image: url('data:image/svg+xml;utf8,%3Csvg fill%3D%22white%22 height%3D%2224%22 viewBox%3D%220 0 24 24%22 width%3D%2224%22 xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath d%3D%22M7 10l5 5 5-5z%22%2F%3E%3C%2Fsvg%3E');
+                    background-repeat: no-repeat;
+                    background-position: right 4px center;
+                    background-size: 16px;
                   "
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                  <option value="both" style="background: #2d2d2d; color: #fff">
+                    Both
+                  </option>
+                  <option
+                    value="movie"
+                    style="background: #2d2d2d; color: #fff"
                   >
-                    <path
-                      d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"
-                    />
-                  </svg>
-                </button>
+                    Movies
+                  </option>
+                  <option value="tv" style="background: #2d2d2d; color: #fff">
+                    Series
+                  </option>
+                </select>
+              </div>
+              <button
+                id="overseerr-trending-refresh"
+                title="Refresh List"
+                class="icon-btn"
+                style="
+                  background: transparent;
+                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  color: #ddd;
+                  border-radius: 8px;
+                  width: 32px;
+                  height: 32px;
+                  padding: 0;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                "
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
 

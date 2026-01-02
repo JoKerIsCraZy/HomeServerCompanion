@@ -1,4 +1,4 @@
-import * as Wizarr from "../../services/wizarr.js";
+﻿import * as Wizarr from "../../services/wizarr.js";
 import { showNotification, showConfirmModal } from "../utils.js";
 
 let currentUrl = '';
@@ -148,7 +148,6 @@ async function loadServers() {
     const serverSelect = document.getElementById('wizarr-server-select');
     if (!serverSelect) return;
     
-    // XSS FIX: Use DOM API instead of innerHTML
     serverSelect.replaceChildren();
     const loadingOpt = document.createElement('option');
     loadingOpt.value = '';
@@ -183,8 +182,7 @@ async function loadServers() {
         serverSelect.disabled = false;
     } catch (error) {
         console.error('Failed to load servers:', error);
-        // XSS FIX: Use DOM API instead of innerHTML
-        serverSelect.replaceChildren();
+            serverSelect.replaceChildren();
         const failOpt = document.createElement('option');
         failOpt.value = '';
         failOpt.textContent = 'Failed to load';
@@ -196,7 +194,6 @@ async function loadLibraries() {
     const container = document.getElementById('wizarr-libraries-list');
     if (!container) return;
 
-    // XSS FIX: Use DOM API instead of innerHTML
     container.replaceChildren();
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'wizarr-loading';
@@ -221,8 +218,7 @@ async function loadLibraries() {
         container.replaceChildren();
 
         if (libraries.length === 0) {
-            // XSS FIX: Use DOM API instead of innerHTML
-            const emptyDiv = document.createElement('div');
+                    const emptyDiv = document.createElement('div');
             emptyDiv.className = 'wizarr-empty-state';
             emptyDiv.textContent = 'No libraries found';
             container.appendChild(emptyDiv);
@@ -248,8 +244,7 @@ async function loadLibraries() {
         });
     } catch (error) {
         console.error('Failed to load libraries:', error);
-        // XSS FIX: Use DOM API instead of innerHTML
-        container.replaceChildren();
+            container.replaceChildren();
         const failDiv = document.createElement('div');
         failDiv.className = 'wizarr-empty-state';
         failDiv.textContent = 'Failed to load libraries';
@@ -315,7 +310,6 @@ async function loadInvitations() {
     
     if (!container) return;
 
-    // XSS FIX: Use DOM API instead of innerHTML
     container.replaceChildren();
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'wizarr-loading';
@@ -358,8 +352,7 @@ async function loadInvitations() {
         container.replaceChildren();
 
         if (invitations.length === 0) {
-            // XSS FIX: Use DOM API instead of innerHTML
-            const emptyDiv = document.createElement('div');
+                    const emptyDiv = document.createElement('div');
             emptyDiv.className = 'wizarr-empty-state';
             emptyDiv.textContent = 'No invitations yet. Create one to get started!';
             container.appendChild(emptyDiv);
@@ -399,7 +392,7 @@ async function loadInvitations() {
                 statusSpan.textContent = 'Expired';
             } else if (invite.unlimited) {
                 statusSpan.className = 'wizarr-status-badge unlimited';
-                statusSpan.textContent = '∞';
+                statusSpan.textContent = 'âˆž';
             } else {
                 statusSpan.className = 'wizarr-status-badge active';
                 statusSpan.textContent = 'Active';
@@ -423,16 +416,15 @@ async function loadInvitations() {
             
             const copyBtn = document.createElement('button');
             copyBtn.className = 'wizarr-copy-btn';
-            // XSS FIX: Use DOM API instead of innerHTML
-            const copyIcon = document.createElement('span');
-            copyIcon.textContent = '📋';
+                    const copyIcon = document.createElement('span');
+            copyIcon.textContent = 'ðŸ“‹';
             copyBtn.appendChild(copyIcon);
             copyBtn.appendChild(document.createTextNode(' Copy'));
             copyBtn.addEventListener('click', () => copyInviteLink(invite.code, copyBtn));
             
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'wizarr-delete-btn';
-            deleteBtn.textContent = '🗑️';
+            deleteBtn.textContent = 'ðŸ—‘ï¸';
             deleteBtn.title = 'Delete invitation';
             deleteBtn.addEventListener('click', () => deleteInvite(invite.id));
             
@@ -445,8 +437,7 @@ async function loadInvitations() {
         });
     } catch (error) {
         console.error('Failed to load invitations:', error);
-        // XSS FIX: Use DOM API instead of innerHTML
-        container.replaceChildren();
+            container.replaceChildren();
         const failDiv = document.createElement('div');
         failDiv.className = 'wizarr-empty-state';
         failDiv.textContent = 'Failed to load invitations';
@@ -461,7 +452,7 @@ async function copyInviteLink(code, element) {
     try {
         await navigator.clipboard.writeText(inviteUrl);
         element.classList.add('wizarr-copied');
-        element.textContent = '✓ Copied!';
+        element.textContent = 'âœ“ Copied!';
         
         setTimeout(() => {
             element.classList.remove('wizarr-copied');
