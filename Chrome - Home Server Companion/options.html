@@ -5,8 +5,8 @@
     <title>Extension Options</title>
     <style>
       /* ===== Modern Design System ===== */
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-      
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
       :root {
         --bg-color: #121212;
         --card-bg: #1e1e1e;
@@ -34,7 +34,8 @@
       }
 
       body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
         background: var(--bg-color);
         color: var(--text-primary);
         margin: 0;
@@ -71,7 +72,9 @@
         }
       }
 
-      .sidebar { display: none !important; }
+      .sidebar {
+        display: none !important;
+      }
 
       .content {
         padding: 28px;
@@ -199,7 +202,7 @@
       }
 
       h2::before {
-        content: '';
+        content: "";
         width: 4px;
         height: 28px;
         background: var(--accent-gradient);
@@ -213,10 +216,18 @@
         animation-fill-mode: both;
       }
 
-      .form-group:nth-child(1) { animation-delay: 0.05s; }
-      .form-group:nth-child(2) { animation-delay: 0.1s; }
-      .form-group:nth-child(3) { animation-delay: 0.15s; }
-      .form-group:nth-child(4) { animation-delay: 0.2s; }
+      .form-group:nth-child(1) {
+        animation-delay: 0.05s;
+      }
+      .form-group:nth-child(2) {
+        animation-delay: 0.1s;
+      }
+      .form-group:nth-child(3) {
+        animation-delay: 0.15s;
+      }
+      .form-group:nth-child(4) {
+        animation-delay: 0.2s;
+      }
 
       @keyframes formGroupFadeIn {
         from {
@@ -325,7 +336,7 @@
         background: rgba(255, 255, 255, 0.08);
         padding: 2px 6px;
         border-radius: 4px;
-        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-family: "SF Mono", "Fira Code", monospace;
         font-size: 11px;
       }
 
@@ -355,7 +366,7 @@
       }
 
       .toggle-switch::after {
-        content: '';
+        content: "";
         position: absolute;
         top: 3px;
         left: 3px;
@@ -432,13 +443,18 @@
 
       /* Shimmer effect on primary button */
       .btn-primary::before {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: -100%;
         width: 100%;
         height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
         transition: left 0.5s;
       }
 
@@ -515,11 +531,11 @@
       }
 
       .status.success::before {
-        content: '✓';
+        content: "✓";
       }
 
       .status.error::before {
-        content: '✕';
+        content: "✕";
       }
 
       /* ===== Drag & Drop Service Order ===== */
@@ -652,16 +668,25 @@
       }
 
       .loading::after {
-        content: '';
+        content: "";
         position: absolute;
         inset: 0;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.05),
+          transparent
+        );
         animation: shimmer 1.5s infinite;
       }
 
       @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
       }
 
       /* ===== Instance Tabs ===== */
@@ -814,11 +839,15 @@
           </div>
           <div class="form-group">
             <label for="startPage">Start Page</label>
-            <select id="startPage" style="width: 100%;">
-              <option value="last-active">Continue where I left off (Last Active)</option>
+            <select id="startPage" style="width: 100%">
+              <option value="last-active">
+                Continue where I left off (Last Active)
+              </option>
               <!-- Services will be populated dynamically via JS -->
             </select>
-            <div class="help-text">Choose which service to open by default.</div>
+            <div class="help-text">
+              Choose which service to open by default.
+            </div>
           </div>
           <div class="form-group">
             <label for="badgeCheckInterval"
@@ -858,11 +887,14 @@
               Enable Dashboard
             </label>
             <div class="help-text">
-                Disabling the dashboard will remove it from the sidebar and navigation.
+              Disabling the dashboard will remove it from the sidebar and
+              navigation.
             </div>
           </div>
           <div class="actions">
-            <button id="saveDashboard" class="btn-primary">Save Dashboard</button>
+            <button id="saveDashboard" class="btn-primary">
+              Save Dashboard
+            </button>
           </div>
           <div id="statusDashboard" class="status"></div>
         </div>
@@ -880,7 +912,8 @@
               Enable SABnzbd
             </label>
             <div class="help-text">
-                Disabling the service will remove it from the sidebar and navigation.
+              Disabling the service will remove it from the sidebar and
+              navigation.
             </div>
           </div>
           <div class="form-group">
@@ -927,7 +960,8 @@
               Enable Sonarr
             </label>
             <div class="help-text">
-                Disabling the service will remove it from the sidebar and navigation.
+              Disabling the service will remove it from the sidebar and
+              navigation.
             </div>
           </div>
           <div class="form-group">
@@ -974,7 +1008,8 @@
               Enable Radarr
             </label>
             <div class="help-text">
-                Disabling the service will remove it from the sidebar and navigation.
+              Disabling the service will remove it from the sidebar and
+              navigation.
             </div>
           </div>
           <div class="form-group">
@@ -1021,7 +1056,8 @@
               Enable Tautulli
             </label>
             <div class="help-text">
-                Disabling the service will remove it from the sidebar and navigation.
+              Disabling the service will remove it from the sidebar and
+              navigation.
             </div>
           </div>
           <div class="form-group">
@@ -1056,7 +1092,8 @@
               Enable IP Geolocation Lookup
             </label>
             <div class="help-text">
-                Enables clicking on IP addresses to view location info. Requires <code>ipwho.is</code> permission.
+              Enables clicking on IP addresses to view location info. Requires
+              <code>ipwho.is</code> permission.
             </div>
           </div>
           <div class="actions">
@@ -1078,11 +1115,12 @@
               <option value="app">Plex Windows App (plex://)</option>
             </select>
             <div class="help-text">
-              Choose how Plex links should open. "Web" opens in browser, "App" opens in the Plex desktop app.
+              Choose how Plex links should open. "Web" opens in browser, "App"
+              opens in the Plex desktop app.
             </div>
           </div>
 
-          <div id="plexAppSettings" style="display: none;">
+          <div id="plexAppSettings" style="display: none">
             <div class="form-group">
               <label for="plexUrl">Plex Server URL</label>
               <div class="input-group" style="display: flex">
@@ -1105,17 +1143,17 @@
               <label for="plexToken">X-Plex-Token</label>
               <input type="password" id="plexToken" />
               <div class="help-text">
-                Find your token: Open Plex Web, press F12, go to Console, type: 
+                Find your token: Open Plex Web, press F12, go to Console, type:
                 <code>localStorage.getItem('myPlexAccessToken')</code>
               </div>
             </div>
           </div>
 
           <div class="actions">
-            <button id="savePlex" class="btn-primary">Save Plex Settings</button>
-            <button id="testPlex" class="btn-secondary">
-              Test Connection
+            <button id="savePlex" class="btn-primary">
+              Save Plex Settings
             </button>
+            <button id="testPlex" class="btn-secondary">Test Connection</button>
           </div>
           <div id="statusPlex" class="status"></div>
         </div>
@@ -1133,7 +1171,8 @@
               Enable Overseerr
             </label>
             <div class="help-text">
-                Disabling the service will remove it from the sidebar and navigation.
+              Disabling the service will remove it from the sidebar and
+              navigation.
             </div>
           </div>
           <div class="form-group">
@@ -1182,7 +1221,8 @@
               Enable Unraid
             </label>
             <div class="help-text">
-                Disabling the service will remove it from the sidebar and navigation.
+              Disabling the service will remove it from the sidebar and
+              navigation.
             </div>
           </div>
           <div class="form-group">
@@ -1211,9 +1251,7 @@
             </div>
           </div>
           <div class="actions">
-            <button id="saveUnraid" class="btn-primary">
-              Save Unraid
-            </button>
+            <button id="saveUnraid" class="btn-primary">Save Unraid</button>
             <button id="testUnraid" class="btn-secondary">
               Test Connection
             </button>
@@ -1234,7 +1272,8 @@
               Enable Prowlarr
             </label>
             <div class="help-text">
-                Disabling the service will remove it from the sidebar and navigation.
+              Disabling the service will remove it from the sidebar and
+              navigation.
             </div>
           </div>
           <div class="form-group">
@@ -1260,9 +1299,7 @@
             <input type="password" id="prowlarrKey" />
           </div>
           <div class="actions">
-            <button id="saveProwlarr" class="btn-primary">
-              Save Prowlarr
-            </button>
+            <button id="saveProwlarr" class="btn-primary">Save Prowlarr</button>
             <button id="testProwlarr" class="btn-secondary">
               Test Connection
             </button>
@@ -1283,7 +1320,8 @@
               Enable Wizarr
             </label>
             <div class="help-text">
-                Disabling the service will remove it from the sidebar and navigation.
+              Disabling the service will remove it from the sidebar and
+              navigation.
             </div>
           </div>
           <div class="form-group">
@@ -1312,9 +1350,7 @@
             </div>
           </div>
           <div class="actions">
-            <button id="saveWizarr" class="btn-primary">
-              Save Wizarr
-            </button>
+            <button id="saveWizarr" class="btn-primary">Save Wizarr</button>
             <button id="testWizarr" class="btn-secondary">
               Test Connection
             </button>
@@ -1335,7 +1371,8 @@
               Enable Portainer
             </label>
             <div class="help-text">
-                Disabling the service will remove it from the sidebar and navigation.
+              Disabling the service will remove it from the sidebar and
+              navigation.
             </div>
           </div>
 
@@ -1357,7 +1394,9 @@
                 placeholder="My Portainer"
                 maxlength="20"
               />
-              <div class="help-text">A friendly name for this instance (shown in sidebar)</div>
+              <div class="help-text">
+                A friendly name for this instance (shown in sidebar)
+              </div>
             </div>
             <div class="form-group">
               <label for="portainerUrl">Server URL</label>
@@ -1381,25 +1420,77 @@
               <label for="portainerKey">Access Token</label>
               <input type="password" id="portainerKey" />
               <div class="help-text">
-                Generate an Access Token in Portainer: My account → Access tokens
+                Generate an Access Token in Portainer: My account → Access
+                tokens
               </div>
             </div>
             <div class="form-group">
               <label>Custom Icon</label>
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div id="portainerIconPreview" style="width: 40px; height: 40px; border-radius: 8px; background: #252525; border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                  <img id="portainerIconImg" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
-                  <span id="portainerIconPlaceholder" style="font-size: 20px;">🐳</span>
+              <div style="display: flex; align-items: center; gap: 12px">
+                <div
+                  id="portainerIconPreview"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 8px;
+                    background: #252525;
+                    border: 1px solid var(--glass-border);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                  "
+                >
+                  <img
+                    id="portainerIconImg"
+                    src=""
+                    style="
+                      width: 100%;
+                      height: 100%;
+                      object-fit: cover;
+                      display: none;
+                    "
+                  />
+                  <span id="portainerIconPlaceholder" style="font-size: 20px"
+                    >🐳</span
+                  >
                 </div>
-                <input type="file" id="portainerIconUpload" accept="image/*" style="display: none;" />
-                <button type="button" id="portainerIconBtn" class="btn-secondary" style="padding: 8px 16px;">
+                <input
+                  type="file"
+                  id="portainerIconUpload"
+                  accept="image/*"
+                  style="display: none"
+                />
+                <button
+                  type="button"
+                  id="portainerIconBtn"
+                  class="btn-secondary"
+                  style="padding: 8px 16px"
+                >
                   Upload Icon
                 </button>
-                <button type="button" id="portainerIconClear" class="btn-secondary" style="padding: 8px 12px; display: none;">
+                <button
+                  type="button"
+                  id="portainerIconClear"
+                  class="btn-secondary"
+                  style="padding: 8px 12px; display: none"
+                >
                   Clear
                 </button>
               </div>
-              <div class="help-text">Upload a custom icon for this instance (max 128x128px, PNG/JPG)</div>
+              <div class="help-text">
+                Upload a custom icon for this instance (max 128x128px, PNG/JPG)
+              </div>
+            </div>
+
+            <!-- Hide in Sidebar Option -->
+            <div class="config-row">
+              <label
+              <label class="config-label" style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input type="checkbox" id="portainerHideInSidebar" style="width: 18px; height: 18px; cursor: pointer;" />
+                <span>Hide</span>
+              </label>
+              <div class="help-text">Hide from Sidebar & Dashboard, but still searchable via Docker search (d:)</div>
             </div>
           </div>
 
@@ -1410,13 +1501,20 @@
             <button id="testPortainer" class="btn-secondary">
               Test Connection
             </button>
-            <button id="deletePortainerInstance" class="btn-secondary" style="background: rgba(244, 67, 54, 0.1); color: #f44336; border-color: rgba(244, 67, 54, 0.3);">
+            <button
+              id="deletePortainerInstance"
+              class="btn-secondary"
+              style="
+                background: rgba(244, 67, 54, 0.1);
+                color: #f44336;
+                border-color: rgba(244, 67, 54, 0.3);
+              "
+            >
               Delete Instance
             </button>
           </div>
           <div id="statusPortainer" class="status"></div>
         </div>
-
       </div>
     </div>
 

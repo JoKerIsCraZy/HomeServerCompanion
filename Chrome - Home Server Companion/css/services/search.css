@@ -59,6 +59,7 @@
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: border-color 0.2s;
+  position: relative;
 }
 
 .search-input-wrapper:focus-within {
@@ -92,6 +93,79 @@
 
 .close-btn:hover {
   color: #fff;
+}
+
+/* Search Info Button & Dropdown */
+.search-info-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.search-info-btn:hover {
+  opacity: 1;
+}
+
+.syntax-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 40px;
+  margin-top: 8px;
+  background: #2a2a2a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 8px 0;
+  min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+.syntax-dropdown.hidden {
+  display: none;
+}
+
+.syntax-dropdown-title {
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #888;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 4px;
+}
+
+.syntax-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.syntax-dropdown-item:hover {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.syntax-prefix {
+  background: rgba(139, 92, 246, 0.3);
+  color: #a78bfa;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 12px;
+  min-width: 35px;
+  text-align: center;
+}
+
+.syntax-desc {
+  color: #ccc;
+  font-size: 13px;
 }
 
 .search-results {
@@ -332,6 +406,40 @@
   border-color: #2196f3;
 }
 
+/* Syntax Hints */
+.search-syntax-hints {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.syntax-hint {
+  font-size: 12px;
+  color: #888;
+}
+
+.syntax-hint code {
+  background: rgba(139, 92, 246, 0.2);
+  color: #a78bfa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.syntax-hint.clickable {
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.syntax-hint.clickable:hover {
+  background: rgba(139, 92, 246, 0.2);
+}
+
 /* Loading/Empty States */
 .loading-spinner,
 .no-results,
@@ -408,4 +516,168 @@
 
 .persistence-toggle-wrapper:hover .persistence-text {
   opacity: 1;
+}
+
+/* Docker Search Results */
+.docker-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+}
+
+.docker-result-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.docker-result-item.running {
+  border-left: 3px solid #4caf50;
+}
+
+.docker-result-item.stopped,
+.docker-result-item.exited {
+  border-left: 3px solid #f44336;
+  opacity: 0.8;
+}
+
+.docker-result-item.paused {
+  border-left: 3px solid #ff9800;
+}
+
+/* Source Badge */
+.docker-source-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.docker-source-badge.unraid {
+  background: rgba(244, 81, 30, 0.2);
+  color: #ff7043;
+  border: 1px solid rgba(244, 81, 30, 0.3);
+}
+
+.docker-source-badge.portainer {
+  background: rgba(66, 165, 245, 0.2);
+  color: #64b5f6;
+  border: 1px solid rgba(66, 165, 245, 0.3);
+}
+
+.docker-source-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+/* Status Dot */
+.docker-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.docker-status-dot.running {
+  background: #4caf50;
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+}
+
+.docker-status-dot.stopped,
+.docker-status-dot.exited {
+  background: #f44336;
+}
+
+.docker-status-dot.paused {
+  background: #ff9800;
+}
+
+/* Container Info */
+.docker-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.docker-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docker-image {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.docker-status-text {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+/* Action Buttons */
+.docker-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.docker-action-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.docker-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.docker-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.docker-action-btn.start:hover:not(:disabled) {
+  background: rgba(76, 175, 80, 0.3);
+  border-color: #4caf50;
+}
+
+.docker-action-btn.stop:hover:not(:disabled) {
+  background: rgba(244, 67, 54, 0.3);
+  border-color: #f44336;
+}
+
+.docker-action-btn.restart:hover:not(:disabled) {
+  background: rgba(33, 150, 243, 0.3);
+  border-color: #2196f3;
+}
+
+.docker-action-btn.webui:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.3);
+  border-color: #8b5cf6;
 }

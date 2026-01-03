@@ -3,6 +3,7 @@ import { showNotification } from "../utils.js";
 import * as Overseerr from "../../services/overseerr.js";
 import * as ProwlarrService from "../../services/prowlarr.js";
 import { renderSearchResults as renderProwlarrResults, populateProwlarrCategories, populateProwlarrIndexers } from "./prowlarr.js";
+import { searchAllContainers, controlContainerFromSearch } from "../../services/dockerSearch.js";
 
 let searchContainer = null;
 let searchInput = null;
@@ -123,9 +124,13 @@ export async function initSearchUI(state) {
 
         const placeholder = document.createElement('div');
         placeholder.className = 'search-placeholder';
-        const placeholderText = document.createElement('p');
-        placeholderText.textContent = 'Type to search across Sonarr, Radarr, and Overseerr.';
-        placeholder.appendChild(placeholderText);
+        placeholder.innerHTML = `
+            <p>Search Movies & TV Shows</p>
+            <div class="search-syntax-hints">
+                <span class="syntax-hint"><code>n:</code> NZB Search (Prowlarr)</span>
+                <span class="syntax-hint"><code>d:</code> Docker Containers</span>
+            </div>
+        `;
         results.appendChild(placeholder);
 
         modal.append(header, filters, results);
@@ -151,6 +156,7 @@ export async function initSearchUI(state) {
             
             // Toggle Prowlarr Filters Visibility based on syntax
             const isProwlarr = /^n[;:]/i.test(query);
+            const isDocker = /^d[;:]/i.test(query);
             const filtersDiv = document.getElementById('unified-prowlarr-filters');
             const searchHeader = document.querySelector('.search-header');
             
@@ -196,8 +202,8 @@ export async function initSearchUI(state) {
                 }
             }
             
-            // Skip auto-search for Prowlarr syntax (n; or n:)
-            if (isProwlarr) {
+            // Skip auto-search for special prefixes (require Enter to search)
+            if (isProwlarr || isDocker) {
                 return; 
             }
             
@@ -269,10 +275,29 @@ export function openSearch() {
             resultsContainer.textContent = '';
             const placeholder = document.createElement('div');
             placeholder.className = 'search-placeholder';
-            const p = document.createElement('p');
-            p.textContent = 'Type to search...';
-            placeholder.appendChild(p);
+            placeholder.innerHTML = `
+                <p>Search Movies & TV Shows</p>
+                <div class="search-syntax-hints">
+                    <span class="syntax-hint clickable" data-prefix="n:"><code>n:</code> NZB Search</span>
+                    <span class="syntax-hint clickable" data-prefix="d:"><code>d:</code> Docker Containers</span>
+                </div>
+            `;
+            
+            // Make hints clickable
+            placeholder.querySelectorAll('.syntax-hint.clickable').forEach(hint => {
+                hint.onclick = () => {
+                    const prefix = hint.dataset.prefix;
+                    input.value = prefix;
+                    input.focus();
+                    // Trigger input event to show filters if needed
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                };
+            });
+            
             resultsContainer.appendChild(placeholder);
+            
+            // Focus the input immediately
+            input.focus();
         }
     }
 }
@@ -351,6 +376,24 @@ async function performSearch(query, state) {
                 indexerIds
             );
             renderProwlarrResults(results, container);
+            saveSearchState(query, container);
+            return;
+        }
+
+        // Docker Search via 'd:' or 'd;' syntax
+        if (/^d[;:]/i.test(query)) {
+            const cleanQuery = query.substring(2).trim();
+            if (cleanQuery.length < 1) {
+                container.textContent = '';
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'no-results';
+                typingDiv.textContent = 'Type container name to search...';
+                container.appendChild(typingDiv);
+                return;
+            }
+            
+            const results = await searchAllContainers(state.configs, cleanQuery);
+            renderDockerResults(results, container, state);
             saveSearchState(query, container);
             return;
         }
@@ -635,4 +678,177 @@ function renderResults(results, container, state) {
         div.appendChild(actions);
         container.appendChild(div);
     });
+}
+
+/**
+ * Renders Docker container search results.
+ */
+function renderDockerResults(results, container, state) {
+    container.replaceChildren();
+    
+    if (results.length === 0) {
+        const noRes = document.createElement('div');
+        noRes.className = 'no-results';
+        noRes.innerHTML = '<div style="font-size: 32px; margin-bottom: 8px;">📭</div>No containers found.';
+        container.appendChild(noRes);
+        return;
+    }
+
+    // Group by source for visual organization
+    results.forEach(item => {
+        const div = document.createElement('div');
+        div.className = `docker-result-item ${item.state}`;
+        
+        // Source badge
+        const sourceBadge = document.createElement('div');
+        sourceBadge.className = `docker-source-badge ${item.source}`;
+        const sourceImg = document.createElement('img');
+        sourceImg.src = item.sourceIcon;
+        sourceImg.alt = item.sourceName;
+        sourceImg.className = 'docker-source-icon';
+        sourceBadge.appendChild(sourceImg);
+        const sourceText = document.createElement('span');
+        sourceText.textContent = item.sourceName;
+        sourceBadge.appendChild(sourceText);
+        div.appendChild(sourceBadge);
+        
+        // Status dot
+        const statusDot = document.createElement('div');
+        statusDot.className = `docker-status-dot ${item.state}`;
+        div.appendChild(statusDot);
+        
+        // Container info
+        const info = document.createElement('div');
+        info.className = 'docker-info';
+        
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'docker-name';
+        nameDiv.textContent = item.name;
+        info.appendChild(nameDiv);
+        
+        const imageDiv = document.createElement('div');
+        imageDiv.className = 'docker-image';
+        imageDiv.textContent = item.image;
+        imageDiv.title = item.image;
+        info.appendChild(imageDiv);
+        
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'docker-status-text';
+        statusDiv.textContent = item.status || item.state;
+        info.appendChild(statusDiv);
+        
+        div.appendChild(info);
+        
+        // Actions
+        const actions = document.createElement('div');
+        actions.className = 'docker-actions';
+        
+        const isRunning = item.state === 'running';
+        const isStopped = item.state === 'stopped' || item.state === 'exited';
+        
+        if (isStopped) {
+            const startBtn = document.createElement('button');
+            startBtn.className = 'docker-action-btn start';
+            startBtn.innerHTML = '▶️';
+            startBtn.title = 'Start';
+            startBtn.onclick = async (e) => {
+                e.stopPropagation();
+                startBtn.disabled = true;
+                startBtn.innerHTML = '⏳';
+                try {
+                    await controlContainerFromSearch(item, 'start');
+                    showNotification(`Started "${item.name}"`, 'success');
+                    statusDot.className = 'docker-status-dot running';
+                    statusDiv.textContent = 'Running';
+                    div.className = 'docker-result-item running';
+                    // Replace start with stop/restart
+                    actions.innerHTML = '';
+                    addRunningActions(actions, item, statusDot, statusDiv, div);
+                } catch (err) {
+                    showNotification(`Failed to start: ${err.message}`, 'error');
+                    startBtn.disabled = false;
+                    startBtn.innerHTML = '▶️';
+                }
+            };
+            actions.appendChild(startBtn);
+        }
+        
+        if (isRunning) {
+            addRunningActions(actions, item, statusDot, statusDiv, div);
+        }
+        
+        // WebUI button (for running containers with webui)
+        if (item.webui && isRunning) {
+            const webuiBtn = document.createElement('button');
+            webuiBtn.className = 'docker-action-btn webui';
+            webuiBtn.innerHTML = '🌐';
+            webuiBtn.title = 'Open WebUI';
+            webuiBtn.onclick = (e) => {
+                e.stopPropagation();
+                chrome.tabs.create({ url: item.webui });
+            };
+            actions.appendChild(webuiBtn);
+        }
+        
+        div.appendChild(actions);
+        container.appendChild(div);
+    });
+    
+    function addRunningActions(actions, item, statusDot, statusDiv, div) {
+        const stopBtn = document.createElement('button');
+        stopBtn.className = 'docker-action-btn stop';
+        stopBtn.innerHTML = '⏹️';
+        stopBtn.title = 'Stop';
+        stopBtn.onclick = async (e) => {
+            e.stopPropagation();
+            stopBtn.disabled = true;
+            stopBtn.innerHTML = '⏳';
+            try {
+                await controlContainerFromSearch(item, 'stop');
+                showNotification(`Stopped "${item.name}"`, 'success');
+                statusDot.className = 'docker-status-dot stopped';
+                statusDiv.textContent = 'Stopped';
+                div.className = 'docker-result-item stopped';
+                // Replace with start button
+                actions.innerHTML = '';
+                const startBtn = document.createElement('button');
+                startBtn.className = 'docker-action-btn start';
+                startBtn.innerHTML = '▶️';
+                startBtn.title = 'Start';
+                startBtn.onclick = async () => {
+                    await controlContainerFromSearch(item, 'start');
+                    showNotification(`Started "${item.name}"`, 'success');
+                    location.reload(); // Refresh to update state
+                };
+                actions.appendChild(startBtn);
+            } catch (err) {
+                showNotification(`Failed to stop: ${err.message}`, 'error');
+                stopBtn.disabled = false;
+                stopBtn.innerHTML = '⏹️';
+            }
+        };
+        
+        const restartBtn = document.createElement('button');
+        restartBtn.className = 'docker-action-btn restart';
+        restartBtn.innerHTML = '🔄';
+        restartBtn.title = 'Restart';
+        restartBtn.onclick = async (e) => {
+            e.stopPropagation();
+            restartBtn.disabled = true;
+            restartBtn.innerHTML = '⏳';
+            try {
+                await controlContainerFromSearch(item, 'restart');
+                showNotification(`Restarted "${item.name}"`, 'success');
+                restartBtn.innerHTML = '🔄';
+                restartBtn.disabled = false;
+            } catch (err) {
+                showNotification(`Failed to restart: ${err.message}`, 'error');
+                restartBtn.disabled = false;
+                restartBtn.innerHTML = '🔄';
+            }
+        };
+        
+        actions.appendChild(stopBtn);
+        actions.appendChild(restartBtn);
+    }
 }

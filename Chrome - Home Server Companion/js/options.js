@@ -85,6 +85,12 @@ function selectPortainerInstance(id) {
         deleteBtn.style.display = portainerInstances.length > 1 ? 'inline-flex' : 'none';
     }
 
+    // Hide in sidebar checkbox
+    const hideCheckbox = document.getElementById('portainerHideInSidebar');
+    if (hideCheckbox) {
+        hideCheckbox.checked = inst.hideInSidebar || false;
+    }
+
     renderPortainerTabs();
 }
 
@@ -168,6 +174,7 @@ function savePortainerInstance() {
     inst.url = fullUrl;
     inst.key = key;
     inst.icon = iconImg.style.display !== 'none' ? iconImg.src : '';
+    inst.hideInSidebar = document.getElementById('portainerHideInSidebar')?.checked || false;
 
     // Request permission for URL
     const urlObj = new URL(fullUrl);

@@ -21,10 +21,10 @@ function createPortainerSidebarEntries(items, sidebar, spacer) {
         staticPortainer.remove();
     }
 
-    // Get valid instances
+    // Get valid instances (exclude hidden ones)
     let instances = [];
     if (items.portainerInstances && items.portainerInstances.length > 0) {
-        instances = items.portainerInstances.filter(i => i.url && i.key);
+        instances = items.portainerInstances.filter(i => i.url && i.key && !i.hideInSidebar);
     }
 
     if (instances.length === 0) return;
@@ -446,89 +446,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     // --- Omnibox Logic (Global Search) ---
     const omniboxContainer = document.getElementById("omnibox-container");
     const omniboxInput = document.getElementById("omnibox-input");
-    const omniboxClose = document.getElementById("omnibox-close");
-    const searchToggleBtn = document.getElementById("search-toggle-btn");
-    const pageTitle = document.getElementById("page-title");
-    const headerActions = document.getElementById("header-actions");
 
-    if (searchToggleBtn) {
-        searchToggleBtn.addEventListener("click", () => {
-             // Show Omnibox, hide Title
-             if (omniboxContainer.classList.contains("hidden")) {
-                 omniboxContainer.classList.remove("hidden");
-                 pageTitle.style.display = "none";
-                 omniboxInput.focus();
-                 // Hide other actions buttons if needed for space, but flex helps
-             } else {
-                 closeOmnibox();
-             }
+    // Click on omnibox opens Unified Search directly
+    if (omniboxContainer) {
+        omniboxContainer.addEventListener("click", () => {
+            import("./ui/searchUI.js").then((module) => {
+                module.initSearchUI(state);
+                module.openSearch();
+            });
         });
     }
 
-    if (omniboxClose) {
-        omniboxClose.addEventListener("click", closeOmnibox);
-    }
-
-    function closeOmnibox() {
-        // Don't hide the omnibox - just clear the input and blur
-        omniboxInput.value = "";
-        omniboxInput.blur();
-    }
-
+    // Focus on input also opens Unified Search
     if (omniboxInput) {
-        // Auto-switch to Unified Search Overlay when typing Prowlarr syntax "n:" or "n;"
-        omniboxInput.addEventListener("input", (e) => {
-            const query = omniboxInput.value;
-            if (/^n[;:]/i.test(query)) {
-                import("./ui/searchUI.js").then((module) => {
-                    module.initSearchUI(state);
-                    module.openSearch();
-                    
-                    const searchInput = document.getElementById('unified-search-input');
-                    if (searchInput) {
-                        searchInput.value = query;
-                        searchInput.focus();
-                        // Trigger input handler in searchUI to show filters
-                        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                    closeOmnibox();
-                });
-            }
-        });
-
-        omniboxInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                const query = omniboxInput.value.trim();
-                
-                // New Unified Search Logic
-                import("./ui/searchUI.js").then((module) => {
-                    module.initSearchUI(state); // Ensure initialized
-                    module.openSearch();
-                    
-                    // Pre-fill if typed in omnibox
-                    const searchInput = document.getElementById('unified-search-input');
-                    if (searchInput && query) {
-                        searchInput.value = query;
-                        
-                        // Check if it is a Prowlarr query which requires Enter
-                        if (/^n[;:]/i.test(query)) {
-                            // Dispatch Enter Keydown to force trigger
-                            searchInput.dispatchEvent(new KeyboardEvent('keydown', {
-                                key: 'Enter',
-                                code: 'Enter',
-                                keyCode: 13,
-                                which: 13,
-                                bubbles: true
-                            }));
-                        } else {
-                            // Standard Input Trigger
-                            searchInput.dispatchEvent(new Event('input', { bubbles: true })); 
-                        }
-                    }
-                });
-                
-                closeOmnibox();
-            }
+        omniboxInput.addEventListener("focus", (e) => {
+            e.preventDefault();
+            omniboxInput.blur();
+            import("./ui/searchUI.js").then((module) => {
+                module.initSearchUI(state);
+                module.openSearch();
+            });
         });
     }
 
@@ -546,6 +483,46 @@ document.addEventListener("DOMContentLoaded", async () => {
                 setTimeout(() => {
                     const searchInput = document.getElementById('unified-search-input');
                     if (searchInput) searchInput.focus();
+                }, 50);
+            });
+        }
+        
+        // Ctrl+D to open Unified Search with Docker prefix
+        if (e.ctrlKey && e.key === "d") {
+            e.preventDefault(); // Prevent browser bookmark dialog
+            
+            import("./ui/searchUI.js").then((module) => {
+                module.initSearchUI(state);
+                module.openSearch();
+                
+                // Pre-fill with d: and focus
+                setTimeout(() => {
+                    const searchInput = document.getElementById('unified-search-input');
+                    if (searchInput) {
+                        searchInput.value = 'd:';
+                        searchInput.focus();
+                        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                }, 50);
+            });
+        }
+        
+        // Ctrl+A to open Unified Search with NZB prefix
+        if (e.ctrlKey && e.key === "a") {
+            e.preventDefault(); // Prevent select all
+            
+            import("./ui/searchUI.js").then((module) => {
+                module.initSearchUI(state);
+                module.openSearch();
+                
+                // Pre-fill with n: and focus
+                setTimeout(() => {
+                    const searchInput = document.getElementById('unified-search-input');
+                    if (searchInput) {
+                        searchInput.value = 'n:';
+                        searchInput.focus();
+                        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
                 }, 50);
             });
         }

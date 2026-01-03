@@ -36,8 +36,11 @@
 |      Shortcut      | Action                               |
 | :----------------: | :----------------------------------- |
 |      `Ctrl+S`      | Open Unified Search                  |
+|      `Ctrl+D`      | Open Docker Container Search         |
+|      `Ctrl+A`      | Open NZB Search (Prowlarr)           |
 |      `Enter`       | Search Movies & TV Shows (Overseerr) |
 |        `n:`        | Search NZBs directly via Prowlarr    |
+|        `d:`        | Search Docker Containers             |
 | `Right-click text` | Context menu search                  |
 
 </div>
@@ -50,11 +53,11 @@ The **Unified Search Bar** is your command center. Click the search bar or press
 
 ### Search Syntax
 
-|  Prefix  | What it does                     | Example            |
-| :------: | :------------------------------- | :----------------- |
-| _(none)_ | Search Movies & TV via Overseerr | `Breaking Bad`     |
-|   `n:`   | Search NZBs via Prowlarr         | `n:ubuntu iso`     |
-|   `n;`   | Same as `n:` (alternative)       | `n;latest release` |
+|  Prefix  | What it does                     | Example        |
+| :------: | :------------------------------- | :------------- |
+| _(none)_ | Search Movies & TV via Overseerr | `Breaking Bad` |
+|   `n:`   | Search NZBs via Prowlarr         | `n:ubuntu iso` |
+|   `d:`   | Search Docker Containers         | `d:plex`       |
 
 ### 🔥 Prowlarr NZB Search (`n:`)
 
@@ -68,6 +71,20 @@ Search **all your indexers at once** directly from the extension!
 ```
 n:Movie Name 2024      -> Search all indexers for "Movie Name 2024"
 n:ubuntu server        -> Find Linux ISOs across your indexers
+```
+
+### 🐳 Docker Container Search (`d:`)
+
+Search **all your Docker containers** across Unraid and all Portainer instances!
+
+- **Multi-Server Search** - Search Unraid + all Portainer instances at once
+- **Source Labels** - See which server each container is from
+- **Quick Actions** - Start, Stop, Restart containers directly
+- **WebUI Links** - One-click access to container web interfaces
+
+```
+d:plex                 -> Find all "plex" containers across servers
+d:sonarr               -> Locate your Sonarr containers
 ```
 
 ---

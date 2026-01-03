@@ -177,7 +177,7 @@ async function renderServiceGrid(container, state, isUpdate = false) {
 
     // Dynamically add Portainer instances as separate services
     const portainerInstances = state.configs.portainerInstances || [];
-    const validPortainerInstances = portainerInstances.filter(i => i.url && i.key);
+    const validPortainerInstances = portainerInstances.filter(i => i.url && i.key && !i.hideInSidebar);
     
     if (validPortainerInstances.length > 0) {
         validPortainerInstances.forEach((inst, index) => {
@@ -198,8 +198,8 @@ async function renderServiceGrid(container, state, isUpdate = false) {
                 }
             });
         });
-    } else {
-        // Fallback: Show single Portainer if no instances configured
+    } else if (portainerInstances.length === 0) {
+        // Fallback: Show single Portainer ONLY if NO instances configured at all
         services.push({
             id: 'portainer',
             name: 'Portainer',
@@ -213,6 +213,7 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             }
         });
     }
+    // If instances exist but all are hidden, don't show any Portainer card
 
     // Filter enabled services
     let enabledServices = services.filter(svc => {
