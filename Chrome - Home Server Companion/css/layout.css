@@ -132,6 +132,23 @@
 
 .settings-btn {
   margin-bottom: 20px;
+  margin-top: -10px;
+}
+
+/* Fullscreen button - smaller */
+#fullscreen-btn {
+  width: 32px;
+  height: 32px;
+  opacity: 0.5;
+}
+
+#fullscreen-btn:hover {
+  opacity: 0.8;
+}
+
+#fullscreen-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Content Area */

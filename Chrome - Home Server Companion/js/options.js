@@ -109,15 +109,29 @@ function deletePortainerInstance() {
     const idx = portainerInstances.findIndex(i => i.id === currentPortainerInstanceId);
     if (idx === -1) return;
 
+    const deletedId = currentPortainerInstanceId;
     portainerInstances.splice(idx, 1);
 
     // Select next available instance
     const nextInst = portainerInstances[Math.min(idx, portainerInstances.length - 1)];
     selectPortainerInstance(nextInst.id);
 
-    // Save immediately
-    chrome.storage.sync.set({ portainerInstances }, () => {
-        showStatus('Portainer', 'Instance deleted!', 'success');
+    // Remove from service order and save
+    chrome.storage.sync.get(['serviceOrder'], (orderItems) => {
+        let serviceOrder = orderItems.serviceOrder || [];
+        const instanceOrderId = 'portainer_' + deletedId;
+        
+        // Remove this instance from the order
+        serviceOrder = serviceOrder.filter(s => s !== instanceOrderId);
+        
+        // Save both instances and order
+        chrome.storage.sync.set({ portainerInstances, serviceOrder }, () => {
+            showStatus('Portainer', 'Instance deleted!', 'success');
+            
+            // Refresh the order list
+            window.orderPortainerInstances = portainerInstances;
+            renderOrderList(true);
+        });
     });
 }
 
@@ -158,12 +172,38 @@ function savePortainerInstance() {
     // Request permission for URL
     const urlObj = new URL(fullUrl);
     chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, (granted) => {
-        chrome.storage.sync.set({ portainerInstances }, () => {
-            showStatus('Portainer', 'Instance saved!', 'success');
-            renderPortainerTabs();
+        // Update service order to include this instance if it's new
+        chrome.storage.sync.get(['serviceOrder'], (orderItems) => {
+            let serviceOrder = orderItems.serviceOrder || [...services];
+            const instanceOrderId = 'portainer_' + inst.id;
+            
+            // Check if this instance is already in the order
+            const hasThisInstance = serviceOrder.includes(instanceOrderId);
+            const hasLegacyPortainer = serviceOrder.includes('portainer');
+            
+            if (!hasThisInstance) {
+                if (hasLegacyPortainer) {
+                    // Replace legacy 'portainer' with this instance
+                    const legacyIdx = serviceOrder.indexOf('portainer');
+                    serviceOrder[legacyIdx] = instanceOrderId;
+                } else {
+                    // Add to end
+                    serviceOrder.push(instanceOrderId);
+                }
+            }
+            
+            // Save both instances and order
+            chrome.storage.sync.set({ portainerInstances, serviceOrder }, () => {
+                showStatus('Portainer', 'Instance saved!', 'success');
+                renderPortainerTabs();
+                
+                // Refresh the order list to show updated name/icon
+                window.orderPortainerInstances = portainerInstances;
+                renderOrderList(true);
 
-            // Notify background to update rules
-            chrome.runtime.sendMessage({ action: 'UPDATE_PORTAINER_RULES' });
+                // Notify background to update rules
+                chrome.runtime.sendMessage({ action: 'UPDATE_PORTAINER_RULES' });
+            });
         });
     });
 }
@@ -903,17 +943,19 @@ const savePlexSettings = () => {
 
 // --- General / Reordering Logic ---
 window.currentOrder = [...services]; // Default attached to window for easy access in listener
+window.orderPortainerInstances = []; // Track portainer instances for order list
 
 const renderOrderList = (initialLoad = true) => {
     const render = () => {
         const container = document.getElementById('service-order-list');
         container.replaceChildren();
         
-        window.currentOrder.forEach((service, index) => {
+        window.currentOrder.forEach((serviceId, index) => {
             const row = document.createElement('div');
             row.className = 'draggable-item';
             row.setAttribute('draggable', 'true');
             row.dataset.index = index;
+            row.dataset.serviceId = serviceId;
             
             // Handle Drop Events
             row.addEventListener('dragstart', dragStart);
@@ -960,16 +1002,44 @@ const renderOrderList = (initialLoad = true) => {
             svg.appendChild(line3);
             handle.appendChild(svg);
 
-            const name = service.charAt(0).toUpperCase() + service.slice(1);
-            const nameSpan = document.createElement('span');
-            nameSpan.style.fontWeight = '500';
-            nameSpan.textContent = name;
-            
-            // Left Side Container (Handle + Name)
+            // Determine display name and icon
+            let displayName = serviceId.charAt(0).toUpperCase() + serviceId.slice(1);
+            let customIcon = null;
+
+            // Check if this is a Portainer instance
+            if (serviceId.startsWith('portainer_')) {
+                const instId = serviceId.replace('portainer_', '');
+                const inst = window.orderPortainerInstances.find(i => i.id === instId);
+                if (inst) {
+                    displayName = inst.name || 'Portainer';
+                    customIcon = inst.icon;
+                }
+            } else if (serviceId === 'portainer') {
+                // Legacy single portainer - check if we have an instance with a name
+                if (window.orderPortainerInstances.length > 0) {
+                    const firstInst = window.orderPortainerInstances[0];
+                    displayName = firstInst.name || 'Portainer';
+                    customIcon = firstInst.icon;
+                }
+            }
+
+            // Left Side Container (Handle + Icon + Name)
             const left = document.createElement('div');
             left.style.display = 'flex';
             left.style.alignItems = 'center';
             left.appendChild(handle);
+
+            // Add custom icon if available
+            if (customIcon) {
+                const iconImg = document.createElement('img');
+                iconImg.src = customIcon;
+                iconImg.style.cssText = 'width: 20px; height: 20px; border-radius: 4px; object-fit: cover; margin-right: 10px;';
+                left.appendChild(iconImg);
+            }
+
+            const nameSpan = document.createElement('span');
+            nameSpan.style.fontWeight = '500';
+            nameSpan.textContent = displayName;
             left.appendChild(nameSpan);
 
             row.appendChild(left);
@@ -978,14 +1048,72 @@ const renderOrderList = (initialLoad = true) => {
     };
 
     if (initialLoad) {
-        chrome.storage.sync.get(['serviceOrder'], (items) => {
+        chrome.storage.sync.get(['serviceOrder', 'portainerInstances'], (items) => {
+            // Load Portainer instances first
+            window.orderPortainerInstances = items.portainerInstances || [];
+            
             if (items.serviceOrder) {
-                // Filter out any services that are no longer valid (e.g., plex was removed)
-                window.currentOrder = items.serviceOrder.filter(s => services.includes(s));
-                // Ensure all known services are present
-                services.forEach(s => {
-                    if (!window.currentOrder.includes(s)) window.currentOrder.push(s);
+                // Filter out any services that are no longer valid
+                window.currentOrder = items.serviceOrder.filter(s => {
+                    // Check regular services
+                    if (services.includes(s) && s !== 'portainer') return true;
+                    // Check portainer instances
+                    if (s === 'portainer') return true;
+                    if (s.startsWith('portainer_')) {
+                        const instId = s.replace('portainer_', '');
+                        return window.orderPortainerInstances.some(i => i.id === instId);
+                    }
+                    return false;
                 });
+                
+                // Ensure all known services are present (except portainer which is handled specially)
+                services.forEach(s => {
+                    if (s === 'portainer') {
+                        // For portainer, add instances if they're not already in the order
+                        if (window.orderPortainerInstances.length > 0) {
+                            // Check if we have the legacy 'portainer' entry that needs migration
+                            const legacyIdx = window.currentOrder.indexOf('portainer');
+                            if (legacyIdx !== -1) {
+                                // Replace legacy 'portainer' with all instances
+                                window.currentOrder.splice(legacyIdx, 1);
+                                window.orderPortainerInstances.forEach((inst, i) => {
+                                    window.currentOrder.splice(legacyIdx + i, 0, 'portainer_' + inst.id);
+                                });
+                            } else {
+                                // Check if any portainer_* entries exist
+                                const hasInstances = window.currentOrder.some(o => o.startsWith('portainer_'));
+                                if (!hasInstances) {
+                                    // Add all instances
+                                    window.orderPortainerInstances.forEach(inst => {
+                                        window.currentOrder.push('portainer_' + inst.id);
+                                    });
+                                } else {
+                                    // Ensure all instances are present
+                                    window.orderPortainerInstances.forEach(inst => {
+                                        const instOrderId = 'portainer_' + inst.id;
+                                        if (!window.currentOrder.includes(instOrderId)) {
+                                            window.currentOrder.push(instOrderId);
+                                        }
+                                    });
+                                }
+                            }
+                        } else if (!window.currentOrder.includes('portainer')) {
+                            window.currentOrder.push('portainer');
+                        }
+                    } else if (!window.currentOrder.includes(s)) {
+                        window.currentOrder.push(s);
+                    }
+                });
+            } else {
+                // No saved order - build default with portainer instances
+                window.currentOrder = services.filter(s => s !== 'portainer');
+                if (window.orderPortainerInstances.length > 0) {
+                    window.orderPortainerInstances.forEach(inst => {
+                        window.currentOrder.push('portainer_' + inst.id);
+                    });
+                } else {
+                    window.currentOrder.push('portainer');
+                }
             }
             render();
         });

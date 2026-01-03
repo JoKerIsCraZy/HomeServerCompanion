@@ -218,6 +218,18 @@ Beautiful high-contrast dark UI:
 
 </details>
 
+<details>
+<summary><b>🐳 Portainer</b> - Docker Container Management</summary>
+
+- **Multi-Instance Support** - Manage multiple Portainer servers
+- **Custom Names & Icons** - Personalize each instance
+- **Container Overview** - Start/Stop/Restart containers
+- **Stack Management** - Control Docker Compose stacks
+- **Real-time Status** - Running container counts
+- **Per-Instance Tab Memory** - Each instance remembers its view
+
+</details>
+
 ---
 
 ## 📷 Screenshots
@@ -292,6 +304,14 @@ Beautiful high-contrast dark UI:
 </div>
 </details>
 
+<details>
+<summary><b>Portainer</b></summary>
+<div align="center">
+  <img src="images/portainer_containers.png" alt="Portainer Containers" width="45%">
+  <img src="images/portainer_stacks.png" alt="Portainer Stacks" width="45%">
+</div>
+</details>
+
 ---
 
 ## 🚀 Installation
@@ -325,6 +345,7 @@ Beautiful high-contrast dark UI:
 | **Overseerr** | Settings -> General        |
 | **Prowlarr**  | Settings -> General        |
 | **Wizarr**    | Settings -> API            |
+| **Portainer** | Settings -> Access Tokens  |
 
 > 💡 **Tip**: Include `http://` or `https://` and port if needed (e.g., `http://192.168.1.10:8080`)
 

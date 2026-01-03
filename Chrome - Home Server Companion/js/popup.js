@@ -11,12 +11,17 @@ import { initPortainer } from "./ui/portainer.js";
 import { checkAndShowChangelog } from "./utils.js";
 
 /**
- * Updates the Portainer sidebar item with custom name and icon from instances.
+ * Creates multiple sidebar entries for each Portainer instance.
+ * Replaces the static portainer nav-item with dynamic ones.
  */
-function updatePortainerSidebarDisplay(items) {
-    const navItem = document.querySelector('.nav-item[data-target="portainer"]');
-    if (!navItem) return;
+function createPortainerSidebarEntries(items, sidebar, spacer) {
+    // Remove the static portainer nav-item
+    const staticPortainer = sidebar.querySelector('.nav-item[data-target="portainer"]');
+    if (staticPortainer) {
+        staticPortainer.remove();
+    }
 
+    // Get valid instances
     let instances = [];
     if (items.portainerInstances && items.portainerInstances.length > 0) {
         instances = items.portainerInstances.filter(i => i.url && i.key);
@@ -24,28 +29,38 @@ function updatePortainerSidebarDisplay(items) {
 
     if (instances.length === 0) return;
 
-    // Get selected instance or first one
-    const selectedId = localStorage.getItem('portainer_selected_instance');
-    const selectedInst = instances.find(i => i.id === selectedId) || instances[0];
+    // Create a nav-item for each instance
+    instances.forEach((inst, index) => {
+        const navItem = document.createElement('div');
+        navItem.className = 'nav-item';
+        navItem.setAttribute('data-target', 'portainer');
+        navItem.setAttribute('data-portainer-id', inst.id);
+        navItem.setAttribute('title', inst.name || 'Portainer');
+        navItem.setAttribute('role', 'button');
+        navItem.setAttribute('tabindex', '0');
+        navItem.setAttribute('aria-label', inst.name || 'Portainer');
 
-    // Update title attribute and text
-    const customName = selectedInst.name || 'Portainer';
-    navItem.setAttribute('title', customName);
-
-    // Update the span text if it exists
-    const nameSpan = navItem.querySelector('span');
-    if (nameSpan) {
-        nameSpan.textContent = customName;
-    }
-
-    // Update icon if custom icon exists
-    if (selectedInst.icon) {
-        const iconContainer = navItem.querySelector('.nav-icon');
-        if (iconContainer) {
-            // Replace default icon with custom one
-            iconContainer.innerHTML = `<img src="${selectedInst.icon}" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;" />`;
+        // Create icon
+        if (inst.icon) {
+            const iconImg = document.createElement('img');
+            iconImg.src = inst.icon;
+            iconImg.className = 'nav-icon';
+            iconImg.style.cssText = 'width: 24px; height: 24px; border-radius: 4px; object-fit: cover;';
+            iconImg.alt = '';
+            iconImg.setAttribute('aria-hidden', 'true');
+            navItem.appendChild(iconImg);
+        } else {
+            const iconImg = document.createElement('img');
+            iconImg.src = 'icons/portainer.png';
+            iconImg.className = 'nav-icon';
+            iconImg.alt = '';
+            iconImg.setAttribute('aria-hidden', 'true');
+            navItem.appendChild(iconImg);
         }
-    }
+
+        // Insert before spacer
+        sidebar.insertBefore(navItem, spacer);
+    });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -112,20 +127,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     const sidebar = document.querySelector(".sidebar");
     const spacer = sidebar.querySelector(".spacer");
 
-    order.forEach((service) => {
-      // Check if service is enabled (default true)
-      if (items[`${service}Enabled`] !== false) {
-        const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
-        if (el) sidebar.insertBefore(el, spacer);
-      } else {
-        // Hide if disabled
-        const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
-        if (el) el.style.display = "none";
-      }
+    // First, create dynamic Portainer entries for each instance
+    createPortainerSidebarEntries(items, sidebar, spacer);
+
+    // Collect all portainer instances for reordering
+    const portainerInstances = items.portainerInstances || [];
+    const portainerIdMap = new Map();
+    portainerInstances.forEach(inst => {
+        portainerIdMap.set('portainer_' + inst.id, inst.id);
     });
 
-    // Update Portainer name and icon from instances
-    updatePortainerSidebarDisplay(items);
+    order.forEach((service) => {
+      // Handle portainer instances - find the specific portainer element by its data-portainer-id
+      if (service.startsWith('portainer_')) {
+          const instId = service.replace('portainer_', '');
+          if (items.portainerEnabled !== false) {
+              const el = sidebar.querySelector(`.nav-item[data-portainer-id="${instId}"]`);
+              if (el) sidebar.insertBefore(el, spacer);
+          } else {
+              const el = sidebar.querySelector(`.nav-item[data-portainer-id="${instId}"]`);
+              if (el) el.style.display = "none";
+          }
+      } else if (service === 'portainer') {
+          // Legacy portainer - show all instances
+          if (items.portainerEnabled !== false) {
+              portainerInstances.forEach(inst => {
+                  const el = sidebar.querySelector(`.nav-item[data-portainer-id="${inst.id}"]`);
+                  if (el) sidebar.insertBefore(el, spacer);
+              });
+          }
+      } else {
+          // Regular services
+          if (items[`${service}Enabled`] !== false) {
+              const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
+              if (el) sidebar.insertBefore(el, spacer);
+          } else {
+              const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
+              if (el) el.style.display = "none";
+          }
+      }
+    });
 
     // Re-calculate visible order for defaulting
     const visibleOrder = order.filter((s) => items[`${s}Enabled`] !== false);
@@ -327,6 +368,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // --- Navigation ---
   function initNavigation() {
+    // Re-query navItems to include dynamically created Portainer entries
+    const currentNavItems = document.querySelectorAll(".sidebar .nav-item[data-target]");
+    
     // Shared navigation handler
     const handleNavigation = (item) => {
         // Clear any auto-refresh intervals
@@ -335,9 +379,14 @@ document.addEventListener("DOMContentLoaded", async () => {
           state.refreshInterval = null;
         }
         const target = item.dataset.target;
+        
+        // Special handling for Portainer instances - set the selected instance
+        if (target === 'portainer' && item.dataset.portainerId) {
+            localStorage.setItem('portainer_selected_instance', item.dataset.portainerId);
+        }
 
         // Update Sidebar
-        navItems.forEach((el) => el.classList.remove("active"));
+        currentNavItems.forEach((el) => el.classList.remove("active"));
         item.classList.add("active");
 
         // Update View
@@ -349,10 +398,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         targetView.classList.remove("hidden"); // Ensure hidden is removed
         targetView.classList.add("active");
 
-        // Update Header
+        // Update Header - use custom name for Portainer instances
         state.activeService = target;
-        headerTitle.textContent =
-          target.charAt(0).toUpperCase() + target.slice(1);
+        if (target === 'portainer' && item.dataset.portainerId) {
+            const instances = state.configs.portainerInstances || [];
+            const inst = instances.find(i => i.id === item.dataset.portainerId);
+            headerTitle.textContent = (inst && inst.name) || 'Portainer';
+        } else {
+            headerTitle.textContent =
+              target.charAt(0).toUpperCase() + target.slice(1);
+        }
 
         // PERSISTENCE: Save Active Service (Always save, so 'Last Active' option works if selected)
         localStorage.setItem("lastActiveService", target);
@@ -373,7 +428,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     // Bind click and keyboard events for accessibility
-    navItems.forEach((item) => {
+    currentNavItems.forEach((item) => {
       item.addEventListener("click", () => handleNavigation(item));
 
       // Keyboard support: Enter and Space activate navigation
@@ -669,7 +724,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (!EXCLUDED_FROM_PERSISTENCE.includes(state.activeService)) {
-            localStorage.setItem(`${state.activeService}_last_tab`, tabName);
+            // For Portainer, use instance-specific key
+            if (state.activeService === 'portainer') {
+                const instanceId = localStorage.getItem('portainer_selected_instance');
+                if (instanceId) {
+                    localStorage.setItem(`portainer_${instanceId}_last_tab`, tabName);
+                }
+            } else {
+                localStorage.setItem(`${state.activeService}_last_tab`, tabName);
+            }
         }
       });
     });
@@ -686,7 +749,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (state.configs.enablePersistence === false) return;
 
     // 1. Restore standard tabs (.tab-btn)
-    const lastTab = localStorage.getItem(`${service}_last_tab`);
+    // For Portainer, use instance-specific key
+    let lastTab;
+    if (service === 'portainer') {
+        const instanceId = localStorage.getItem('portainer_selected_instance');
+        if (instanceId) {
+            lastTab = localStorage.getItem(`portainer_${instanceId}_last_tab`);
+        }
+    } else {
+        lastTab = localStorage.getItem(`${service}_last_tab`);
+    }
+    
     if (lastTab) {
       const view = document.getElementById(`${service}-view`);
       if (view) {

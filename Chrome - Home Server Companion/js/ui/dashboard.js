@@ -54,11 +54,9 @@ export async function initDashboard(state) {
     container.appendChild(grid);
 
     // 3. Trigger Parallel Status Checks
-    // We'll populate this in the next step
     renderServiceGrid(grid, state);
 
     // 4. Auto Refresh Loop
-    // Use configured interval or default 5000ms
     const intervalTime = parseInt(state.configs.refreshInterval) || 5000;
     
     // Clear any existing interval to be safe (though popup.js usually handles view transitions)
@@ -67,13 +65,6 @@ export async function initDashboard(state) {
     state.refreshInterval = setInterval(() => {
         // Only refresh if Dashboard is actually active/visible in DOM
         if (document.getElementById('dashboard-view')) {
-            // We use 'quiet' updates often, but renderServiceGrid replaces innerHTML currently.
-            // For smoother updates, we should implementation diffing or just update values.
-            // For now, full re-render is acceptable as per previous design, but let's be careful.
-            // Actually, `renderServiceGrid` clears innerHTML: `container.innerHTML = '';`
-            // This causes flickering. We should optimize `renderServiceGrid` to UPDATE if exists.
-            
-            // Re-render
             renderServiceGrid(grid, state, true); // Pass 'true' for update mode
         } else {
             clearInterval(state.refreshInterval);
@@ -180,40 +171,70 @@ async function renderServiceGrid(container, state, isUpdate = false) {
                await Wizarr.getInvitations(url, key);
                return { status: 'online', metric: 'OK', label: 'Status' };
             }
-        },
-        {
+        }
+        // Note: Portainer is handled dynamically below
+    ];
+
+    // Dynamically add Portainer instances as separate services
+    const portainerInstances = state.configs.portainerInstances || [];
+    const validPortainerInstances = portainerInstances.filter(i => i.url && i.key);
+    
+    if (validPortainerInstances.length > 0) {
+        validPortainerInstances.forEach((inst, index) => {
+            services.push({
+                id: `portainer_${inst.id}`,
+                baseId: 'portainer', // Used for enabled check
+                instanceId: inst.id,
+                name: inst.name || 'Portainer',
+                icon: 'portainer.png',
+                customIcon: inst.icon || null,
+                check: async () => {
+                    // Fetch endpoints first
+                    const endpoints = await Portainer.getEndpoints(inst.url, inst.key);
+                    const endpointId = (endpoints && endpoints.length > 0) ? endpoints[0].Id : 1;
+                    const containers = await Portainer.getContainers(inst.url, inst.key, endpointId);
+                    const running = containers.filter(c => c.State === 'running').length;
+                    return { status: 'online', metric: running, label: 'Running' };
+                }
+            });
+        });
+    } else {
+        // Fallback: Show single Portainer if no instances configured
+        services.push({
             id: 'portainer',
             name: 'Portainer',
             icon: 'portainer.png',
             check: async (url, key) => {
-                // Fetch endpoints first
                 const endpoints = await Portainer.getEndpoints(url, key);
                 const endpointId = (endpoints && endpoints.length > 0) ? endpoints[0].Id : 1;
                 const containers = await Portainer.getContainers(url, key, endpointId);
                 const running = containers.filter(c => c.State === 'running').length;
                 return { status: 'online', metric: running, label: 'Running' };
-            },
-            // Dynamic name/icon for multi-instance support
-            getDynamicProps: (configs) => {
-                const instances = configs.portainerInstances || [];
-                if (instances.length === 0) return {};
-                const selectedId = localStorage.getItem('portainer_selected_instance');
-                const selectedInst = instances.find(i => i.id === selectedId) || instances[0];
-                return {
-                    name: selectedInst.name || 'Portainer',
-                    customIcon: selectedInst.icon || null
-                };
             }
-        }
-    ];
+        });
+    }
 
     // Filter enabled services
-    let enabledServices = services.filter(svc => state.configs[`${svc.id}Enabled`] !== false);
+    let enabledServices = services.filter(svc => {
+        // For portainer instances, check portainerEnabled
+        const checkId = svc.baseId || svc.id;
+        return state.configs[`${checkId}Enabled`] !== false;
+    });
 
     // Apply Custom Sort Order if present
     if (state.configs.serviceOrder && Array.isArray(state.configs.serviceOrder)) {
         const orderMap = new Map();
-        state.configs.serviceOrder.forEach((id, index) => orderMap.set(id, index));
+        state.configs.serviceOrder.forEach((id, index) => {
+            // Handle portainer instances - map portainer_xxx to portainer for service matching
+            if (id.startsWith('portainer_')) {
+                // Use the lowest index for portainer if multiple instances exist
+                if (!orderMap.has('portainer') || index < orderMap.get('portainer')) {
+                    orderMap.set('portainer', index);
+                }
+            } else {
+                orderMap.set(id, index);
+            }
+        });
         
         enabledServices.sort((a, b) => {
             const indexA = orderMap.has(a.id) ? orderMap.get(a.id) : 999;
@@ -225,17 +246,25 @@ async function renderServiceGrid(container, state, isUpdate = false) {
     // Create placeholders ONLY if not updating
     if (!isUpdate) {
         enabledServices.forEach(svc => {
-            // Get dynamic props (for services like Portainer with custom names/icons)
-            const dynamicProps = svc.getDynamicProps ? svc.getDynamicProps(state.configs) : {};
-            const displayName = dynamicProps.name || svc.name;
-            const customIcon = dynamicProps.customIcon || null;
+            // Use customIcon from service definition (for Portainer instances)
+            const displayName = svc.name;
+            const customIcon = svc.customIcon || null;
 
             const card = document.createElement('div');
             card.className = 'service-card';
             card.id = `card-${svc.id}`;
+            
+            // Click handler - special handling for Portainer instances
             card.onclick = () => {
-                 const navItem = document.querySelector(`.nav-item[data-target="${svc.id}"]`);
-                 if (navItem) navItem.click();
+                if (svc.instanceId) {
+                    // Portainer instance - set selected instance and click correct nav item
+                    localStorage.setItem('portainer_selected_instance', svc.instanceId);
+                    const navItem = document.querySelector(`.nav-item[data-portainer-id="${svc.instanceId}"]`);
+                    if (navItem) navItem.click();
+                } else {
+                    const navItem = document.querySelector(`.nav-item[data-target="${svc.id}"]`);
+                    if (navItem) navItem.click();
+                }
             };
             // Build card with DOM API
             const cardHeader = document.createElement('div');
@@ -283,8 +312,10 @@ async function renderServiceGrid(container, state, isUpdate = false) {
         const url = state.configs[`${svc.id}Url`];
         const key = state.configs[`${svc.id}Key`];
 
-        // Validation for Unraid/Wizarr which might not have keys or different logic
-        if (svc.id !== 'unraid' && svc.id !== 'wizarr' && (!url || !key)) {
+        // Skip validation for services with embedded credentials (Portainer instances)
+        // and for Unraid/Wizarr which have different logic
+        const hasEmbeddedCredentials = svc.instanceId !== undefined;
+        if (!hasEmbeddedCredentials && svc.id !== 'unraid' && svc.id !== 'wizarr' && (!url || !key)) {
              updateCard(svc.id, 'offline', 'Cfg', 'Missing Config');
              return;
         }
