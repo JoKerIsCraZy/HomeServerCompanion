@@ -860,4 +860,45 @@ document.addEventListener("DOMContentLoaded", async () => {
   function hideError() {
     errorMsg.classList.add("hidden");
   }
+
+  // Event handler for loading hidden Portainer instances from Dashboard
+  window.addEventListener('loadPortainerInstance', async (e) => {
+    const instanceId = e.detail?.instanceId;
+    if (!instanceId) return;
+
+    // Update state
+    state.activeService = 'portainer';
+    localStorage.setItem('lastActiveService', 'portainer');
+
+    // Clear any auto-refresh intervals
+    if (state.refreshInterval) {
+      clearInterval(state.refreshInterval);
+      state.refreshInterval = null;
+    }
+
+    // Load portainer with the selected instance
+    hideError();
+    try {
+      await initPortainer(null, null, state);
+
+      // Update glider for the active tab after view is rendered
+      setTimeout(() => {
+        const portainerView = document.getElementById('portainer-view');
+        if (portainerView) {
+          const activeBtn = portainerView.querySelector('.tab-btn.active');
+          if (activeBtn) {
+            const container = activeBtn.parentElement;
+            const glider = container.querySelector('.tab-glider');
+            if (glider && activeBtn.offsetWidth > 0) {
+              glider.style.width = `${activeBtn.offsetWidth}px`;
+              glider.style.transform = `translateX(${activeBtn.offsetLeft - 5}px)`;
+            }
+          }
+        }
+      }, 100);
+    } catch (error) {
+      console.error(error);
+      showError(`Failed to load Portainer: ${error.message}`);
+    }
+  });
 });

@@ -177,7 +177,7 @@ async function renderServiceGrid(container, state, isUpdate = false) {
 
     // Dynamically add Portainer instances as separate services
     const portainerInstances = state.configs.portainerInstances || [];
-    const validPortainerInstances = portainerInstances.filter(i => i.url && i.key && !i.hideInSidebar);
+    const validPortainerInstances = portainerInstances.filter(i => i.url && i.key);
     
     if (validPortainerInstances.length > 0) {
         validPortainerInstances.forEach((inst, index) => {
@@ -258,10 +258,34 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             // Click handler - special handling for Portainer instances
             card.onclick = () => {
                 if (svc.instanceId) {
-                    // Portainer instance - set selected instance and click correct nav item
+                    // Portainer instance - set selected instance
                     localStorage.setItem('portainer_selected_instance', svc.instanceId);
+                    // Try nav item first (if visible in sidebar)
                     const navItem = document.querySelector(`.nav-item[data-portainer-id="${svc.instanceId}"]`);
-                    if (navItem) navItem.click();
+                    if (navItem) {
+                        navItem.click();
+                    } else {
+                        // Instance is hidden from sidebar - directly switch to portainer view
+                        const views = document.querySelectorAll('.view');
+                        views.forEach(v => {
+                            v.classList.remove('active');
+                            v.classList.add('hidden');
+                        });
+                        const portainerView = document.getElementById('portainer-view');
+                        if (portainerView) {
+                            portainerView.classList.remove('hidden');
+                            portainerView.classList.add('active');
+                        }
+                        // Update header
+                        const headerTitle = document.getElementById('page-title');
+                        if (headerTitle) {
+                            const instances = JSON.parse(localStorage.getItem('portainerInstances') || '[]');
+                            const inst = instances.find(i => i.id === svc.instanceId);
+                            headerTitle.textContent = (inst && inst.name) || svc.name || 'Portainer';
+                        }
+                        // Trigger portainer load via custom event
+                        window.dispatchEvent(new CustomEvent('loadPortainerInstance', { detail: { instanceId: svc.instanceId } }));
+                    }
                 } else {
                     const navItem = document.querySelector(`.nav-item[data-target="${svc.id}"]`);
                     if (navItem) navItem.click();
