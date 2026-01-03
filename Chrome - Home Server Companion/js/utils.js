@@ -407,9 +407,8 @@ export async function checkAndShowChangelog() {
     if (result.last_run_version !== version) {
         // Create changelog content safely using DOM API
         const changelogItems = [
-            { title: 'Overseerr Trending:', desc: 'Added Refresh button and moved filter options to the header for easier access.' },
-            { title: 'UI Enhancement:', desc: 'Updated calendar redirect icons and missing-view search/refresh icons to modern SVG style.' },
-            { title: 'Bugfixes:', desc: 'Fixed layout issues causing missing views for Prowlarr/Wizarr and improved overall stability.' }
+            { title: 'Portainer Integration:', desc: 'Added full Portainer support with multi-instance management, custom names & icons, container/stack control, and per-instance tab memory.' },
+            { title: 'Unified Docker Search:', desc: 'New d: prefix in Unified Search to find Docker containers across Unraid and all Portainer instances with quick actions.' }
         ];
         
         // Create modal with DOM

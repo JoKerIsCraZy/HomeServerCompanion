@@ -21,8 +21,7 @@ This is the original Chrome version of the Home Server Companion extension.
 
 - This version uses Manifest V3.
 
-### New in v3.7
+### New in v3.8
 
-- **Overseerr Trending**: Added Refresh button and moved filter options to the header for easier access
-- **UI Enhancement**: Updated calendar redirect icons and missing-view search/refresh icons to modern SVG style
-- **Bugfixes**: Fixed layout issues causing missing views for Prowlarr/Wizarr and improved overall stability
+- **Portainer Integration**: Added full Portainer support with multi-instance management, custom names & icons, container/stack control, and per-instance tab memory
+- **Unified Docker Search**: New `d:` prefix in Unified Search to find Docker containers across Unraid and all Portainer instances with quick actions
