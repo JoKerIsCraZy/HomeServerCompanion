@@ -1,5 +1,5 @@
 import * as Portainer from "../../services/portainer.js";
-import { showNotification } from "../utils.js";
+import { showNotification, escapeHtml } from "../utils.js";
 
 // Cache settings
 const CACHE_KEY = "portainer_cache";
@@ -54,7 +54,7 @@ export async function initPortainer(url, token, state) {
         console.error("Portainer loading error:", error);
         const containerTab = document.getElementById("portainer-containers");
         if (containerTab) {
-            containerTab.innerHTML = `<div class="queue-empty"><div class="queue-empty-icon">⚠️</div><div class="queue-empty-text">Failed to load Portainer: ${error.message}</div></div>`;
+            containerTab.innerHTML = `<div class="queue-empty"><div class="queue-empty-icon">⚠️</div><div class="queue-empty-text">Failed to load Portainer: ${escapeHtml(error.message)}</div></div>`;
         }
     }
 }
@@ -167,7 +167,7 @@ async function loadInstance(instanceId, state) {
 
             const errorDiv = document.createElement('div');
             errorDiv.className = 'queue-empty';
-            errorDiv.innerHTML = `<div class="queue-empty-icon">⚠️</div><div class="queue-empty-text">Failed to load: ${error.message}</div>`;
+            errorDiv.innerHTML = `<div class="queue-empty-icon">⚠️</div><div class="queue-empty-text">Failed to load: ${escapeHtml(error.message)}</div>`;
             containerTab.appendChild(errorDiv);
         }
     }
@@ -293,13 +293,13 @@ function renderContainers(containers, url, token, state, endpointId = 1) {
         
         const card = document.createElement('div');
         card.className = `portainer-container-card ${isRunning ? 'running' : (isPaused ? 'paused' : 'stopped')}`;
-        
+
         card.innerHTML = `
             <div class="status-dot ${isRunning ? 'running' : (isPaused ? 'paused' : 'stopped')}"></div>
             <div class="portainer-container-info">
-                <div class="portainer-container-name" title="${name}">${name}</div>
-                <div class="portainer-container-image" title="${image}">${image}</div>
-                <div class="portainer-container-status">${status}</div>
+                <div class="portainer-container-name" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
+                <div class="portainer-container-image" title="${escapeHtml(image)}">${escapeHtml(image)}</div>
+                <div class="portainer-container-status">${escapeHtml(status)}</div>
             </div>
             <div class="portainer-container-actions">
                 ${!isRunning ? `<button class="start-btn" title="Start"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>` : ''}
@@ -417,8 +417,8 @@ function renderStacks(stacks, url, token, state, endpointId = 1) {
             <div class="stack-icon">📦</div>
             <div class="status-dot ${statusClass}"></div>
             <div class="portainer-stack-info">
-                <div class="portainer-stack-name">${stack.Name}</div>
-                <div class="portainer-stack-status">${statusText} • ${stack.Type === 1 ? 'Swarm' : 'Compose'}</div>
+                <div class="portainer-stack-name">${escapeHtml(stack.Name)}</div>
+                <div class="portainer-stack-status">${escapeHtml(statusText)} • ${stack.Type === 1 ? 'Swarm' : 'Compose'}</div>
             </div>
             <div class="portainer-stack-actions">
                 ${!isActive ? `<button class="start-btn" title="Start"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>` : ''}

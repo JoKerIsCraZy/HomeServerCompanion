@@ -1,6 +1,6 @@
 import * as Sonarr from "../../services/sonarr.js";
 import { formatSize } from "../../services/utils.js";
-import { showNotification, showConfirmModal } from "../utils.js";
+import { showNotification, showConfirmModal, escapeHtml } from "../utils.js";
 
 /**
  * Initializes the Sonarr service view.
@@ -388,34 +388,40 @@ function renderSonarrQueue(records, state) {
         // Create queue card
         const card = document.createElement('div');
         card.className = `queue-card${isWarning ? ' ' + tStatus : ''}`;
-        
+
+        const displayTitle = escapeHtml(series.title || 'Unknown');
+        const escapedQuality = escapeHtml(quality);
+        const escapedItemTitle = escapeHtml(item.title);
+        const escapedStatusMessage = escapeHtml(statusMessage);
+        const escapedStatusText = escapeHtml(statusText);
+
         card.innerHTML = `
             <div class="queue-poster">
-                <img src="${posterUrl}" alt="" onerror="this.src='icons/icon48.png'">
+                <img src="${escapeHtml(posterUrl)}" alt="" onerror="this.src='icons/icon48.png'">
             </div>
             <div class="queue-content">
                 <div class="queue-header">
-                    <div class="queue-title" title="${series.title || 'Unknown'}">${series.title || 'Unknown'}</div>
+                    <div class="queue-title" title="${displayTitle}">${displayTitle}</div>
                 </div>
                 <div class="queue-subtitle">
-                    <span style="font-weight:700; color:var(--text-primary); margin-right:6px;">${epString}</span>
-                    ${quality ? `<span class="queue-quality">${quality}</span>` : ''}
+                    <span style="font-weight:700; color:var(--text-primary); margin-right:6px;">${escapeHtml(epString)}</span>
+                    ${quality ? `<span class="queue-quality">${escapedQuality}</span>` : ''}
                 </div>
-                
+
                 <div class="queue-progress-row">
                     <div class="queue-progress-bar">
                         <div class="queue-progress-fill" style="width: ${percent}%"></div>
                     </div>
                     <span class="queue-percentage">${Math.round(percent)}%</span>
                 </div>
-                
-                <div style="font-size:10px; color:var(--text-secondary); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.8;" title="${item.title}">
-                    <span style="font-weight:600; opacity:0.7;">Release Name:</span> ${item.title}
+
+                <div style="font-size:10px; color:var(--text-secondary); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.8;" title="${escapedItemTitle}">
+                    <span style="font-weight:600; opacity:0.7;">Release Name:</span> ${escapedItemTitle}
                 </div>
 
                 <div class="queue-details">
-                    <span class="queue-size">${formatSize(item.sizeleft)} left</span>
-                    <span class="queue-status-chip ${statusClass}" title="${statusMessage}" style="cursor:help;">${statusText}</span>
+                    <span class="queue-size">${escapeHtml(formatSize(item.sizeleft))} left</span>
+                    <span class="queue-status-chip ${statusClass}" title="${escapedStatusMessage}" style="cursor:help;">${escapedStatusText}</span>
                 </div>
             </div>
             <div class="queue-actions">
@@ -434,13 +440,26 @@ function renderSonarrQueue(records, state) {
                 
                 const optionsDiv = document.createElement('div');
                 optionsDiv.className = 'queue-delete-options';
-                optionsDiv.innerHTML = `
-                    <button class="btn-remove" title="Remove from Client">🗑️</button>
-                    <button class="btn-block" title="Blocklist & Search">🚫</button>
-                    <button class="btn-cancel">×</button>
-                `;
-                
-                optionsDiv.querySelector('.btn-remove').onclick = async (ev) => {
+
+                const btnRemove = document.createElement('button');
+                btnRemove.className = 'btn-remove';
+                btnRemove.title = 'Remove from Client';
+                btnRemove.textContent = '🗑️';
+
+                const btnBlock = document.createElement('button');
+                btnBlock.className = 'btn-block';
+                btnBlock.title = 'Blocklist & Search';
+                btnBlock.textContent = '🚫';
+
+                const btnCancel = document.createElement('button');
+                btnCancel.className = 'btn-cancel';
+                btnCancel.textContent = '×';
+
+                optionsDiv.appendChild(btnRemove);
+                optionsDiv.appendChild(btnBlock);
+                optionsDiv.appendChild(btnCancel);
+
+                btnRemove.onclick = async (ev) => {
                     ev.stopPropagation();
                     const confirmed = await showConfirmModal('Remove from Queue', 'Remove from queue?', 'Remove', '#2196f3');
                     if (!confirmed) return;
@@ -454,8 +473,8 @@ function renderSonarrQueue(records, state) {
                     }
                     setTimeout(refreshQueue, 250);
                 };
-                
-                optionsDiv.querySelector('.btn-block').onclick = async (ev) => {
+
+                btnBlock.onclick = async (ev) => {
                     ev.stopPropagation();
                     const confirmed = await showConfirmModal('Remove & Blocklist', 'Remove, Blocklist and Search for new one?', 'Blocklist', '#f44336');
                     if (!confirmed) return;
@@ -468,8 +487,8 @@ function renderSonarrQueue(records, state) {
                     }
                     setTimeout(refreshQueue, 250);
                 };
-                
-                optionsDiv.querySelector('.btn-cancel').onclick = (ev) => {
+
+                btnCancel.onclick = (ev) => {
                     ev.stopPropagation();
                     optionsDiv.remove();
                 };

@@ -3,6 +3,20 @@
  */
 
 /**
+ * Escapes HTML special characters to prevent XSS attacks.
+ * Use this when inserting untrusted data into HTML context via innerHTML.
+ * @param {string} str - The string to escape
+ * @returns {string} - The escaped string safe for HTML insertion
+ */
+export function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    const text = String(str);
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
  * Shows a global notification toast
  * @param {string} message - Message to display
  * @param {string} type - 'success', 'error', 'info'

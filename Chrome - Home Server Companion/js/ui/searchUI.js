@@ -9,6 +9,9 @@ let searchContainer = null;
 let searchInput = null;
 
 export async function initSearchUI(state) {
+    // Store state reference for search persistence restore
+    window.__searchState = state;
+
     // Warm up cache in background
     warmUpSearchCache(state.configs);
 
@@ -245,27 +248,34 @@ export function openSearch() {
     if (overlay) {
         overlay.classList.remove('hidden');
         
-        // Check if persistence is enabled and we have saved state
+        // Check if persistence is enabled and we have saved query
+        // SECURITY: We only save the query, not HTML content (prevents XSS)
         const persistenceEnabled = localStorage.getItem('searchPersistenceEnabled') === 'true';
         const savedQuery = localStorage.getItem('savedSearchQuery');
-        const savedResultsHtml = localStorage.getItem('savedSearchResults');
-        
-        if (persistenceEnabled && savedQuery && savedResultsHtml) {
-            // Restore saved search state
+
+        if (persistenceEnabled && savedQuery) {
+            // Restore saved search query and re-execute search
             input.value = savedQuery;
-            const resultsContainer = document.getElementById('unified-search-results');
-            resultsContainer.innerHTML = savedResultsHtml;
-            
+
             // Show/hide Prowlarr filters based on query type
             if (/^n[;:]/i.test(savedQuery)) {
                 if (filtersDiv) filtersDiv.classList.remove('hidden');
             } else {
                 if (filtersDiv) filtersDiv.classList.add('hidden');
             }
-            
+
             // Focus at end of input
             input.focus();
             input.setSelectionRange(input.value.length, input.value.length);
+
+            // Re-execute search safely instead of loading cached HTML
+            // Use a small delay to ensure the overlay is fully visible
+            setTimeout(() => {
+                const stateFromWindow = window.__searchState;
+                if (stateFromWindow && savedQuery.length >= 2) {
+                    performSearch(savedQuery, stateFromWindow);
+                }
+            }, 100);
         } else {
             // Default behavior - clear everything and hide filters
             input.value = '';
@@ -305,26 +315,23 @@ export function openSearch() {
 function closeSearch() {
     const overlay = document.getElementById('unified-search-overlay');
     if (overlay) {
-        // Save state if persistence is enabled
+        // Save query only if persistence is enabled (not HTML for security)
         const persistenceEnabled = localStorage.getItem('searchPersistenceEnabled') === 'true';
         if (persistenceEnabled) {
             const input = document.getElementById('unified-search-input');
-            const resultsContainer = document.getElementById('unified-search-results');
             if (input && input.value.trim()) {
                 localStorage.setItem('savedSearchQuery', input.value);
-                localStorage.setItem('savedSearchResults', resultsContainer.innerHTML);
             }
         }
         overlay.classList.add('hidden');
     }
 }
 
-// Helper function to save search state
-function saveSearchState(query, container) {
+// Helper function to save search query (not HTML for security)
+function saveSearchState(query) {
     const persistenceEnabled = localStorage.getItem('searchPersistenceEnabled') === 'true';
     if (persistenceEnabled && query && query.trim()) {
         localStorage.setItem('savedSearchQuery', query);
-        localStorage.setItem('savedSearchResults', container.innerHTML);
     }
 }
 
@@ -376,7 +383,7 @@ async function performSearch(query, state) {
                 indexerIds
             );
             renderProwlarrResults(results, container);
-            saveSearchState(query, container);
+            saveSearchState(query);
             return;
         }
 
@@ -394,13 +401,13 @@ async function performSearch(query, state) {
             
             const results = await searchAllContainers(state.configs, cleanQuery);
             renderDockerResults(results, container, state);
-            saveSearchState(query, container);
+            saveSearchState(query);
             return;
         }
 
         const results = await aggregatedSearch(query, state.configs);
         renderResults(results, container, state);
-        saveSearchState(query, container);
+        saveSearchState(query);
     } catch (e) {
         container.textContent = '';
         const errDiv = document.createElement('div');
@@ -689,7 +696,12 @@ function renderDockerResults(results, container, state) {
     if (results.length === 0) {
         const noRes = document.createElement('div');
         noRes.className = 'no-results';
-        noRes.innerHTML = '<div style="font-size: 32px; margin-bottom: 8px;">📭</div>No containers found.';
+        const iconDiv = document.createElement('div');
+        iconDiv.style.cssText = 'font-size: 32px; margin-bottom: 8px;';
+        iconDiv.textContent = '📭';
+        noRes.appendChild(iconDiv);
+        const textNode = document.createTextNode('No containers found.');
+        noRes.appendChild(textNode);
         container.appendChild(noRes);
         return;
     }
