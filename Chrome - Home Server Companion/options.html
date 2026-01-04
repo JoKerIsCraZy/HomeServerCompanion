@@ -251,6 +251,7 @@
 
       input[type="text"],
       input[type="password"],
+      input[type="email"],
       input[type="number"],
       select {
         width: 100%;
@@ -267,6 +268,7 @@
 
       input[type="text"]:hover,
       input[type="password"]:hover,
+      input[type="email"]:hover,
       input[type="number"]:hover,
       select:hover {
         border-color: var(--glass-border-hover);
@@ -275,6 +277,7 @@
 
       input[type="text"]:focus,
       input[type="password"]:focus,
+      input[type="email"]:focus,
       input[type="number"]:focus,
       select:focus {
         border-color: var(--accent-primary);
@@ -1241,6 +1244,12 @@
           
           <!-- Local Auth -->
           <div id="overseerrAuthLocal" class="auth-panel" style="display: none;">
+            <div style="background: rgba(252, 129, 129, 0.1); border: 1px solid rgba(252, 129, 129, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px;">
+              <span style="font-size: 16px;">⚠️</span>
+              <p style="color: #fc8181; font-size: 12px; margin: 0;">
+                <strong>Security Notice:</strong> Your password will be stored in plain text in the browser's local storage. Use a unique password for Overseerr.
+              </p>
+            </div>
             <div class="form-group">
               <label for="overseerrEmail">Email</label>
               <input type="email" id="overseerrEmail" placeholder="your@email.com" />
@@ -1248,9 +1257,6 @@
             <div class="form-group">
               <label for="overseerrPassword">Password</label>
               <input type="password" id="overseerrPassword" placeholder="Password" />
-            </div>
-            <div class="help-text" style="margin-bottom: 16px;">
-              Use your Overseerr local account credentials.
             </div>
           </div>
           

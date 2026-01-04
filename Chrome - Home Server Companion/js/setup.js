@@ -2,6 +2,15 @@
 // This wizard only runs on first install OR when manually triggered.
 // Existing users with configured services will NOT see this automatically.
 
+// Security: Escape HTML to prevent XSS
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    const text = String(str);
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 const SERVICES = [
     { 
         id: 'dashboard', 
@@ -316,7 +325,7 @@ function renderConfigStep() {
                     <option value="https://" ${existing.protocol === 'https://' ? 'selected' : ''}>https://</option>
                 </select>
                 <input type="text" id="configUrl" placeholder="${service.urlPlaceholder}" 
-                       value="${existing.url || ''}">
+                       value="${escapeHtml(existing.url || '')}">
             </div>
             <p class="help-text">e.g. ${service.urlPlaceholder} or 192.168.1.100:${service.urlPlaceholder.split(':')[1] || '80'}</p>
         </div>
@@ -324,7 +333,7 @@ function renderConfigStep() {
         <div class="form-group">
             <label>API Key ${service.keyRequired ? '' : '(Optional)'}</label>
             <input type="password" id="configKey" placeholder="Enter API Key" 
-                   value="${existing.key || ''}">
+                   value="${escapeHtml(existing.key || '')}">
             <p class="help-text">${service.keyHelp}</p>
         </div>
         
@@ -365,7 +374,7 @@ function renderPortainerConfigStep() {
         <div class="form-group" style="margin-top: 24px;">
             <label>Instance Name</label>
             <input type="text" id="configName" placeholder="e.g. Main Server, NAS, etc." 
-                   value="${instance.name || ''}">
+                   value="${escapeHtml(instance.name || '')}">
             <p class="help-text">A friendly name to identify this Portainer instance</p>
         </div>
         
@@ -377,7 +386,7 @@ function renderPortainerConfigStep() {
                     <option value="https://" ${instance.protocol === 'https://' ? 'selected' : ''}>https://</option>
                 </select>
                 <input type="text" id="configUrl" placeholder="localhost:9000" 
-                       value="${instance.url || ''}">
+                       value="${escapeHtml(instance.url || '')}">
             </div>
             <p class="help-text">e.g. localhost:9000 or 192.168.1.100:9000</p>
         </div>
@@ -385,7 +394,7 @@ function renderPortainerConfigStep() {
         <div class="form-group">
             <label>Access Token</label>
             <input type="password" id="configKey" placeholder="Enter Access Token" 
-                   value="${instance.key || ''}">
+                   value="${escapeHtml(instance.key || '')}">
             <p class="help-text">Access Token at: My Account → Access Tokens</p>
         </div>
         
@@ -493,7 +502,7 @@ function renderOverseerrConfigStep() {
                     <option value="https://" ${existing.protocol === 'https://' ? 'selected' : ''}>https://</option>
                 </select>
                 <input type="text" id="configUrl" placeholder="${service.urlPlaceholder}" 
-                       value="${existing.url || ''}">
+                       value="${escapeHtml(existing.url || '')}">
             </div>
             <p class="help-text">e.g. ${service.urlPlaceholder} or 192.168.1.100:5055</p>
         </div>
@@ -513,22 +522,28 @@ function renderOverseerrConfigStep() {
             <div class="form-group">
                 <label>API Key</label>
                 <input type="password" id="configKey" placeholder="Enter API Key" 
-                       value="${existing.key || ''}">
+                       value="${escapeHtml(existing.key || '')}">
                 <p class="help-text">Find in Overseerr → Settings → General</p>
             </div>
         </div>
         
         <!-- Local Auth Panel -->
         <div id="authPanelLocal" class="auth-panel" style="${overseerrAuthMethod === 'local' ? '' : 'display: none;'}">
+            <div style="background: rgba(252, 129, 129, 0.1); border: 1px solid rgba(252, 129, 129, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px;">
+                <span style="font-size: 16px;">⚠️</span>
+                <p style="color: #fc8181; font-size: 12px; margin: 0;">
+                    <strong>Security Notice:</strong> Your password will be stored in plain text in the browser's local storage. Use a unique password for Overseerr.
+                </p>
+            </div>
             <div class="form-group">
                 <label>Email</label>
                 <input type="email" id="configEmail" placeholder="your@email.com" 
-                       value="${existing.email || ''}">
+                       value="${escapeHtml(existing.email || '')}">
             </div>
             <div class="form-group">
                 <label>Password</label>
                 <input type="password" id="configPassword" placeholder="Password" 
-                       value="${existing.password || ''}">
+                       value="${escapeHtml(existing.password || '')}">
             </div>
         </div>
         
