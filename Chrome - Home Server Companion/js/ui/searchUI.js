@@ -205,9 +205,21 @@ export async function initSearchUI(state) {
                 }
             }
             
-            // Skip auto-search for special prefixes (require Enter to search)
-            if (isProwlarr || isDocker) {
+            // Skip auto-search only for Prowlarr (external indexer API calls)
+            // Docker search can auto-search since it's local
+            if (isProwlarr) {
                 return; 
+            }
+            
+            // For Docker search, perform auto-search with debounce
+            if (isDocker) {
+                const cleanQuery = query.substring(2).trim();
+                if (cleanQuery.length >= 1) {
+                    debounceTimer = setTimeout(() => {
+                        performSearch(query, state);
+                    }, 300); // Faster debounce for Docker since it's local
+                }
+                return;
             }
             
             if (query.length < 2) {
