@@ -120,6 +120,13 @@ body.fullscreen-mode #sab-history .card {
   margin-bottom: 0;
 }
 
+/* Empty Queue State - Center in grid */
+body.fullscreen-mode #sab-queue .queue-empty,
+body.fullscreen-mode #sab-history .queue-empty {
+  grid-column: 1 / -1;
+  min-height: 300px;
+}
+
 /* ============================================
    PROGRESS BARS
    ============================================ */

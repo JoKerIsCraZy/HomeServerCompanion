@@ -1054,9 +1054,15 @@ body.dark-mode .ip-map-frame {
 
 /* Empty Queue State */
 .queue-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   padding: 40px 20px;
   color: var(--text-secondary);
+  width: 100%;
+  min-height: 200px;
 }
 
 .queue-empty-icon {
