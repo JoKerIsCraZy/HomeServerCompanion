@@ -21,7 +21,8 @@ This is the original Chrome version of the Home Server Companion extension.
 
 - This version uses Manifest V3.
 
-### New in v3.8
+### New in v3.9
 
-- **Portainer Integration**: Added full Portainer support with multi-instance management, custom names & icons, container/stack control, and per-instance tab memory
-- **Unified Docker Search**: New `d:` prefix in Unified Search to find Docker containers across Unraid and all Portainer instances with quick actions
+- **Setup Wizard**: New first-run setup wizard guides you through configuring all your services with a beautiful step-by-step interface
+- **Overseerr Multi-Auth**: Choose between API Key, Local Account (Email/Password), or Plex Sign-In for Overseerr authentication
+- **Bug Fixes**: Fixed sidebar not hiding disabled services, improved dropdown styling, backwards compatibility for existing configs

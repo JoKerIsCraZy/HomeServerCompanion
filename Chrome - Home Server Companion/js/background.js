@@ -1,12 +1,41 @@
 // Background Script
 
-// Initialize Context Menu
-chrome.runtime.onInstalled.addListener(() => {
+// Initialize Context Menu & Handle Setup Wizard
+chrome.runtime.onInstalled.addListener(async (details) => {
+    // Create context menu
     chrome.contextMenus.create({
         id: "search-hsc",
         title: "Search in Home Server Companion",
         contexts: ["selection"]
     });
+    
+    // Setup Wizard Logic: Only show on fresh install, not on updates
+    if (details.reason === 'install') {
+        // Fresh install - open setup wizard
+        chrome.tabs.create({ url: 'setup.html' });
+    } else if (details.reason === 'update') {
+        // Update - check if user has any configured services
+        // If they do, mark setup as complete so they never see the wizard
+        chrome.storage.sync.get(null, (items) => {
+            // Check if setup was already completed
+            if (items.setupCompleted) return;
+            
+            // Check if user has any configured services (existing user)
+            const hasConfig = items.sabnzbdUrl || items.sonarrUrl || items.radarrUrl || 
+                              items.tautulliUrl || items.unraidUrl || items.overseerrUrl ||
+                              items.prowlarrUrl || items.wizarrUrl || items.portainerUrl ||
+                              (items.portainerInstances && items.portainerInstances.length > 0);
+            
+            if (hasConfig) {
+                // Existing user with config - mark setup as complete
+                chrome.storage.sync.set({ 
+                    setupCompleted: true,
+                    setupCompletedAt: 'migrated-from-update'
+                });
+            }
+            // If no config, user can manually run setup from options page
+        });
+    }
 });
 
 // Handle Context Menu Click

@@ -773,6 +773,27 @@
 
           <div class="header-links">
             <a
+              href="setup.html"
+              class="header-link"
+              style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15)); border-color: rgba(102, 126, 234, 0.3);"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="18"
+                width="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+              Setup Wizard
+            </a>
+            <a
               href="https://github.com/JoKerIsCraZy/HomeServerCompanion"
               target="_blank"
               rel="noopener noreferrer"
@@ -1190,12 +1211,69 @@
               />
             </div>
             <div class="help-text">
-              Enter host and port, e.g., 192.168.1.10:8080
+              Enter host and port, e.g., 192.168.1.10:5055
             </div>
           </div>
+          
+          <!-- Auth Method Selector -->
           <div class="form-group">
-            <label for="overseerrKey">API Key</label>
-            <input type="password" id="overseerrKey" />
+            <label for="overseerrAuthMethod">Authentication Method</label>
+            <select id="overseerrAuthMethod" style="width: 100%;">
+              <option value="apikey">API Key (Admin Access)</option>
+              <option value="local">Local Account (Email/Password)</option>
+              <option value="plex">Plex Sign-In</option>
+            </select>
+            <div class="help-text">
+              API Key grants admin access. Local/Plex auth uses your personal account.
+            </div>
+          </div>
+          
+          <!-- API Key Auth (default) -->
+          <div id="overseerrAuthApiKey" class="auth-panel">
+            <div class="form-group">
+              <label for="overseerrKey">API Key</label>
+              <input type="password" id="overseerrKey" />
+              <div class="help-text">
+                Find your API key in Overseerr → Settings → General
+              </div>
+            </div>
+          </div>
+          
+          <!-- Local Auth -->
+          <div id="overseerrAuthLocal" class="auth-panel" style="display: none;">
+            <div class="form-group">
+              <label for="overseerrEmail">Email</label>
+              <input type="email" id="overseerrEmail" placeholder="your@email.com" />
+            </div>
+            <div class="form-group">
+              <label for="overseerrPassword">Password</label>
+              <input type="password" id="overseerrPassword" placeholder="Password" />
+            </div>
+            <div class="help-text" style="margin-bottom: 16px;">
+              Use your Overseerr local account credentials.
+            </div>
+          </div>
+          
+          <!-- Plex Auth -->
+          <div id="overseerrAuthPlex" class="auth-panel" style="display: none;">
+            <div class="plex-auth-container" style="background: rgba(229, 160, 13, 0.1); border: 1px solid rgba(229, 160, 13, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#E5A00D">
+                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 17.08l-5.894-5.08-5.894 5.08V6.92l5.894 5.08 5.894-5.08v10.16z"/>
+                </svg>
+                <span style="font-weight: 600; color: #E5A00D;">Plex Authentication</span>
+              </div>
+              <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
+                Sign in with your Plex account to authenticate with Overseerr.
+              </p>
+              <button type="button" id="overseerrPlexLogin" class="btn-secondary" style="background: #E5A00D; color: #000; border: none; width: 100%;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 17.08l-5.894-5.08-5.894 5.08V6.92l5.894 5.08 5.894-5.08v10.16z"/>
+                </svg>
+                Sign in with Plex
+              </button>
+              <div id="overseerrPlexStatus" style="margin-top: 12px; font-size: 13px;"></div>
+            </div>
           </div>
           <div class="actions">
             <button id="saveOverseerr" class="btn-primary">

@@ -498,6 +498,24 @@ const loadOptions = () => {
         if (plexTokenEl && items.plexToken) {
             plexTokenEl.value = items.plexToken;
         }
+        
+        // Load Plex URL
+        const plexUrlEl = document.getElementById('plexUrl');
+        const plexProtocolEl = document.getElementById('plexProtocol');
+        if (plexUrlEl && items.plexUrl) {
+            let fullUrl = items.plexUrl;
+            let protocol = 'http://';
+            
+            if (fullUrl.startsWith('https://')) {
+                protocol = 'https://';
+                fullUrl = fullUrl.substring(8);
+            } else if (fullUrl.startsWith('http://')) {
+                fullUrl = fullUrl.substring(7);
+            }
+            
+            if (plexProtocolEl) plexProtocolEl.value = protocol;
+            plexUrlEl.value = fullUrl;
+        }
     });
 };
 
@@ -1183,4 +1201,335 @@ function dragEnd(e) {
 }
 
 
+// ==================== OVERSEERR MULTI-AUTH ====================
 
+// Plex OAuth configuration
+const PLEX_AUTH_CONFIG = {
+    clientId: 'home-server-companion',
+    product: 'Home Server Companion',
+    device: 'Chrome Extension',
+    version: '1.0'
+};
+
+// Initialize Overseerr auth UI
+function initOverseerrAuth() {
+    const authMethodSelect = document.getElementById('overseerrAuthMethod');
+    const apiKeyPanel = document.getElementById('overseerrAuthApiKey');
+    const localPanel = document.getElementById('overseerrAuthLocal');
+    const plexPanel = document.getElementById('overseerrAuthPlex');
+    const plexLoginBtn = document.getElementById('overseerrPlexLogin');
+    
+    if (!authMethodSelect) return;
+    
+    // Toggle panels based on auth method
+    authMethodSelect.addEventListener('change', (e) => {
+        const method = e.target.value;
+        
+        apiKeyPanel.style.display = method === 'apikey' ? 'block' : 'none';
+        localPanel.style.display = method === 'local' ? 'block' : 'none';
+        plexPanel.style.display = method === 'plex' ? 'block' : 'none';
+    });
+    
+    // Plex login button
+    if (plexLoginBtn) {
+        plexLoginBtn.addEventListener('click', startPlexOAuth);
+    }
+}
+
+// Start Plex OAuth flow
+async function startPlexOAuth() {
+    const statusEl = document.getElementById('overseerrPlexStatus');
+    statusEl.innerHTML = '<span style="color: var(--accent-primary);">Opening Plex login...</span>';
+    
+    try {
+        // Get a PIN from Plex
+        const pinRes = await fetch('https://plex.tv/api/v2/pins', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Plex-Client-Identifier': PLEX_AUTH_CONFIG.clientId,
+                'X-Plex-Product': PLEX_AUTH_CONFIG.product,
+                'X-Plex-Device': PLEX_AUTH_CONFIG.device,
+                'X-Plex-Version': PLEX_AUTH_CONFIG.version
+            },
+            body: JSON.stringify({ strong: true })
+        });
+        
+        if (!pinRes.ok) throw new Error('Failed to get Plex PIN');
+        
+        const pinData = await pinRes.json();
+        const pinId = pinData.id;
+        const pinCode = pinData.code;
+        
+        // Open Plex auth window
+        const authUrl = `https://app.plex.tv/auth#?clientID=${PLEX_AUTH_CONFIG.clientId}&code=${pinCode}&context%5Bdevice%5D%5Bproduct%5D=${encodeURIComponent(PLEX_AUTH_CONFIG.product)}`;
+        
+        const authWindow = window.open(authUrl, 'PlexAuth', 'width=800,height=600');
+        
+        statusEl.innerHTML = '<span style="color: #E5A00D;">Waiting for Plex login... Close the popup when done.</span>';
+        
+        // Poll for completion
+        let attempts = 0;
+        const maxAttempts = 60; // 2 minutes
+        
+        const pollInterval = setInterval(async () => {
+            attempts++;
+            
+            if (attempts > maxAttempts) {
+                clearInterval(pollInterval);
+                statusEl.innerHTML = '<span style="color: #fc8181;">Timeout. Please try again.</span>';
+                return;
+            }
+            
+            // Check if window was closed
+            if (authWindow && authWindow.closed) {
+                // Check the PIN status
+                try {
+                    const checkRes = await fetch(`https://plex.tv/api/v2/pins/${pinId}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Plex-Client-Identifier': PLEX_AUTH_CONFIG.clientId
+                        }
+                    });
+                    
+                    if (checkRes.ok) {
+                        const checkData = await checkRes.json();
+                        
+                        if (checkData.authToken) {
+                            clearInterval(pollInterval);
+                            
+                            // Save the Plex auth token
+                            chrome.storage.sync.set({ 
+                                overseerrPlexToken: checkData.authToken 
+                            }, () => {
+                                statusEl.innerHTML = '<span style="color: #48bb78;">✓ Plex account linked successfully!</span>';
+                            });
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error('PIN check error:', e);
+                }
+                
+                clearInterval(pollInterval);
+                statusEl.innerHTML = '<span style="color: #fc8181;">Login cancelled or failed.</span>';
+                return;
+            }
+        }, 2000);
+        
+    } catch (e) {
+        console.error('Plex OAuth error:', e);
+        statusEl.innerHTML = `<span style="color: #fc8181;">Error: ${e.message}</span>`;
+    }
+}
+
+// Save Overseerr with multi-auth support
+async function saveOverseerrAuth() {
+    const authMethod = document.getElementById('overseerrAuthMethod')?.value || 'apikey';
+    const protocol = document.getElementById('overseerrProtocol')?.value || 'http://';
+    const urlInput = document.getElementById('overseerrUrl')?.value.trim() || '';
+    const enabled = document.getElementById('overseerrEnabled')?.checked ?? true;
+    
+    if (!urlInput) {
+        showStatus('Overseerr', 'URL is required!', 'error');
+        return;
+    }
+    
+    const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const fullUrl = protocol + cleanUrl;
+    
+    const data = {
+        overseerrEnabled: enabled,
+        overseerrUrl: fullUrl,
+        overseerrAuthMethod: authMethod
+    };
+    
+    // Save auth-specific data
+    if (authMethod === 'apikey') {
+        const apiKey = document.getElementById('overseerrKey')?.value.trim() || '';
+        if (!apiKey) {
+            showStatus('Overseerr', 'API Key is required!', 'error');
+            return;
+        }
+        data.overseerrKey = apiKey;
+        
+    } else if (authMethod === 'local') {
+        const email = document.getElementById('overseerrEmail')?.value.trim() || '';
+        const password = document.getElementById('overseerrPassword')?.value || '';
+        
+        if (!email || !password) {
+            showStatus('Overseerr', 'Email and password are required!', 'error');
+            return;
+        }
+        
+        // Test local login
+        showStatus('Overseerr', 'Logging in...', 'success');
+        try {
+            const res = await fetch(`${fullUrl}/api/v1/auth/local`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+                credentials: 'include'
+            });
+            
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `Login failed: ${res.status}`);
+            }
+            
+            // Store credentials for re-login
+            data.overseerrEmail = email;
+            data.overseerrPassword = password;
+            
+        } catch (e) {
+            showStatus('Overseerr', `Login failed: ${e.message}`, 'error');
+            return;
+        }
+        
+    } else if (authMethod === 'plex') {
+        // Plex auth - check if token exists
+        const stored = await new Promise(r => chrome.storage.sync.get(['overseerrPlexToken'], r));
+        if (!stored.overseerrPlexToken) {
+            showStatus('Overseerr', 'Please sign in with Plex first!', 'error');
+            return;
+        }
+        
+        // Test Plex login to Overseerr
+        showStatus('Overseerr', 'Authenticating with Plex...', 'success');
+        try {
+            const res = await fetch(`${fullUrl}/api/v1/auth/plex`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken: stored.overseerrPlexToken }),
+                credentials: 'include'
+            });
+            
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `Plex auth failed: ${res.status}`);
+            }
+            
+        } catch (e) {
+            showStatus('Overseerr', `Plex login failed: ${e.message}`, 'error');
+            return;
+        }
+    }
+    
+    // Request permissions
+    try {
+        const urlObj = new URL(fullUrl);
+        await new Promise((resolve) => {
+            chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, resolve);
+        });
+    } catch {}
+    
+    // Save to storage
+    chrome.storage.sync.set(data, () => {
+        showStatus('Overseerr', 'Settings saved!', 'success');
+    });
+}
+
+// Test Overseerr connection with any auth method
+async function testOverseerrConnection() {
+    const authMethod = document.getElementById('overseerrAuthMethod')?.value || 'apikey';
+    const protocol = document.getElementById('overseerrProtocol')?.value || 'http://';
+    const urlInput = document.getElementById('overseerrUrl')?.value.trim() || '';
+    
+    if (!urlInput) {
+        showStatus('Overseerr', 'URL is required!', 'error');
+        return;
+    }
+    
+    const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const fullUrl = protocol + cleanUrl;
+    
+    showStatus('Overseerr', 'Testing...', 'success');
+    
+    try {
+        let options = { method: 'GET' };
+        
+        if (authMethod === 'apikey') {
+            const apiKey = document.getElementById('overseerrKey')?.value.trim() || '';
+            options.headers = { 'X-Api-Key': apiKey };
+        } else {
+            // Cookie auth - use credentials
+            options.credentials = 'include';
+        }
+        
+        const res = await fetch(`${fullUrl}/api/v1/auth/me`, options);
+        
+        if (res.ok) {
+            const user = await res.json();
+            showStatus('Overseerr', `✓ Connected as: ${user.displayName || user.email}`, 'success');
+        } else if (res.status === 401) {
+            showStatus('Overseerr', 'Not authenticated. Please save settings first.', 'error');
+        } else {
+            showStatus('Overseerr', `Error: ${res.status}`, 'error');
+        }
+        
+    } catch (e) {
+        showStatus('Overseerr', `Connection failed: ${e.message}`, 'error');
+    }
+}
+
+// Load Overseerr auth settings
+function loadOverseerrAuth(items) {
+    const authMethodSelect = document.getElementById('overseerrAuthMethod');
+    const apiKeyPanel = document.getElementById('overseerrAuthApiKey');
+    const localPanel = document.getElementById('overseerrAuthLocal');
+    const plexPanel = document.getElementById('overseerrAuthPlex');
+    const plexStatus = document.getElementById('overseerrPlexStatus');
+    
+    if (!authMethodSelect) return;
+    
+    // Set auth method
+    const method = items.overseerrAuthMethod || 'apikey';
+    authMethodSelect.value = method;
+    
+    // Show correct panel
+    apiKeyPanel.style.display = method === 'apikey' ? 'block' : 'none';
+    localPanel.style.display = method === 'local' ? 'block' : 'none';
+    plexPanel.style.display = method === 'plex' ? 'block' : 'none';
+    
+    // Load local auth fields
+    if (items.overseerrEmail) {
+        document.getElementById('overseerrEmail').value = items.overseerrEmail;
+    }
+    if (items.overseerrPassword) {
+        document.getElementById('overseerrPassword').value = items.overseerrPassword;
+    }
+    
+    // Update Plex status
+    if (items.overseerrPlexToken && plexStatus) {
+        plexStatus.innerHTML = '<span style="color: #48bb78;">✓ Plex account linked</span>';
+    }
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    initOverseerrAuth();
+    
+    // Override Overseerr save/test buttons
+    const saveBtn = document.getElementById('saveOverseerr');
+    const testBtn = document.getElementById('testOverseerr');
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            saveOverseerrAuth();
+        });
+    }
+    
+    if (testBtn) {
+        testBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            testOverseerrConnection();
+        });
+    }
+});
+
+// Load Overseerr auth on storage load (called from loadOptions)
+chrome.storage.sync.get(null, (items) => {
+    setTimeout(() => loadOverseerrAuth(items), 100);
+});

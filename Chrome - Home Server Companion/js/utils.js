@@ -407,8 +407,9 @@ export async function checkAndShowChangelog() {
     if (result.last_run_version !== version) {
         // Create changelog content safely using DOM API
         const changelogItems = [
-            { title: 'Portainer Integration:', desc: 'Added full Portainer support with multi-instance management, custom names & icons, container/stack control, and per-instance tab memory.' },
-            { title: 'Unified Docker Search:', desc: 'New d: prefix in Unified Search to find Docker containers across Unraid and all Portainer instances with quick actions.' }
+            { title: 'Setup Wizard:', desc: 'New first-run setup wizard guides you through configuring all your services with a beautiful step-by-step interface.' },
+            { title: 'Overseerr Multi-Auth:', desc: 'Choose between API Key, Local Account, or Plex Sign-In for Overseerr authentication.' },
+            { title: 'Bug Fixes:', desc: 'Fixed sidebar not hiding disabled services, improved dropdown styling, backwards compatibility for existing configs.' }
         ];
         
         // Create modal with DOM

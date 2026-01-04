@@ -1,5 +1,109 @@
 import { normalizeUrl } from './utils.js';
 
+// ==================== AUTHENTICATION ====================
+
+/**
+ * Login with local Overseerr account (email/password)
+ * @param {string} baseUrl 
+ * @param {string} email 
+ * @param {string} password 
+ * @returns {Promise<Object>} User object if successful
+ */
+export async function loginLocal(baseUrl, email, password) {
+    baseUrl = normalizeUrl(baseUrl);
+    const response = await fetch(`${baseUrl}/api/v1/auth/local`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'
+    });
+    
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || `Login failed: ${response.status}`);
+    }
+    
+    return await response.json();
+}
+
+/**
+ * Login with Plex token (from OAuth flow)
+ * @param {string} baseUrl 
+ * @param {string} authToken - Plex auth token
+ * @returns {Promise<Object>} User object if successful
+ */
+export async function loginPlex(baseUrl, authToken) {
+    baseUrl = normalizeUrl(baseUrl);
+    const response = await fetch(`${baseUrl}/api/v1/auth/plex`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authToken }),
+        credentials: 'include'
+    });
+    
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || `Plex login failed: ${response.status}`);
+    }
+    
+    return await response.json();
+}
+
+/**
+ * Check if current session is valid
+ * @param {string} baseUrl 
+ * @returns {Promise<Object|null>} User object if logged in, null otherwise
+ */
+export async function checkSession(baseUrl) {
+    baseUrl = normalizeUrl(baseUrl);
+    try {
+        const response = await fetch(`${baseUrl}/api/v1/auth/me`, {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) return null;
+        return await response.json();
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Logout from Overseerr
+ * @param {string} baseUrl 
+ */
+export async function logout(baseUrl) {
+    baseUrl = normalizeUrl(baseUrl);
+    try {
+        await fetch(`${baseUrl}/api/v1/auth/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch (e) {
+        console.error('Logout error:', e);
+    }
+}
+
+/**
+ * Get fetch options based on auth method
+ * @param {string} authMethod - 'apikey', 'local', or 'plex'
+ * @param {string} apiKey - API key (only used if authMethod is 'apikey')
+ * @returns {Object} Fetch options with appropriate headers
+ */
+export function getAuthFetchOptions(authMethod, apiKey) {
+    if (authMethod === 'apikey') {
+        return {
+            headers: { 'X-Api-Key': apiKey }
+        };
+    } else {
+        // Cookie-based auth
+        return {
+            credentials: 'include'
+        };
+    }
+}
+
+
 /**
  * Fetches requests (pending, approved, etc).
  * @param {string} url 

@@ -129,6 +129,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // First, create dynamic Portainer entries for each instance
     createPortainerSidebarEntries(items, sidebar, spacer);
+    
+    // CRITICAL: Hide ALL disabled services FIRST (regardless of order array)
+    // This ensures services disabled via Setup Wizard are properly hidden
+    const allServiceNavItems = sidebar.querySelectorAll('.nav-item[data-target]');
+    allServiceNavItems.forEach(navItem => {
+        const service = navItem.dataset.target;
+        // Skip portainer instances (handled separately)
+        if (navItem.dataset.portainerId) {
+            if (items.portainerEnabled === false) {
+                navItem.style.display = 'none';
+            }
+            return;
+        }
+        // Hide if service is explicitly disabled
+        if (items[`${service}Enabled`] === false) {
+            navItem.style.display = 'none';
+        }
+    });
 
     // Collect all portainer instances for reordering
     const portainerInstances = items.portainerInstances || [];
@@ -157,13 +175,10 @@ document.addEventListener("DOMContentLoaded", async () => {
               });
           }
       } else {
-          // Regular services
+          // Regular services - only reorder if enabled (already hidden above if disabled)
           if (items[`${service}Enabled`] !== false) {
               const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
               if (el) sidebar.insertBefore(el, spacer);
-          } else {
-              const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
-              if (el) el.style.display = "none";
           }
       }
     });
