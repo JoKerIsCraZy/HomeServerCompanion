@@ -27,7 +27,7 @@
 
 ```
 1. Install from Chrome Web Store
-2. Right-click extension icon -> Options -> Add your service URLs & API keys
+2. Complete the setup wizard
 3. Click the icon and start managing your server!
 ```
 
