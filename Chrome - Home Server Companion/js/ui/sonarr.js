@@ -1355,9 +1355,52 @@ function renderSonarrMissing(records, state) {
     refreshBtn.onclick = () => {
         loadSonarrMissing(state.configs.sonarrUrl, state.configs.sonarrKey, state, true);
     };
+
+    const searchAllBtn = document.createElement('button');
+    searchAllBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search All`;
+    searchAllBtn.title = "Search All Missing Episodes";
+    searchAllBtn.classList.add("btn-primary");
+    searchAllBtn.style.cssText = "background: var(--accent-sonarr); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-size: 0.9em; font-weight: bold;";
+    
+    searchAllBtn.onmouseover = () => { searchAllBtn.style.filter = "brightness(1.2)"; };
+    searchAllBtn.onmouseout = () => { searchAllBtn.style.filter = "brightness(1)"; };
+    
+    searchAllBtn.onclick = async () => {
+        const confirmed = await showConfirmModal('Search All Missing', 'Trigger an automatic search for ALL missing episodes in Sonarr?', 'Search', 'var(--accent-sonarr)');
+        if (!confirmed) return;
+        
+        searchAllBtn.textContent = 'Searching...';
+        searchAllBtn.style.pointerEvents = 'none';
+        searchAllBtn.style.opacity = '0.7';
+        
+        try {
+            await fetch(`${state.configs.sonarrUrl}/api/v3/command`, {
+                 method: 'POST',
+                 headers: { 
+                    'X-Api-Key': state.configs.sonarrKey,
+                    'Content-Type': 'application/json'
+                 },
+                 body: JSON.stringify({ name: 'MissingEpisodeSearch' })
+            });
+            showNotification('Started search for all missing episodes', 'success');
+        } catch (e) {
+            showNotification('Error starting search', 'error');
+        }
+        
+        setTimeout(() => {
+            searchAllBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search All`;
+            searchAllBtn.style.pointerEvents = 'auto';
+            searchAllBtn.style.opacity = '1';
+        }, 2000);
+    };
+
+    const actionsDiv = document.createElement('div');
+    actionsDiv.style.cssText = "display: flex; gap: 8px; align-items: center;";
+    actionsDiv.appendChild(searchAllBtn);
+    actionsDiv.appendChild(refreshBtn);
     
     toolbar.appendChild(countBadge);
-    toolbar.appendChild(refreshBtn);
+    toolbar.appendChild(actionsDiv);
     container.appendChild(toolbar);
 
     if (filtered.length === 0) {
