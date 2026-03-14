@@ -418,11 +418,11 @@ function renderRadarrQueue(records, state) {
 
         card.innerHTML = `
             <div class="queue-poster">
-                <img src="${escapeHtml(posterUrl)}" alt="" onerror="this.src='icons/icon48.png'">
+                <img id="queue-poster-${item.id}" src="${escapeHtml(posterUrl)}" alt="" onerror="this.src='icons/icon48.png'">
             </div>
             <div class="queue-content">
                 <div class="queue-header">
-                    <div class="queue-title" title="${displayTitle}">${displayTitle}</div>
+                    <div id="queue-title-${item.id}" class="queue-title" title="${displayTitle}">${displayTitle}</div>
                 </div>
                 <div class="queue-subtitle">
                     ${quality ? `<span class="queue-quality">${escapedQuality}</span>` : ''}
@@ -450,6 +450,41 @@ function renderRadarrQueue(records, state) {
                 <button class="queue-action-btn delete-btn" title="Remove from Queue">×</button>
             </div>
         `;
+
+        if (!movie || !movie.title || movie.title === 'Unknown') {
+            Radarr.parseTitle(state.configs.radarrUrl, state.configs.radarrKey, item.title)
+                .then(parsed => {
+                    if (parsed) {
+                        // If Radarr mapped it to a real movie
+                        if (parsed.movie && parsed.movie.title) {
+                            const titleEl = card.querySelector('#queue-title-' + item.id);
+                            if (titleEl) {
+                                titleEl.textContent = parsed.movie.title;
+                                titleEl.title = parsed.movie.title;
+                            }
+                            
+                            const posterEl = card.querySelector('#queue-poster-' + item.id);
+                            if (posterEl) {
+                                const newPosterUrl = getPosterUrl(parsed.movie);
+                                if (newPosterUrl && newPosterUrl !== 'icons/icon48.png') {
+                                    posterEl.src = newPosterUrl;
+                                }
+                            }
+                        } 
+                        // If Radarr couldn't map it, but still extracted a title string
+                        else if (parsed.parsedMovieInfo && parsed.parsedMovieInfo.movieTitle) {
+                            const titleEl = card.querySelector('#queue-title-' + item.id);
+                            if (titleEl) {
+                                const rawTitle = parsed.parsedMovieInfo.movieTitle;
+                                // Combine title and year if parsed
+                                const displayTitle = parsed.parsedMovieInfo.year ? `${rawTitle} (${parsed.parsedMovieInfo.year})` : rawTitle;
+                                titleEl.innerHTML = escapeHtml(displayTitle) + ' <span style="font-size: 0.8em; color: #ff9800;">(Unmapped)</span>';
+                                titleEl.title = displayTitle + " (Movie not matched in DB)";
+                            }
+                        }
+                    }
+                }).catch(err => console.log("Radarr Parse API error", err));
+        }
 
         // Event handlers
         const delBtn = card.querySelector('.delete-btn');

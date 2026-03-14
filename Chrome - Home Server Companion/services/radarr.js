@@ -267,3 +267,25 @@ export const deleteRadarrBlocklistItem = async (url, apiKey, id) => {
     }
 };
 
+/**
+ * Parses release name to extract movie information
+ * @param {string} url - Radarr URL
+ * @param {string} apiKey - API Key
+ * @param {string} title - Release name to parse
+ * @returns {Promise<Object>} Parsed title information
+ */
+export const parseTitle = async (url, apiKey, title) => {
+    try {
+        const query = encodeURIComponent(title);
+        const response = await fetch(`${url}/api/v3/parse?title=${query}`, {
+            headers: {
+                'X-Api-Key': apiKey
+            }
+        });
+        if (!response.ok) throw new Error(`Parse Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Radarr Parse Error:", error);
+        return null;
+    }
+};
