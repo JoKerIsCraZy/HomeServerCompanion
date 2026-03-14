@@ -259,3 +259,23 @@ export const deleteSonarrBlocklistItem = async (url, apiKey, id) => {
     }
 };
 
+/**
+ * Parses a title to find matching series info using Sonarr's parse endpoint
+ * @param {string} url - Sonarr URL
+ * @param {string} apiKey - API Key
+ * @param {string} title - Release Title to parse
+ * @returns {Promise<Object>} Parse result combining series/episode info
+ */
+export const parseTitle = async (url, apiKey, title) => {
+    try {
+        const response = await fetch(`${url}/api/v3/parse?title=${encodeURIComponent(title)}`, {
+            headers: { 'X-Api-Key': apiKey }
+        });
+        if (!response.ok) throw new Error(`Parse Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Sonarr Parse Error:", error);
+        throw error;
+    }
+};
+

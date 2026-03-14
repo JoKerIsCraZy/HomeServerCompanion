@@ -397,14 +397,14 @@ function renderSonarrQueue(records, state) {
 
         card.innerHTML = `
             <div class="queue-poster">
-                <img src="${escapeHtml(posterUrl)}" alt="" onerror="this.src='icons/icon48.png'">
+                <img id="queue-poster-${item.id}" src="${escapeHtml(posterUrl)}" alt="" onerror="this.src='icons/icon48.png'">
             </div>
             <div class="queue-content">
                 <div class="queue-header">
-                    <div class="queue-title" title="${displayTitle}">${displayTitle}</div>
+                    <div id="queue-title-${item.id}" class="queue-title" title="${displayTitle}">${displayTitle}</div>
                 </div>
                 <div class="queue-subtitle">
-                    <span style="font-weight:700; color:var(--text-primary); margin-right:6px;">${escapeHtml(epString)}</span>
+                    <span id="queue-epstring-${item.id}" style="font-weight:700; color:var(--text-primary); margin-right:6px;">${escapeHtml(epString)}</span>
                     ${quality ? `<span class="queue-quality">${escapedQuality}</span>` : ''}
                 </div>
 
@@ -429,6 +429,122 @@ function renderSonarrQueue(records, state) {
                 <button class="queue-action-btn delete-btn" title="Remove from Queue">×</button>
             </div>
         `;
+
+        if (!series || !series.title) {
+            Sonarr.parseTitle(state.configs.sonarrUrl, state.configs.sonarrKey, item.title)
+                .then(parsed => {
+                    if (parsed) {
+                        // If Sonarr mapped it to a real series
+                        if (parsed.series && parsed.series.title) {
+                            const titleEl = card.querySelector('#queue-title-' + item.id);
+                            if (titleEl) {
+                                titleEl.textContent = parsed.series.title;
+                                titleEl.title = parsed.series.title;
+                            }
+                            
+                            const posterEl = card.querySelector('#queue-poster-' + item.id);
+                            if (posterEl) {
+                                const newPosterUrl = getPosterUrl(parsed.series);
+                                if (newPosterUrl && newPosterUrl !== 'icons/icon48.png') {
+                                    posterEl.src = newPosterUrl;
+                                }
+                            }
+                        } 
+                        // If Sonarr couldn't map it, but still extracted a title string
+                        else if (parsed.parsedEpisodeInfo && parsed.parsedEpisodeInfo.seriesTitle) {
+                            const rawTitle = parsed.parsedEpisodeInfo.seriesTitle;
+                            const titleEl = card.querySelector('#queue-title-' + item.id);
+                            
+                            // Start by displaying the unmapped string
+                            if (titleEl) {
+                                titleEl.innerHTML = escapeHtml(rawTitle) + ' <span style="font-size: 0.8em; color: #ff9800;">(Unmapped)</span>';
+                                titleEl.title = rawTitle + " (Series not matched in DB)";
+                            }
+
+                            // Attempt local fuzzy match
+                            Sonarr.getSonarrSeries(state.configs.sonarrUrl, state.configs.sonarrKey)
+                                .then(allSeries => {
+                                    if (!allSeries || allSeries.length === 0) return;
+                                    
+                                    // Basic tokenization: lowercase, remove non-alphanumeric, split by spaces
+                                    const tokenize = (str) => {
+                                        return (str || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+                                    };
+                                    
+                                    const rawTokens = tokenize(rawTitle);
+                                    if (rawTokens.length === 0) return;
+                                    
+                                    const firstWord = rawTokens[0];
+                                    
+                                    let bestMatch = null;
+                                    let bestScore = 0;
+
+                                    allSeries.forEach(s => {
+                                        // Check main title
+                                        const titleTokens = tokenize(s.title);
+                                        if (titleTokens.length > 0 && titleTokens[0] === firstWord) {
+                                            // Score 1.0 for perfect first word match
+                                            if (1.0 > bestScore) {
+                                                bestScore = 1.0;
+                                                bestMatch = s;
+                                            }
+                                        }
+
+                                        // Check Aliases if requested
+                                        if (s.alternateTitles) {
+                                            s.alternateTitles.forEach(alt => {
+                                                const altTokens = tokenize(alt.title);
+                                                if (altTokens.length > 0 && altTokens[0] === firstWord) {
+                                                     if (1.0 > bestScore) {
+                                                        bestScore = 1.0;
+                                                        bestMatch = s;
+                                                     }
+                                                }
+                                            });
+                                        }
+                                    });
+
+                                    // If we matched the first word
+                                    if (bestMatch && bestScore > 0) {
+                                        if (titleEl) {
+                                            titleEl.innerHTML = escapeHtml(bestMatch.title) + ' <span style="font-size: 0.8em; color: #4caf50;">(Fuzzy)</span>';
+                                            titleEl.title = `Mapped from first word of: ${rawTitle}`;
+                                        }
+                                        
+                                        const posterEl = card.querySelector('#queue-poster-' + item.id);
+                                        if (posterEl) {
+                                            const newPosterUrl = getPosterUrl(bestMatch);
+                                            if (newPosterUrl && newPosterUrl !== 'icons/icon48.png') {
+                                                posterEl.src = newPosterUrl;
+                                            }
+                                        }
+                                    }
+
+                                }).catch(err => console.log("Fuzzy match fetch failed", err));
+                        }
+
+                        // Try to update Season/Episode number whether mapped or unmapped
+                        const epStringEl = card.querySelector('#queue-epstring-' + item.id);
+                        if (epStringEl) {
+                            if (parsed.episodes && parsed.episodes.length > 0) {
+                                const ep = parsed.episodes[0];
+                                const parseSNum = String(ep.seasonNumber || 0).padStart(2, '0');
+                                const parseENum = String(ep.episodeNumber || 0).padStart(2, '0');
+                                epStringEl.textContent = `S${parseSNum}E${parseENum}`;
+                            } else if (parsed.parsedEpisodeInfo) {
+                                const pInfo = parsed.parsedEpisodeInfo;
+                                const parseSNum = String(pInfo.seasonNumber || 0).padStart(2, '0');
+                                const parseENum = (pInfo.episodeNumbers && pInfo.episodeNumbers.length > 0) 
+                                    ? String(pInfo.episodeNumbers[0]).padStart(2, '0') 
+                                    : '00';
+                                epStringEl.textContent = `S${parseSNum}E${parseENum}`;
+                            }
+                        }
+                    }
+                }).catch(err => {
+                    console.log("Failed to parse unknown queue item title:", err);
+                });
+        }
 
         // Event handlers
         const delBtn = card.querySelector('.delete-btn');
