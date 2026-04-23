@@ -371,7 +371,8 @@ Beautiful high-contrast dark UI:
 | **Sonarr**    | Settings -> General        |
 | **Radarr**    | Settings -> General        |
 | **Tautulli**  | Settings -> Web Interface  |
-| **Seerr** | Settings -> General        |
+| **Tracearr**  | Settings -> API Tokens     |
+| **Seerr**     | Settings -> General        |
 | **Prowlarr**  | Settings -> General        |
 | **Wizarr**    | Settings -> API            |
 | **Portainer** | Settings -> Access Tokens  |
