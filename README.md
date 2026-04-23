@@ -5,7 +5,7 @@
 
 **Your Home Server, One Click Away**
 
-[![Version](https://img.shields.io/badge/version-3.9-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
+[![Version](https://img.shields.io/badge/version-4.0.0-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/blob/master/LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
 
@@ -38,7 +38,7 @@
 |      `Ctrl+S`      | Open Unified Search                  |
 |      `Ctrl+D`      | Open Docker Container Search         |
 |      `Ctrl+A`      | Open NZB Search (Prowlarr)           |
-|      `Enter`       | Search Movies & TV Shows (Overseerr) |
+|      `Enter`       | Search Movies & TV Shows (Seerr) |
 |        `n:`        | Search NZBs directly via Prowlarr    |
 |        `d:`        | Search Docker Containers             |
 | `Right-click text` | Context menu search                  |
@@ -55,7 +55,7 @@ The **Unified Search Bar** is your command center. Click the search bar or press
 
 |  Prefix  | What it does                     | Example        |
 | :------: | :------------------------------- | :------------- |
-| _(none)_ | Search Movies & TV via Overseerr | `Breaking Bad` |
+| _(none)_ | Search Movies & TV via Seerr | `Breaking Bad` |
 |   `n:`   | Search NZBs via Prowlarr         | `n:ubuntu iso` |
 |   `d:`   | Search Docker Containers         | `d:plex`       |
 
@@ -203,14 +203,26 @@ Beautiful high-contrast dark UI:
 </details>
 
 <details>
-<summary><b>✏️ Overseerr</b> - Media Requests</summary>
+<summary><b>✏️ Seerr</b> - Media Requests</summary>
 
-- **Browse Requests** - Filter by status
+- **Browse Requests** - Filter by status with accurate media status display
 - **TMDB Search** - Find movies & TV shows
 - **Trending** - Discover with type filter
 - **One-Click Request** - Movies & full TV seasons
 - **Approve/Decline** - Manage pending requests
+- **Multi-Auth** - API Key, Local Account, or Plex Sign-In
 - **Smart Caching** - Instant load times
+
+</details>
+
+<details>
+<summary><b>📡 Tracearr</b> - Content Tracking</summary>
+
+- **Live Streams** - Active Plex streams with poster art and progress bars
+- **Stream Details** - Video/audio codec, resolution, bandwidth, player info
+- **Statistics** - Overview, plays today, watch time, active users, top users
+- **Kill Stream** - Terminate streams directly
+- **Badge Alerts** - Live stream count in sidebar
 
 </details>
 
@@ -296,11 +308,11 @@ Beautiful high-contrast dark UI:
 </details>
 
 <details>
-<summary><b>Overseerr</b></summary>
+<summary><b>Seerr</b></summary>
 <div align="center">
-  <img src="images/overseerr_requests.png" alt="Overseerr Requests" width="45%">
-  <img src="images/overseerr_search.png" alt="Overseerr Search" width="45%">
-  <img src="images/overseerr_trending.png" alt="Overseerr Trending" width="45%">
+  <img src="images/seerr_requests.png" alt="Seerr Requests" width="45%">
+  <img src="images/seerr_search.png" alt="Seerr Search" width="45%">
+  <img src="images/seerr_trending.png" alt="Seerr Trending" width="45%">
 </div>
 </details>
 
@@ -359,7 +371,7 @@ Beautiful high-contrast dark UI:
 | **Sonarr**    | Settings -> General        |
 | **Radarr**    | Settings -> General        |
 | **Tautulli**  | Settings -> Web Interface  |
-| **Overseerr** | Settings -> General        |
+| **Seerr** | Settings -> General        |
 | **Prowlarr**  | Settings -> General        |
 | **Wizarr**    | Settings -> API            |
 | **Portainer** | Settings -> Access Tokens  |

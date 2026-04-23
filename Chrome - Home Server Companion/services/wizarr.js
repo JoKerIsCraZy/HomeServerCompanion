@@ -1,15 +1,16 @@
 import { normalizeUrl } from './utils.js';
+import { validateSearchQuery } from './inputValidation.js';
 
 /**
  * Test connection to Wizarr server
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @returns {Promise<boolean>}
  */
 export const testConnection = async (url, apiKey) => {
     if (!url || !apiKey) return false;
     url = normalizeUrl(url);
-    
+
     try {
         const response = await fetch(`${url}/api/status`, {
             headers: {
@@ -26,14 +27,14 @@ export const testConnection = async (url, apiKey) => {
 
 /**
  * Get all configured servers (Plex/Jellyfin)
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @returns {Promise<Array>}
  */
 export const getServers = async (url, apiKey) => {
     if (!url || !apiKey) return [];
     url = normalizeUrl(url);
-    
+
     try {
         const response = await fetch(`${url}/api/servers`, {
             headers: {
@@ -41,11 +42,11 @@ export const getServers = async (url, apiKey) => {
                 'accept': 'application/json'
             }
         });
-        
+
         if (!response.ok) {
             throw new Error(`Wizarr API Error: ${response.status}`);
         }
-        
+
         const data = await response.json();
         // Response is { servers: [...], count: n }
         return Array.isArray(data.servers) ? data.servers : [];
@@ -57,14 +58,14 @@ export const getServers = async (url, apiKey) => {
 
 /**
  * Get libraries (all libraries from connected servers)
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @returns {Promise<Array>}
  */
 export const getLibraries = async (url, apiKey) => {
     if (!url || !apiKey) return [];
     url = normalizeUrl(url);
-    
+
     try {
         const response = await fetch(`${url}/api/libraries`, {
             headers: {
@@ -72,11 +73,11 @@ export const getLibraries = async (url, apiKey) => {
                 'accept': 'application/json'
             }
         });
-        
+
         if (!response.ok) {
             throw new Error(`Wizarr API Error: ${response.status}`);
         }
-        
+
         const data = await response.json();
         return Array.isArray(data) ? data : [];
     } catch (error) {
@@ -87,14 +88,14 @@ export const getLibraries = async (url, apiKey) => {
 
 /**
  * Get all invitations
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @returns {Promise<Array>}
  */
 export const getInvitations = async (url, apiKey) => {
     if (!url || !apiKey) return [];
     url = normalizeUrl(url);
-    
+
     try {
         const response = await fetch(`${url}/api/invitations`, {
             headers: {
@@ -102,11 +103,11 @@ export const getInvitations = async (url, apiKey) => {
                 'accept': 'application/json'
             }
         });
-        
+
         if (!response.ok) {
             throw new Error(`Wizarr API Error: ${response.status}`);
         }
-        
+
         const data = await response.json();
         return Array.isArray(data) ? data : [];
     } catch (error) {
@@ -117,8 +118,8 @@ export const getInvitations = async (url, apiKey) => {
 
 /**
  * Create a new invitation
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @param {Object} options - Invitation options
  * @param {string} options.server - Server ID (REQUIRED)
  * @param {string} [options.code] - Custom invite code (auto-generated if empty)
@@ -133,16 +134,24 @@ export const createInvitation = async (url, apiKey, options) => {
         throw new Error('URL, API Key, and Server are required');
     }
     url = normalizeUrl(url);
-    
+
+    // Validate code if provided
+    if (options.code) {
+        const validation = validateSearchQuery(options.code);
+        if (!validation.valid) {
+            throw new Error(`Invalid invite code: ${validation.error}`);
+        }
+    }
+
     // Generate random code if not provided
     const code = options.code || generateInviteCode();
-    
+
     // Ensure server_id is a number
     const serverId = parseInt(options.server) || 1;
-    
+
     // Build library_ids as integers
     const libraryIds = (options.libraries || []).map(id => parseInt(id) || id);
-    
+
     const payload = {
         server_ids: [serverId],
         expires_in_days: options.expiresInDays || 0,
@@ -153,7 +162,7 @@ export const createInvitation = async (url, apiKey, options) => {
         allow_live_tv: false,
         allow_mobile_uploads: false
     };
-    
+
     try {
         const response = await fetch(`${url}/api/invitations`, {
             method: 'POST',
@@ -164,12 +173,12 @@ export const createInvitation = async (url, apiKey, options) => {
             },
             body: JSON.stringify(payload)
         });
-        
+
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
             throw new Error(errData.message || `Status ${response.status}`);
         }
-        
+
         return await response.json();
     } catch (error) {
         console.error('Failed to create Wizarr invitation:', error);
@@ -179,24 +188,27 @@ export const createInvitation = async (url, apiKey, options) => {
 
 /**
  * Delete an invitation
- * @param {string} url 
- * @param {string} apiKey 
- * @param {string} inviteId 
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {string} inviteId
  * @returns {Promise<boolean>}
  */
 export const deleteInvitation = async (url, apiKey, inviteId) => {
     if (!url || !apiKey || !inviteId) return false;
     url = normalizeUrl(url);
-    
+
+    // Validate inviteId to prevent path injection
+    const sanitizedId = String(inviteId).replace(/[^\w\-]/g, '');
+
     try {
-        const response = await fetch(`${url}/api/invitations/${inviteId}`, {
+        const response = await fetch(`${url}/api/invitations/${sanitizedId}`, {
             method: 'DELETE',
             headers: {
                 'X-API-Key': apiKey,
                 'accept': 'application/json'
             }
         });
-        
+
         return response.ok;
     } catch (error) {
         console.error('Failed to delete Wizarr invitation:', error);

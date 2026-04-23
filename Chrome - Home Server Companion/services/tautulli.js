@@ -1,7 +1,9 @@
+import { validateSearchQuery } from './inputValidation.js';
+
 /**
  * Fetches current Tautulli activity (sessions).
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @returns {Promise<Array>} List of sessions
  */
 export const getTautulliActivity = async (url, apiKey) => {
@@ -19,13 +21,19 @@ export const getTautulliActivity = async (url, apiKey) => {
 // Terminate Session
 /**
  * Terminates a specific session.
- * @param {string} url 
- * @param {string} apiKey 
- * @param {string} sessionId 
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {string} sessionId
  * @param {string} message - Reason for termination
  */
 export const terminateSession = async (url, apiKey, sessionId, message = 'Terminated by Admin') => {
     try {
+        // Validate the termination message to prevent injection
+        const validation = validateSearchQuery(message);
+        if (!validation.valid) {
+            throw new Error(`Invalid message: ${validation.error}`);
+        }
+
         const response = await fetch(`${url}/api/v2?apikey=${apiKey}&cmd=terminate_session&session_id=${sessionId}&message=${encodeURIComponent(message)}`);
         if (!response.ok) throw new Error(`Error: ${response.status}`);
         return await response.json();

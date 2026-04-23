@@ -1,33 +1,36 @@
-import * as Overseerr from "../../services/overseerr.js";
-import { showNotification, showConfirmModal } from "../utils.js";
+import * as Seerr from "../../services/seerr.js";
+import { showNotification, showConfirmModal, validateUrl } from "../utils.js";
 
 /**
- * Initializes the Overseerr service view.
+ * Initializes the Seerr service view.
  * - Handles Trending, Requests, and Search tabs.
  * - Sets up filtering and auto-reload logic.
- * @param {string} url - Overseerr URL
- * @param {string} key - API Key
+ * @param {string} url - Seerr URL
+ * @param {string} key - API Key (optional for Plex/Local auth)
  * @param {object} state - App state
  */
-export async function initOverseerr(url, key, state) {
-    if (!url || !key) {
-        const container = document.getElementById('overseerr-requests');
+export async function initSeerr(url, key, state) {
+    const authMethod = state.configs.seerrAuthMethod || 'apikey';
+
+    // For Plex/Local auth, key may be empty - that's OK
+    if (!url) {
+        const container = document.getElementById('seerr-requests');
         if(container) {
             container.textContent = "";
             const div = document.createElement('div');
             div.className = 'error-banner';
-            div.textContent = "Please configure Overseerr in options.";
+            div.textContent = "Please configure Seerr in options.";
             container.appendChild(div);
         }
         return;
     }
     
     // Setup Filter Listener (Ensure single binding)
-    const filterSelect = document.getElementById('overseerr-filter');
+    const filterSelect = document.getElementById('seerr-filter');
     
     if (filterSelect) {
-        if (state.configs.overseerrFilter) {
-            filterSelect.value = state.configs.overseerrFilter;
+        if (state.configs.seerrFilter) {
+            filterSelect.value = state.configs.seerrFilter;
         }
     }
 
@@ -35,36 +38,36 @@ export async function initOverseerr(url, key, state) {
         filterSelect.addEventListener('change', () => {
              // Save preference
              const newVal = filterSelect.value;
-             state.configs.overseerrFilter = newVal; // Update local state
-             chrome.storage.sync.set({ overseerrFilter: newVal });
+             state.configs.seerrFilter = newVal; // Update local state
+             chrome.storage.sync.set({ seerrFilter: newVal });
 
-             loadRequests(url, key, filterSelect.value);
+             loadRequests(url, key, filterSelect.value, authMethod);
         });
         filterSelect.dataset.listenerAttached = "true";
     }
 
     // Setup Trending Filter Listener
-    const trendingFilterSelect = document.getElementById('overseerr-trending-filter');
+    const trendingFilterSelect = document.getElementById('seerr-trending-filter');
     if (trendingFilterSelect) {
         // Load saved preference
-        if (state.configs.overseerrTrendingFilter) {
-            trendingFilterSelect.value = state.configs.overseerrTrendingFilter;
+        if (state.configs.seerrTrendingFilter) {
+            trendingFilterSelect.value = state.configs.seerrTrendingFilter;
         }
     }
 
     if (trendingFilterSelect && !trendingFilterSelect.dataset.listenerAttached) {
         trendingFilterSelect.addEventListener('change', () => {
             const newVal = trendingFilterSelect.value;
-            state.configs.overseerrTrendingFilter = newVal;
-            chrome.storage.sync.set({ overseerrTrendingFilter: newVal });
+            state.configs.seerrTrendingFilter = newVal;
+            chrome.storage.sync.set({ seerrTrendingFilter: newVal });
             // Reload trending with new filter (keep same pages)
-            loadTrending(url, key, newVal);
+            loadTrending(url, key, newVal, authMethod);
         });
         trendingFilterSelect.dataset.listenerAttached = "true";
     }
 
     // Setup Trending Refresh Listener
-    const trendingRefreshBtn = document.getElementById('overseerr-trending-refresh');
+    const trendingRefreshBtn = document.getElementById('seerr-trending-refresh');
     if (trendingRefreshBtn && !trendingRefreshBtn.dataset.listenerAttached) {
         trendingRefreshBtn.addEventListener('click', () => {
              // Add spinning animation
@@ -75,20 +78,20 @@ export async function initOverseerr(url, key, state) {
                  const spinInterval = setInterval(() => {
                     icon.style.transform = `rotate(${360 + 360}deg)`; // Mock spin
                  }, 1000);
-                 
+
                  // Stop generic spinning class if used, but manual rotation is fine for simple feedback
                  trendingRefreshBtn.disabled = true;
-                 
-                  const trendingFilter = document.getElementById('overseerr-trending-filter')?.value || 'both';
-                  loadTrending(url, key, trendingFilter).finally(() => {
+
+                  const trendingFilter = document.getElementById('seerr-trending-filter')?.value || 'both';
+                  loadTrending(url, key, trendingFilter, authMethod).finally(() => {
                      clearInterval(spinInterval);
                      icon.style.transform = 'none';
                      trendingRefreshBtn.disabled = false;
                  });
              } else {
                  // Fallback without icon animation
-                 const trendingFilter = document.getElementById('overseerr-trending-filter')?.value || 'both';
-                 loadTrending(url, key, trendingFilter);
+                 const trendingFilter = document.getElementById('seerr-trending-filter')?.value || 'both';
+                 loadTrending(url, key, trendingFilter, authMethod);
              }
         });
         
@@ -101,16 +104,16 @@ export async function initOverseerr(url, key, state) {
     }
 
     // Logic for swapping Header Toolbars (Requests Filter vs Trending Filter)
-    const toolbarTrending = document.getElementById('overseerr-trending-toolbar');
-    const toolbarRequests = document.getElementById('overseerr-filter-container'); 
+    const toolbarTrending = document.getElementById('seerr-trending-toolbar');
+    const toolbarRequests = document.getElementById('seerr-filter-container'); 
     
     const updateToolbars = (targetId) => {
         if (!toolbarTrending || !toolbarRequests) return;
         
-        if (targetId === 'overseerr-trending-tab') {
+        if (targetId === 'seerr-trending-tab') {
             toolbarTrending.classList.remove('hidden');
             toolbarRequests.classList.add('hidden');
-        } else if (targetId === 'overseerr-requests-tab') {
+        } else if (targetId === 'seerr-requests-tab') {
             toolbarTrending.classList.add('hidden');
             toolbarRequests.classList.remove('hidden');
         } else {
@@ -120,10 +123,10 @@ export async function initOverseerr(url, key, state) {
         }
     };
 
-    // Attach listeners to Overseerr tabs
+    // Attach listeners to Seerr tabs
     // Note: We use a generic approach to find the buttons
-    const overseerrTabBtns = document.querySelectorAll('.sub-tab-btn[data-target^="overseerr-"]');
-    overseerrTabBtns.forEach(btn => {
+    const seerrTabBtns = document.querySelectorAll('.sub-tab-btn[data-target^="seerr-"]');
+    seerrTabBtns.forEach(btn => {
         // Avoid duplicate listeners if possible, but click listeners stack safely mostly if idempotent
          if (!btn.dataset.toolbarListenerAttached) {
             btn.addEventListener('click', () => {
@@ -134,33 +137,33 @@ export async function initOverseerr(url, key, state) {
     });
 
     // Initial Toolbar State
-    const activeOverseerrTab = document.querySelector('.sub-tab-btn.active[data-target^="overseerr-"]');
-    if (activeOverseerrTab) {
-        updateToolbars(activeOverseerrTab.dataset.target);
+    const activeSeerrTab = document.querySelector('.sub-tab-btn.active[data-target^="seerr-"]');
+    if (activeSeerrTab) {
+        updateToolbars(activeSeerrTab.dataset.target);
     }
 
     // Setup Tab Listeners for auto-reload
-    const trendingBtn = document.querySelector('.sub-tab-btn[data-target="overseerr-trending-tab"]');
+    const trendingBtn = document.querySelector('.sub-tab-btn[data-target="seerr-trending-tab"]');
     if (trendingBtn && !trendingBtn.dataset.listenerAttached) {
          trendingBtn.addEventListener('click', () => {
              // Reload trending with new random pages
-             const trendingFilter = document.getElementById('overseerr-trending-filter')?.value || 'both';
-             loadTrending(url, key, trendingFilter);
+             const trendingFilter = document.getElementById('seerr-trending-filter')?.value || 'both';
+             loadTrending(url, key, trendingFilter, authMethod);
          });
          trendingBtn.dataset.listenerAttached = "true";
     }
 
     // Initial Load
-    const currentFilter = filterSelect ? filterSelect.value : (state.configs.overseerrFilter || 'pending');
+    const currentFilter = filterSelect ? filterSelect.value : (state.configs.seerrFilter || 'pending');
     // 5. Check active tab and load content
-    const trendingTab = document.getElementById('overseerr-trending-tab');
-    const searchTab = document.getElementById('overseerr-search-tab');
+    const trendingTab = document.getElementById('seerr-trending-tab');
+    const searchTab = document.getElementById('seerr-search-tab');
 
     // If Trending is visible, load trending
     if (trendingTab && !trendingTab.classList.contains('hidden')) {
-        const trendingFilter = document.getElementById('overseerr-trending-filter')?.value || 'both';
-        await loadTrending(url, key, trendingFilter);
-    } 
+        const trendingFilter = document.getElementById('seerr-trending-filter')?.value || 'both';
+        await loadTrending(url, key, trendingFilter, authMethod);
+    }
     // If Search is visible, do nothing (wait for user search?)
     else if (searchTab && !searchTab.classList.contains('hidden')) {
         // Maybe focus input?
@@ -168,16 +171,16 @@ export async function initOverseerr(url, key, state) {
     // Otherwise (Requests tab is default), load requests
     else {
         // Only load if container exists
-        if (document.getElementById('overseerr-requests')) {
-            await loadRequests(url, key, currentFilter);
+        if (document.getElementById('seerr-requests')) {
+            await loadRequests(url, key, currentFilter, authMethod);
         }
     }
 }
 
-export async function loadTrending(url, key, typeFilter = 'both') {
-    const container = document.getElementById('overseerr-trending-results');
+export async function loadTrending(url, key, typeFilter = 'both', authMethod = 'apikey') {
+    const container = document.getElementById('seerr-trending-results');
     if (!container) return;
-    
+
     container.textContent = "";
     const loadDiv = document.createElement('div');
     loadDiv.className = "loading";
@@ -188,20 +191,20 @@ export async function loadTrending(url, key, typeFilter = 'both') {
         // Fetch multiple pages to ensure we have enough items after filtering
         // RANDOMIZE: Start page between 1 and 10 to show "new" stuff each time
         const startPage = Math.floor(Math.random() * 10) + 1;
-        
+
         const promises = [
-            Overseerr.getTrending(url, key, startPage),
-            Overseerr.getTrending(url, key, startPage + 1),
-            Overseerr.getTrending(url, key, startPage + 2)
+            Seerr.getTrending(url, key, startPage, authMethod),
+            Seerr.getTrending(url, key, startPage + 1, authMethod),
+            Seerr.getTrending(url, key, startPage + 2, authMethod)
         ];
-        
+
         const resultsArrays = await Promise.all(promises);
-        
+
         // Flatten and deduplicate by ID
         const allResults = resultsArrays.flat();
         const seen = new Set();
         const uniqueResults = [];
-        
+
         for (const item of allResults) {
             if (!seen.has(item.id)) {
                 seen.add(item.id);
@@ -209,7 +212,7 @@ export async function loadTrending(url, key, typeFilter = 'both') {
             }
         }
 
-        renderTrendingTab(uniqueResults, url, key, typeFilter);
+        renderTrendingTab(uniqueResults, url, key, typeFilter, authMethod);
     } catch (e) {
         console.error(e);
         container.replaceChildren();
@@ -220,8 +223,8 @@ export async function loadTrending(url, key, typeFilter = 'both') {
     }
 }
 
-function renderTrendingTab(results, url, key, typeFilter = 'both') {
-    const container = document.getElementById('overseerr-trending-results');
+function renderTrendingTab(results, url, key, typeFilter = 'both', authMethod = 'apikey') {
+    const container = document.getElementById('seerr-trending-results');
     if (!container) return;
     container.replaceChildren();
     // Use grid-container to layout cards properly similar to Requests
@@ -241,7 +244,7 @@ function renderTrendingTab(results, url, key, typeFilter = 'both') {
         return;
     }
 
-    const tmpl = document.getElementById('overseerr-trending-card');
+    const tmpl = document.getElementById('seerr-trending-card');
 
     // Filter by type first (movie/tv/both)
     let typeFilteredResults = results;
@@ -290,7 +293,7 @@ function renderTrendingTab(results, url, key, typeFilter = 'both') {
         }
 
         // Backdrop
-        const backdropDiv = clone.querySelector('.overseerr-backdrop');
+        const backdropDiv = clone.querySelector('.seerr-backdrop');
         if (backdropDiv && item.backdropPath) {
              const backdropUrl = `https://image.tmdb.org/t/p/w500${item.backdropPath}`;
              backdropDiv.style.backgroundImage = `url('${backdropUrl}')`;
@@ -324,15 +327,15 @@ function renderTrendingTab(results, url, key, typeFilter = 'both') {
             badge.style.color = '#fff'; // White text for both
         }
 
-        // Clickable Poster/Title -> Open in Overseerr
-        const openInOverseerr = () => {
+        // Clickable Poster/Title -> Open in Seerr
+        const openInSeerr = () => {
              const targetUrl = `${url}/${mediaType}/${item.id}`;
-             chrome.tabs.create({ url: targetUrl });
+             if (validateUrl(targetUrl)) chrome.tabs.create({ url: targetUrl });
         };
         posterImg.style.cursor = 'pointer';
-        posterImg.onclick = openInOverseerr;
+        posterImg.onclick = openInSeerr;
         titleEl.style.cursor = 'pointer';
-        titleEl.onclick = openInOverseerr;
+        titleEl.onclick = openInSeerr;
 
 
         // Button Logic
@@ -349,17 +352,17 @@ function renderTrendingTab(results, url, key, typeFilter = 'both') {
                 };
 
                 if (mediaType === 'tv') {
-                    const details = await Overseerr.getTv(url, key, item.id);
+                    const details = await Seerr.getTv(url, key, item.id, authMethod);
                     if (details && details.seasons) {
                         payload.seasons = details.seasons
                             .filter(s => s.seasonNumber !== 0)
                             .map(s => s.seasonNumber);
                     } else {
-                         payload.seasons = [1]; 
+                         payload.seasons = [1];
                     }
                 }
 
-                await Overseerr.request(url, key, payload);
+                await Seerr.request(url, key, payload, authMethod);
                 
                 btn.textContent = "✔ Requested";
                 btn.style.background = "#4caf50";
@@ -382,11 +385,11 @@ function renderTrendingTab(results, url, key, typeFilter = 'both') {
     });
 }
 
-export async function doSearch(url, key, query) {
+export async function doSearch(url, key, query, authMethod = 'apikey') {
     if (!query) {
         return;
     }
-    const container = document.getElementById('overseerr-search-results');
+    const container = document.getElementById('seerr-search-results');
     if (container) {
         container.replaceChildren();
         const loading = document.createElement('div');
@@ -394,10 +397,10 @@ export async function doSearch(url, key, query) {
         loading.textContent = 'Searching...';
         container.appendChild(loading);
     }
-    
+
     try {
-      const results = await Overseerr.search(url, key, query);
-      renderOverseerrSearch(results, url, key);
+      const results = await Seerr.search(url, key, query, authMethod);
+      renderSeerrSearch(results, url, key, authMethod);
     } catch (e) {
       console.error("Search failed in doSearch:", e);
       if (container) {
@@ -410,17 +413,17 @@ export async function doSearch(url, key, query) {
     }
 }
 
-async function loadRequests(url, key, filter) {
-    const container = document.getElementById('overseerr-requests');
+async function loadRequests(url, key, filter, authMethod = 'apikey') {
+    const container = document.getElementById('seerr-requests');
     // If trending, use a different cache/logic
-    const cacheKey = `overseerr_hydrated_${filter}`;
-    
+    const cacheKey = `seerr_hydrated_${filter}`;
+
     // 1. Try Cache (Hydrated Data)
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
         try {
            const hydratedData = JSON.parse(cached);
-           renderHydratedRequests(hydratedData, url, key);
+           renderHydratedRequests(hydratedData, url, key, authMethod);
         } catch(e) { console.error("Cache parse error", e); }
     } else {
         if (container) {
@@ -431,18 +434,18 @@ async function loadRequests(url, key, filter) {
             container.appendChild(loadingDiv);
         }
     }
-    
+
     try {
        // 2. Fetch Fresh Raw Data
-       const rawData = await Overseerr.getRequests(url, key, filter);
+       const rawData = await Seerr.getRequests(url, key, filter, authMethod);
        const requests = rawData.results || [];
 
        // 3. Hydrate Data (Fetch Details)
-       const hydratedRequests = await hydrateRequests(requests, url, key);
+       const hydratedRequests = await hydrateRequests(requests, url, key, authMethod);
 
        // 4. Save Cache & Render
        localStorage.setItem(cacheKey, JSON.stringify(hydratedRequests));
-       renderHydratedRequests(hydratedRequests, url, key);
+       renderHydratedRequests(hydratedRequests, url, key, authMethod);
 
    } catch (e) {
        console.error(e);
@@ -458,8 +461,8 @@ async function loadRequests(url, key, filter) {
 
 
 
-function renderOverseerrSearch(results, url, key) {
-    const container = document.getElementById('overseerr-search-results');
+function renderSeerrSearch(results, url, key, authMethod = 'apikey') {
+    const container = document.getElementById('seerr-search-results');
     if (!container) return;
     container.replaceChildren();
     
@@ -474,7 +477,7 @@ function renderOverseerrSearch(results, url, key) {
         return;
     }
 
-    const tmpl = document.getElementById('overseerr-search-card');
+    const tmpl = document.getElementById('seerr-search-card');
 
     results.filter(item => item.mediaType === 'movie' || item.mediaType === 'tv').forEach(item => {
         const clone = tmpl.content.cloneNode(true);
@@ -495,7 +498,7 @@ function renderOverseerrSearch(results, url, key) {
 
         if (item.backdropPath) {
              const backdropUrl = `https://image.tmdb.org/t/p/w500${item.backdropPath}`;
-             clone.querySelector('.overseerr-backdrop').style.backgroundImage = `url('${backdropUrl}')`;
+             clone.querySelector('.seerr-backdrop').style.backgroundImage = `url('${backdropUrl}')`;
         }
 
         // Title
@@ -553,10 +556,10 @@ function renderOverseerrSearch(results, url, key) {
                 btn.textContent = "⏳";
                 btn.disabled = true;
                 try {
-                    await Overseerr.request(url, key, {
+                    await Seerr.request(url, key, {
                         mediaId: item.id,
                         mediaType: item.mediaType
-                    });
+                    }, authMethod);
                     btn.textContent = "✔";
                     btn.title = "Requested";
                     showNotification('Requested successfully!', 'success');
@@ -573,14 +576,14 @@ function renderOverseerrSearch(results, url, key) {
     });
 }
 
-async function hydrateRequests(requests, url, key) {
+async function hydrateRequests(requests, url, key, authMethod = 'apikey') {
     if (!requests || requests.length === 0) return [];
-    
+
     // PERFORMANCE: Batch API calls instead of sequential per-request calls
     // 1. Collect IDs by type
     const movieRequests = [];
     const tvRequests = [];
-    
+
     requests.forEach((req, index) => {
         if (req.type === 'movie' && req.media?.tmdbId) {
             movieRequests.push({ index, id: req.media.tmdbId });
@@ -588,12 +591,12 @@ async function hydrateRequests(requests, url, key) {
             tvRequests.push({ index, id: req.media.tmdbId });
         }
     });
-    
+
     // 2. Fetch all in parallel (movies and TVs simultaneously)
     // Use allSettled to prevent one failure from breaking the entire list
     const [movieResults, tvResults] = await Promise.all([
-        Promise.allSettled(movieRequests.map(m => Overseerr.getMovie(url, key, m.id))),
-        Promise.allSettled(tvRequests.map(t => Overseerr.getTv(url, key, t.id)))
+        Promise.allSettled(movieRequests.map(m => Seerr.getMovie(url, key, m.id, authMethod))),
+        Promise.allSettled(tvRequests.map(t => Seerr.getTv(url, key, t.id, authMethod)))
     ]);
     
     // 3. Build lookup maps for O(1) access
@@ -633,23 +636,21 @@ async function hydrateRequests(requests, url, key) {
     });
 }
 
-function renderHydratedRequests(requests, url, key) {
-    const container = document.getElementById('overseerr-requests');
+function renderHydratedRequests(requests, url, key, authMethod = 'apikey') {
+    const container = document.getElementById('seerr-requests');
     if (!container) return;
     container.replaceChildren();
 
     if (requests.length === 0) {
         const card = document.createElement('div');
         card.className = "card";
-        const header = document.createElement('div');
-        header.className = "card-header";
-        header.textContent = "No pending requests";
-        card.appendChild(header);
+        card.style.cssText = "grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);";
+        card.innerHTML = '<div style="font-size: 48px; margin-bottom: 16px;">🎬</div><div>No pending requests</div>';
         container.appendChild(card);
         return;
     }
 
-    const tmpl = document.getElementById('overseerr-card');
+    const tmpl = document.getElementById('seerr-card');
 
     requests.forEach((req) => {
         const clone = tmpl.content.cloneNode(true);
@@ -667,7 +668,7 @@ function renderHydratedRequests(requests, url, key) {
 
            if (backdropPath) {
                const backdropUrl = `https://image.tmdb.org/t/p/w500${backdropPath}`;
-               clone.querySelector('.overseerr-backdrop').style.backgroundImage = `url('${backdropUrl}')`;
+               clone.querySelector('.seerr-backdrop').style.backgroundImage = `url('${backdropUrl}')`;
            }
         } else {
            posterImg.src = 'icons/icon48.png';
@@ -704,7 +705,7 @@ function renderHydratedRequests(requests, url, key) {
                 targetUrl = `${baseUrl}/tv/${tmdbId}`;
             }
 
-            if (targetUrl) {
+            if (targetUrl && validateUrl(targetUrl)) {
                 chrome.tabs.create({ url: targetUrl });
             }
         });
@@ -715,30 +716,30 @@ function renderHydratedRequests(requests, url, key) {
         let statusText = "Pending Approval";
         let statusClass = "status-text-pending"; // Default
 
-        // Request Status: 1=Pending, 2=Approved, 3=Declined
-        if (req.status === 1) {
-            statusText = "Pending Approval";
-            statusClass = "status-text-pending";
-        } else if (req.status === 2) {
-            statusText = "Approved";
-            statusClass = "status-text-approved";
+        // Determine status from media first (more accurate), then fall back to request status
+        // Media Status: 1=Unknown, 2=Pending, 3=Processing, 4=Partially Available, 5=Available
+        // Request Status: 1=Pending Approval, 2=Approved, 3=Declined
+        const mediaStatus = media ? media.status : 0;
 
-            // Check Media Status if Approved
-            if (media) {
-                if (media.status === 3) {
-                    statusText = "Processing";
-                    statusClass = "status-text-processing";
-                } else if (media.status === 4) {
-                    statusText = "Partially Available";
-                    statusClass = "status-text-partially";
-                } else if (media.status === 5) {
-                    statusText = "Available";
-                    statusClass = "status-text-available";
-                }
-            }
+        if (mediaStatus === 5) {
+            statusText = "Available";
+            statusClass = "status-text-available";
+        } else if (mediaStatus === 4) {
+            statusText = "Partially Available";
+            statusClass = "status-text-partially";
+        } else if (mediaStatus === 3) {
+            statusText = "Processing";
+            statusClass = "status-text-processing";
         } else if (req.status === 3) {
             statusText = "Declined";
             statusClass = "status-text-declined";
+        } else if (req.status === 2) {
+            // Approved but media not yet available (status 1 or 2)
+            statusText = mediaStatus === 2 ? "Pending" : "Approved";
+            statusClass = mediaStatus === 2 ? "status-text-pending" : "status-text-approved";
+        } else if (req.status === 1) {
+            statusText = "Pending Approval";
+            statusClass = "status-text-pending";
         }
         
         const statusEl = clone.querySelector('.request-status');
@@ -749,7 +750,7 @@ function renderHydratedRequests(requests, url, key) {
         statusEl.style = ""; 
 
         // Actions - Only show if Pending (1)
-        const actionsDiv = clone.querySelector('.overseerr-actions');
+        const actionsDiv = clone.querySelector('.seerr-actions');
         if (req.status !== 1) {
             actionsDiv.style.display = 'none';
         } else {
@@ -759,9 +760,9 @@ function renderHydratedRequests(requests, url, key) {
             if (approveBtn) {
                approveBtn.onclick = async () => {
                   approveBtn.disabled = true;
-                  const success = await Overseerr.approveRequest(url, key, req.id);
+                  const success = await Seerr.approveRequest(url, key, req.id, authMethod);
                   if (success) {
-                      loadRequests(url, key, document.getElementById('overseerr-filter')?.value || 'pending');
+                      loadRequests(url, key, document.getElementById('seerr-filter')?.value || 'pending', authMethod);
                       showNotification(`Request "${title}" approved`, 'success');
                   }
                };
@@ -777,11 +778,11 @@ function renderHydratedRequests(requests, url, key) {
                         'Decline',
                         '#f44336'
                     );
-                    
+
                     if (confirmed) {
-                        const success = await Overseerr.declineRequest(url, key, req.id);
+                        const success = await Seerr.declineRequest(url, key, req.id, authMethod);
                         if (success) {
-                             loadRequests(url, key, document.getElementById('overseerr-filter')?.value || 'pending');
+                             loadRequests(url, key, document.getElementById('seerr-filter')?.value || 'pending', authMethod);
                              showNotification(`Request "${title}" declined`, '#f44336'); // Red for declined
                         }
                     } else {

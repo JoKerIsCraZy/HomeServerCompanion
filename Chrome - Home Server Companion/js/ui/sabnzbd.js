@@ -25,10 +25,14 @@ function renderSabnzbdQueue(queue, state, url, key) {
         container.textContent = "";
         const emptyDiv = document.createElement('div');
         emptyDiv.className = 'queue-empty';
-        emptyDiv.innerHTML = `
-            <div class="queue-empty-icon">📭</div>
-            <div class="queue-empty-text">Queue is empty</div>
-        `;
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'queue-empty-icon';
+        iconDiv.textContent = '📭';
+        const textDiv = document.createElement('div');
+        textDiv.className = 'queue-empty-text';
+        textDiv.textContent = 'Queue is empty';
+        emptyDiv.appendChild(iconDiv);
+        emptyDiv.appendChild(textDiv);
         container.appendChild(emptyDiv);
     }
     return;
@@ -191,10 +195,14 @@ function renderSabnzbdHistory(history, state, url, key) {
           container.textContent = "";
           const emptyDiv = document.createElement('div');
           emptyDiv.className = 'queue-empty';
-          emptyDiv.innerHTML = `
-              <div class="queue-empty-icon">📭</div>
-              <div class="queue-empty-text">History is empty</div>
-          `;
+          const iconDiv = document.createElement('div');
+          iconDiv.className = 'queue-empty-icon';
+          iconDiv.textContent = '📭';
+          const textDiv = document.createElement('div');
+          textDiv.className = 'queue-empty-text';
+          textDiv.textContent = 'History is empty';
+          emptyDiv.appendChild(iconDiv);
+          emptyDiv.appendChild(textDiv);
           container.appendChild(emptyDiv);
       }
       return;
@@ -433,10 +441,40 @@ export async function initSabnzbd(url, key, state) {
             const mainBtn = document.getElementById("sab-pause-main");
             const isPaused = queue.paused;
             if (mainBtn) {
-                 // Play icon (triangle) for paused state, Pause icon (two bars) for active state
-                 const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-                 const pauseIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`;
-                 mainBtn.innerHTML = isPaused ? playIcon : pauseIcon;
+                 // Clear existing content
+                 mainBtn.textContent = '';
+
+                 // Create SVG element
+                 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                 svg.setAttribute("width", "16");
+                 svg.setAttribute("height", "16");
+                 svg.setAttribute("viewBox", "0 0 24 24");
+                 svg.setAttribute("fill", "currentColor");
+
+                 if (isPaused) {
+                     // Play icon (triangle)
+                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                     path.setAttribute("d", "M8 5v14l11-7z");
+                     svg.appendChild(path);
+                 } else {
+                     // Pause icon (two bars)
+                     const rect1 = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                     rect1.setAttribute("x", "6");
+                     rect1.setAttribute("y", "4");
+                     rect1.setAttribute("width", "4");
+                     rect1.setAttribute("height", "16");
+                     rect1.setAttribute("rx", "1");
+                     const rect2 = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                     rect2.setAttribute("x", "14");
+                     rect2.setAttribute("y", "4");
+                     rect2.setAttribute("width", "4");
+                     rect2.setAttribute("height", "16");
+                     rect2.setAttribute("rx", "1");
+                     svg.appendChild(rect1);
+                     svg.appendChild(rect2);
+                 }
+
+                 mainBtn.appendChild(svg);
                  mainBtn.title = isPaused ? "Resume Queue" : "Pause Queue";
                  if (isPaused) mainBtn.classList.add("paused");
                  else mainBtn.classList.remove("paused");

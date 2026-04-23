@@ -1,0 +1,54 @@
+/* css/services/tracearr.css */
+:root {
+    --accent-tracearr: #00bcd4;
+}
+
+.tracearr-view .card {
+    border-left: 3px solid var(--accent-tracearr);
+}
+
+/* Tracearr uses same card styles as Tautulli */
+.tracearr-item-wrapper {
+    margin-bottom: 12px;
+}
+
+/* Tracearr-specific fancy header */
+.tracearr-view .fancy-header {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent-tracearr);
+    margin: 10px 0 15px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--accent-tracearr);
+    padding-bottom: 5px;
+    display: inline-block;
+}
+
+/* No streams message */
+.no-streams-msg {
+    color: var(--color-text-muted);
+    padding: var(--space-8);
+    text-align: center;
+}
+
+/* Tracearr backdrop cards (share Tautulli styles) */
+.tautulli-item-wrapper.tracearr-item-wrapper .media-title span:hover {
+    text-decoration: underline;
+    color: #00bcd4 !important; /* Tracearr Cyan */
+}
+
+/* Stats in Tracearr view */
+.tracearr-stat-card {
+    background: var(--color-bg-secondary);
+    border-radius: var(--border-radius-lg);
+    padding: var(--space-4);
+    text-align: center;
+}
+
+.tracearr-view .section-header {
+    padding: var(--space-4);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}

@@ -1,5 +1,5 @@
 import * as Portainer from "../../services/portainer.js";
-import { showNotification, escapeHtml } from "../utils.js";
+import { showNotification, escapeHtml, validateUrl } from "../utils.js";
 
 // Cache settings
 const CACHE_KEY = "portainer_cache";
@@ -135,7 +135,7 @@ async function loadInstance(instanceId, state) {
         }
 
         const endpointId = endpoints[0].Id;
-        console.log("Using Portainer Endpoint ID:", endpointId);
+        console.debug("Using Portainer Endpoint ID:", endpointId);
 
         // Fetch fresh data
         const [containers, stacks] = await Promise.all([
@@ -219,7 +219,7 @@ function renderContainers(containers, url, token, state, endpointId = 1) {
     linkBtn.onclick = () => {
         let cleanUrl = url;
         if (cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
-        chrome.tabs.create({ url: cleanUrl });
+        if (validateUrl(cleanUrl)) chrome.tabs.create({ url: cleanUrl });
     };
     
     const refreshBtn = document.createElement('button');

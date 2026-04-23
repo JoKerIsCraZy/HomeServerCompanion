@@ -1,14 +1,11 @@
+/* Import Design Token System */
+@import url("tokens.css");
+
+/* Legacy variables - will be migrated to token system */
 :root {
   --sidebar-bg: #1a1b1e;
   --sidebar-width: 60px;
   --content-bg: #f8f9fa;
-  --accent-sab: #ff9100;
-  --accent-sonarr: #2196f3;
-  --accent-radarr: #ffc107;
-  --accent-tautulli: #282a2d; /* Dark theme default */
-  --accent-unraid: #f15a2c;
-  --text-primary: #333;
-  --text-secondary: #666;
   --card-bg: #fff;
   --border-radius: 8px;
 }

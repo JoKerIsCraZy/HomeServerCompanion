@@ -1,4 +1,5 @@
 import { formatSize, formatTime } from './utils.js';
+import { validateSearchQuery } from './inputValidation.js';
 
 // Queue
 /**
@@ -42,8 +43,8 @@ export const getSabnzbdHistory = async (url, apiKey, limit = 10) => {
 // Controls
 /**
  * Pauses the download queue.
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @param {string|null} time - Optional duration (e.g., "15", "30") or null for indefinite
  */
 export const pauseQueue = async (url, apiKey, time = null) => {

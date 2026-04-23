@@ -22,7 +22,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
             
             // Check if user has any configured services (existing user)
             const hasConfig = items.sabnzbdUrl || items.sonarrUrl || items.radarrUrl || 
-                              items.tautulliUrl || items.unraidUrl || items.overseerrUrl ||
+                              items.tautulliUrl || items.unraidUrl || items.seerrUrl ||
                               items.prowlarrUrl || items.wizarrUrl || items.portainerUrl ||
                               (items.portainerInstances && items.portainerInstances.length > 0);
             
@@ -77,7 +77,7 @@ async function updatePortainerRules() {
         const hostWithPort = urlObj.host; // includes port if specified
         const urlFilter = `*://${hostWithPort}/*`;
 
-        console.log("Setting Portainer Rule for:", urlFilter, "with Origin:", origin);
+        console.debug("Setting Portainer Rule for:", urlFilter, "with Origin:", origin);
 
         chrome.declarativeNetRequest.updateDynamicRules({
             removeRuleIds: [PORTAINER_RULE_ID],
@@ -100,7 +100,7 @@ async function updatePortainerRules() {
             if (chrome.runtime.lastError) {
                 console.error("Rule update failed:", chrome.runtime.lastError);
             } else {
-                console.log("Portainer rules updated successfully for:", origin);
+                console.debug("Portainer rules updated successfully for:", origin);
             }
         });
     } catch (e) {

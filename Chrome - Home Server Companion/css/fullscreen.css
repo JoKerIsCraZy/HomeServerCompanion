@@ -439,6 +439,198 @@ body.fullscreen-mode .tautulli-session-meta {
 }
 
 /* ============================================
+   TRACEARR
+   ============================================ */
+/* Streams Tab - Normal size like Tautulli */
+body.fullscreen-mode #tracearr-activity {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+body.fullscreen-mode #tracearr-activity .card {
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 0;
+}
+
+/* Statistics Tab - Compact ONLY */
+body.fullscreen-mode #tracearr-stats-content > div {
+  margin-bottom: 12px;
+}
+
+body.fullscreen-mode #tracearr-stats-content .stats-grid {
+  gap: 8px;
+}
+
+/* Stats Grid (Total Sessions, Total Users etc.) - Kleine Boxen, lesbare Texte */
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) {
+  gap: 10px !important;
+  margin-bottom: 14px !important;
+  padding: 0 !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card {
+  padding: 12px !important;
+  gap: 12px !important;
+  border-radius: 10px !important;
+  min-height: auto !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card > div:first-child {
+  width: 42px !important;
+  height: 42px !important;
+  font-size: 20px !important;
+  border-radius: 10px !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card > div:last-child {
+  gap: 3px !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card > div:last-child > div:first-child {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card > div:last-child > div:nth-child(2) {
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card > div:last-child > div:nth-child(3) {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+}
+
+/* Hero Section - Extra compact */
+body.fullscreen-mode #tracearr-stats-content > div:first-child {
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:first-child > div:first-child {
+  font-size: 8px;
+  margin-bottom: 6px;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:first-child > div:last-child {
+  gap: 8px;
+}
+
+/* Hero stat cards - Extra small */
+body.fullscreen-mode #tracearr-stats-content > div:first-child .statCard > div:first-child,
+body.fullscreen-mode #tracearr-stats-content > div:first-child .statCard > div:last-child > div:first-child {
+  font-size: 14px;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:first-child .statCard > div:last-child > div:last-child {
+  font-size: 8px;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:first-child .statCard > div:first-child {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+/* Stats Cards - Extra compact */
+body.fullscreen-mode #tracearr-stats-content .card {
+  padding: 8px;
+}
+
+body.fullscreen-mode #tracearr-stats-content .card > div:last-child > div:first-child {
+  font-size: 14px;
+}
+
+body.fullscreen-mode #tracearr-stats-content .card > div:last-child > div:last-child {
+  font-size: 9px;
+}
+
+body.fullscreen-mode #tracearr-stats-content .card > div:last-child > div:last-child {
+  font-size: 7px;
+}
+
+body.fullscreen-mode #tracearr-stats-content .card > div:first-child {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+/* Users Header - Smaller */
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(3) {
+  margin-bottom: 10px !important;
+  padding: 0 !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(3) h2 {
+  font-size: 14px !important;
+  margin: 0 !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(3) p {
+  font-size: 11px !important;
+  margin: 0 !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(3) > div:last-child {
+  font-size: 20px !important;
+}
+
+/* Users Grid - Kleine Boxen, lesbare Texte */
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) {
+  gap: 10px !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  padding: 0 !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card {
+  padding: 10px !important;
+  gap: 10px !important;
+  border-radius: 10px !important;
+  min-height: auto !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card > div:first-child {
+  font-size: 18px !important;
+  min-width: 24px !important;
+  padding: 0 !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card img {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card > div:last-child {
+  gap: 3px !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card > div:last-child > div:first-child {
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+}
+
+body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card > div:last-child > div:last-child > span {
+  font-size: 11px !important;
+}
+
+/* All headers - Smaller */
+body.fullscreen-mode #tracearr-stats-content > div > div:first-child,
+body.fullscreen-mode #tracearr-stats-content h2,
+body.fullscreen-mode #tracearr-stats-content > div > div > div:first-child {
+  font-size: 10px !important;
+}
+
+/* Decorative icons - Smaller */
+body.fullscreen-mode #tracearr-stats-content > div:last-child > div:last-child {
+  font-size: 16px;
+}
+
+/* ============================================
    UNRAID
    ============================================ */
 /* Unraid Tabs - Match other services */
@@ -776,39 +968,39 @@ body.fullscreen-mode .dropdown-item {
 }
 
 /* ============================================
-   OVERSEERR
+   SEERR
    ============================================ */
-/* Overseerr Tabs - Match other services */
-body.fullscreen-mode #overseerr-view .sub-tabs {
+/* Seerr Tabs - Match other services */
+body.fullscreen-mode #seerr-view .sub-tabs {
   padding: 8px !important;
   border-radius: 16px !important;
   gap: 8px !important;
 }
 
-body.fullscreen-mode #overseerr-view .sub-tab-btn {
+body.fullscreen-mode #seerr-view .sub-tab-btn {
   padding: 12px 28px !important;
   font-size: 15px !important;
   border-radius: 12px !important;
 }
 
-body.fullscreen-mode #overseerr-view .tab-glider {
+body.fullscreen-mode #seerr-view .tab-glider {
   top: 8px !important;
   left: 8px !important;
   height: calc(100% - 16px) !important;
   border-radius: 12px !important;
 }
 
-body.fullscreen-mode #overseerr-requests,
-body.fullscreen-mode #overseerr-trending-results,
-body.fullscreen-mode #overseerr-search-results {
+body.fullscreen-mode #seerr-requests,
+body.fullscreen-mode #seerr-trending-results,
+body.fullscreen-mode #seerr-search-results {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
 }
 
-body.fullscreen-mode #overseerr-requests .card,
-body.fullscreen-mode #overseerr-trending-results .card,
-body.fullscreen-mode #overseerr-search-results .card {
+body.fullscreen-mode #seerr-requests .card,
+body.fullscreen-mode #seerr-trending-results .card,
+body.fullscreen-mode #seerr-search-results .card {
   padding: 0;
   border-radius: 12px;
   margin-bottom: 0;
@@ -1012,9 +1204,9 @@ body.fullscreen-mode ::-webkit-scrollbar-thumb {
   body.fullscreen-mode #unraid-docker-list,
   body.fullscreen-mode #prowlarr-indexers,
   body.fullscreen-mode #prowlarr-search-results,
-  body.fullscreen-mode #overseerr-requests,
-  body.fullscreen-mode #overseerr-trending-results,
-  body.fullscreen-mode #overseerr-search-results {
+  body.fullscreen-mode #seerr-requests,
+  body.fullscreen-mode #seerr-trending-results,
+  body.fullscreen-mode #seerr-search-results {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
   }
 }
@@ -1032,9 +1224,9 @@ body.fullscreen-mode ::-webkit-scrollbar-thumb {
   body.fullscreen-mode #unraid-docker-list,
   body.fullscreen-mode #prowlarr-indexers,
   body.fullscreen-mode #prowlarr-search-results,
-  body.fullscreen-mode #overseerr-requests,
-  body.fullscreen-mode #overseerr-trending-results,
-  body.fullscreen-mode #overseerr-search-results,
+  body.fullscreen-mode #seerr-requests,
+  body.fullscreen-mode #seerr-trending-results,
+  body.fullscreen-mode #seerr-search-results,
   body.fullscreen-mode #dashboard-view .dashboard-grid {
     grid-template-columns: 1fr !important;
   }

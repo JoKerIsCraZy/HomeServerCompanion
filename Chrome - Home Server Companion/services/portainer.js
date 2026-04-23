@@ -1,5 +1,7 @@
 // Portainer API Service
 
+import { validateSearchQuery } from './inputValidation.js';
+
 /**
  * Makes an authenticated request to the Portainer API.
  * @param {string} url - Base Portainer URL
@@ -25,12 +27,12 @@ async function portainerFetch(url, token, endpoint, options = {}) {
         headers,
         credentials: 'omit' // Don't send cookies - prevents CSRF token requirement
     });
-    
+
     if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Portainer API Error ${response.status}: ${errorText}`);
     }
-    
+
     return response.json();
 }
 
@@ -108,8 +110,17 @@ export async function getStacks(url, token) {
  */
 export async function controlContainer(url, token, endpointId, containerId, action) {
     try {
-        const response = await portainerFetch(url, token, 
-            `/endpoints/${endpointId}/docker/containers/${containerId}/${action}`,
+        // Validate action parameter
+        const allowedActions = ['start', 'stop', 'restart', 'pause', 'unpause'];
+        if (!allowedActions.includes(action)) {
+            throw new Error(`Invalid action: ${action}`);
+        }
+
+        // Sanitize containerId to prevent path injection
+        const sanitizedId = String(containerId).replace(/[^\w\-]/g, '');
+
+        const response = await portainerFetch(url, token,
+            `/endpoints/${endpointId}/docker/containers/${sanitizedId}/${action}`,
             { method: 'POST' }
         );
         return response;
@@ -134,8 +145,20 @@ export async function controlContainer(url, token, endpointId, containerId, acti
  */
 export async function controlStack(url, token, stackId, action, endpointId = 1) {
     try {
-        return await portainerFetch(url, token, 
-            `/stacks/${stackId}/${action}?endpointId=${endpointId}`,
+        // Validate action parameter
+        const allowedActions = ['start', 'stop'];
+        if (!allowedActions.includes(action)) {
+            throw new Error(`Invalid action: ${action}`);
+        }
+
+        // Validate and sanitize stackId
+        const sanitizedStackId = parseInt(stackId);
+        if (isNaN(sanitizedStackId) || sanitizedStackId <= 0) {
+            throw new Error(`Invalid stack ID: ${stackId}`);
+        }
+
+        return await portainerFetch(url, token,
+            `/stacks/${sanitizedStackId}/${action}?endpointId=${endpointId}`,
             { method: 'POST' }
         );
     } catch (error) {

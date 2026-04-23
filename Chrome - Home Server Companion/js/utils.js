@@ -17,6 +17,128 @@ export function escapeHtml(str) {
 }
 
 /**
+ * Validates a URL is safe for chrome.tabs.create()
+ * @param {string} urlString - URL to validate
+ * @returns {boolean} - True if safe (http:// or https://), false otherwise
+ */
+export function validateUrl(urlString) {
+    if (!urlString || typeof urlString !== 'string') {
+        return false;
+    }
+    try {
+        const url = new URL(urlString);
+        // Allow http, https, plex (Plex deep links), and chrome-extension (own runtime URLs)
+        return ['http:', 'https:', 'plex:', 'chrome-extension:'].includes(url.protocol);
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Checks whether a host looks like it belongs to a private/local network.
+ * Used to give `chrome.tabs.create()` links that come from service responses
+ * an extra sanity check — a compromised Sonarr/Radarr/Unraid instance
+ * shouldn't be able to redirect the user to arbitrary public sites without
+ * the user seeing it first.
+ * @param {string} hostname
+ * @returns {boolean}
+ */
+export function isLocalHost(hostname) {
+    if (!hostname) return false;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true;
+    // RFC1918 private IPv4 ranges
+    if (/^10\./.test(hostname)) return true;
+    if (/^192\.168\./.test(hostname)) return true;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)) return true;
+    // IPv4 link-local
+    if (/^169\.254\./.test(hostname)) return true;
+    // IPv6 unique-local / link-local
+    if (/^(fc|fd)[0-9a-f]{2}:/i.test(hostname)) return true;
+    if (/^fe80:/i.test(hostname)) return true;
+    // Common local TLDs used on home networks
+    if (/\.(local|home|lan|internal|intranet)$/i.test(hostname)) return true;
+    return false;
+}
+
+/**
+ * Returns true if the candidate URL is trusted for silent navigation.
+ * A URL is trusted when it is local/private, OR its host matches the host
+ * of one of the user-configured trusted base URLs (their own home servers).
+ * Everything else — e.g. a `webUiUrl` label pointing to `evil.com` pushed
+ * by a compromised container — must go through a user-visible confirmation.
+ *
+ * @param {string} candidateUrl - URL we're about to open
+ * @param {string[]} trustedBaseUrls - Configured service URLs (radarrUrl, unraidUrl, …)
+ * @returns {boolean}
+ */
+export function isTrustedNavigationUrl(candidateUrl, trustedBaseUrls = []) {
+    if (!validateUrl(candidateUrl)) return false;
+    try {
+        const u = new URL(candidateUrl);
+        // Extension's own pages, Plex deep links — always trusted
+        if (u.protocol === 'chrome-extension:' || u.protocol === 'plex:') return true;
+        if (isLocalHost(u.hostname)) return true;
+        for (const base of trustedBaseUrls) {
+            if (!base) continue;
+            try {
+                const b = new URL(base);
+                if (b.hostname === u.hostname) return true;
+            } catch { /* ignore malformed base */ }
+        }
+        return false;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Collects every configured service URL from the app state so callers can
+ * build a trusted-host list without knowing every service key by name.
+ * @param {object} configs - The Chrome-synced configs object
+ * @returns {string[]}
+ */
+export function collectTrustedBaseUrls(configs = {}) {
+    const urls = [];
+    const keys = Object.keys(configs);
+    for (const k of keys) {
+        if (typeof configs[k] === 'string' && /Url$/.test(k) && configs[k]) {
+            urls.push(configs[k]);
+        }
+    }
+    // Portainer multi-instance
+    if (Array.isArray(configs.portainerInstances)) {
+        for (const inst of configs.portainerInstances) {
+            if (inst?.url) urls.push(inst.url);
+        }
+    }
+    return urls;
+}
+
+/**
+ * Safe open-in-new-tab wrapper. Opens the URL directly if it is trusted,
+ * otherwise prompts the user to confirm the external navigation.
+ * @param {string} candidateUrl
+ * @param {object} configs - App configs (used to derive trusted hosts)
+ * @param {string} [source] - Optional origin label shown in the prompt
+ */
+export function openUrlSafely(candidateUrl, configs = {}, source = '') {
+    if (!validateUrl(candidateUrl)) return false;
+    const trusted = collectTrustedBaseUrls(configs);
+    if (isTrustedNavigationUrl(candidateUrl, trusted)) {
+        chrome.tabs.create({ url: candidateUrl });
+        return true;
+    }
+    let host = '';
+    try { host = new URL(candidateUrl).hostname; } catch { /* ignore */ }
+    const origin = source ? ` (from ${source})` : '';
+    const ok = confirm(
+        `This link${origin} points to an external site:\n\n${host}\n\nOpen it anyway?`
+    );
+    if (ok) chrome.tabs.create({ url: candidateUrl });
+    return ok;
+}
+
+/**
  * Shows a global notification toast
  * @param {string} message - Message to display
  * @param {string} type - 'success', 'error', 'info'
@@ -407,44 +529,63 @@ export async function checkAndShowChangelog() {
     if (result.last_run_version !== version) {
         // Create changelog content safely using DOM API
         const changelogItems = [
-            { title: 'Setup Wizard:', desc: 'New first-run setup wizard guides you through configuring all your services with a beautiful step-by-step interface.' },
-            { title: 'Overseerr Multi-Auth:', desc: 'Choose between API Key, Local Account, or Plex Sign-In for Overseerr authentication.' },
-            { title: 'Bug Fixes:', desc: 'Fixed sidebar not hiding disabled services, improved dropdown styling, backwards compatibility for existing configs.' }
+            { title: 'Tracearr:', desc: 'New service for monitoring Plex streams with live progress bars, stream details, and a statistics dashboard.' },
+            { title: 'Seerr (formerly Overseerr):', desc: 'Rebranded with Multi-Auth support (API Key, Local Account, Plex Sign-In). Your existing settings migrate automatically on first launch.' },
+            { title: 'Unraid Temperatures:', desc: 'Live CPU, Motherboard, and Hottest Disk temperature cards on the Unraid dashboard (requires Unraid OS 7.3+ / API v4.30).' },
+            { title: 'Docker Template Icons:', desc: 'Unraid containers now show their template icons directly in the list — no more two-letter placeholders.' },
+            { title: 'Instant Load:', desc: 'Unraid tab renders from the last snapshot immediately while fetching fresh data in the background. No more blank screens.' },
+            { title: 'Responsive Design:', desc: 'Mobile and tablet optimized interface with touch-friendly navigation and a reusable component library.' },
+            { title: 'Security Hardening:', desc: 'Tighter Content Security Policy, DOM injection protection, and confirmation prompts before opening external links from Docker labels.' },
+            { title: 'Performance:', desc: 'Up to 3× faster dashboard refresh — smarter polling, staggered badge updates, and fewer API roundtrips.' },
+            { title: 'Bug Fixes:', desc: 'Fullscreen button now opens correctly, Seerr request statuses display accurately, Tracearr empty state clears when streams start.' }
         ];
         
         // Create modal with DOM
         const modal = document.createElement('div');
         modal.className = 'custom-modal-backdrop';
-        
+
         const content = document.createElement('div');
         content.className = 'custom-modal';
-        
+        // Constrain to popup viewport — Chrome extension popups are small.
+        // Use flex column so the body can scroll while header/footer stay pinned.
+        content.style.maxHeight = '85vh';
+        content.style.display = 'flex';
+        content.style.flexDirection = 'column';
+
         const header = document.createElement('div');
         header.className = 'custom-modal-header';
+        header.style.flexShrink = '0';
         header.textContent = `What's New in v${version}`;
-        
+
         const body = document.createElement('div');
         body.className = 'custom-modal-body';
         body.style.textAlign = 'left';
-        
+        body.style.padding = '14px 18px';
+        body.style.fontSize = '12.5px';
+        body.style.overflowY = 'auto';
+        body.style.flex = '1 1 auto';
+        body.style.minHeight = '0';
+
         const ul = document.createElement('ul');
-        ul.style.cssText = 'padding-left: 20px; margin: 0; list-style-type: disc;';
-        
+        ul.style.cssText = 'padding-left: 18px; margin: 0; list-style-type: disc;';
+
         changelogItems.forEach(item => {
             const li = document.createElement('li');
-            li.style.marginBottom = '4px';
+            li.style.marginBottom = '6px';
+            li.style.lineHeight = '1.4';
             const b = document.createElement('b');
             b.textContent = item.title;
             li.appendChild(b);
             li.appendChild(document.createTextNode(' ' + item.desc));
             ul.appendChild(li);
         });
-        
+
         body.appendChild(ul);
         
         const footer = document.createElement('div');
         footer.className = 'custom-modal-footer';
-        
+        footer.style.flexShrink = '0';
+
         const confirmBtn = document.createElement('button');
         confirmBtn.className = 'modal-btn confirm';
         confirmBtn.style.backgroundColor = '#2196f3';

@@ -1,6 +1,6 @@
 import * as Sonarr from "../../services/sonarr.js";
 import { formatSize } from "../../services/utils.js";
-import { showNotification, showConfirmModal, escapeHtml } from "../utils.js";
+import { showNotification, showConfirmModal, escapeHtml, validateUrl } from "../utils.js";
 
 /**
  * Initializes the Sonarr service view.
@@ -108,7 +108,35 @@ function renderSonarrCalendar(episodes, state) {
       // Add Link to FIRST element ("Top element")
       if (index === 0) {
           const linkBtn = document.createElement('button');
-          linkBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+
+          // Create SVG for external link icon
+          const svg1 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg1.setAttribute("width", "16");
+          svg1.setAttribute("height", "16");
+          svg1.setAttribute("viewBox", "0 0 24 24");
+          svg1.setAttribute("fill", "none");
+          svg1.setAttribute("stroke", "currentColor");
+          svg1.setAttribute("stroke-width", "2");
+          svg1.setAttribute("stroke-linecap", "round");
+          svg1.setAttribute("stroke-linejoin", "round");
+
+          const path1 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path1.setAttribute("d", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6");
+
+          const polyline1 = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+          polyline1.setAttribute("points", "15 3 21 3 21 9");
+
+          const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line1.setAttribute("x1", "10");
+          line1.setAttribute("y1", "14");
+          line1.setAttribute("x2", "21");
+          line1.setAttribute("y2", "3");
+
+          svg1.appendChild(path1);
+          svg1.appendChild(polyline1);
+          svg1.appendChild(line1);
+          linkBtn.appendChild(svg1);
+
           linkBtn.title = "Open Calendar";
           linkBtn.style.cssText = "background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); cursor: pointer; padding: 6px 8px; border-radius: 6px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; margin-left: 10px;";
           
@@ -119,7 +147,8 @@ function renderSonarrCalendar(episodes, state) {
               e.stopPropagation();
               let cleanUrl = state.configs.sonarrUrl;
               if(cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
-              chrome.tabs.create({ url: `${cleanUrl}/calendar` });
+              const calendarUrl = `${cleanUrl}/calendar`;
+              if (validateUrl(calendarUrl)) chrome.tabs.create({ url: calendarUrl });
           };
           header.appendChild(linkBtn);
       }
@@ -208,9 +237,9 @@ function renderSonarrCalendar(episodes, state) {
 
         // Status Ribbon (Top Right)
         let statusColor = "#9e9e9e";
-        if (ep.hasFile) statusColor = "#4caf50";
-        else if (new Date() > airTime) statusColor = "#f44336"; // Missing
-        else statusColor = "#2196f3"; // Airing/Upcoming
+        if (ep.hasFile) statusColor = "#4caf50"; // Downloaded - green
+        else if (new Date() > airTime) statusColor = "#ff9800"; // Missing - orange
+        else statusColor = "#f44336"; // Upcoming - red
 
         const ribbon = document.createElement("div");
         ribbon.style.cssText = `position: absolute; top: 8px; right: 8px; width: 10px; height: 10px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 5px ${statusColor};`;
@@ -225,7 +254,8 @@ function renderSonarrCalendar(episodes, state) {
             card.style.cursor = "pointer";
             card.onclick = () => {
                 const url = state.configs.sonarrUrl;
-                chrome.tabs.create({ url: `${url}/series/${ep.series.titleSlug}` });
+                const seriesUrl = `${url}/series/${ep.series.titleSlug}`;
+                if (validateUrl(seriesUrl)) chrome.tabs.create({ url: seriesUrl });
             };
         }
 
@@ -293,7 +323,35 @@ function renderSonarrQueue(records, state) {
     
     // Open in Sonarr button (external link icon)
     const linkBtn = document.createElement('button');
-    linkBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+
+    // Create SVG for external link icon
+    const svg2 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg2.setAttribute("width", "16");
+    svg2.setAttribute("height", "16");
+    svg2.setAttribute("viewBox", "0 0 24 24");
+    svg2.setAttribute("fill", "none");
+    svg2.setAttribute("stroke", "currentColor");
+    svg2.setAttribute("stroke-width", "2");
+    svg2.setAttribute("stroke-linecap", "round");
+    svg2.setAttribute("stroke-linejoin", "round");
+
+    const path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path2.setAttribute("d", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6");
+
+    const polyline2 = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    polyline2.setAttribute("points", "15 3 21 3 21 9");
+
+    const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line2.setAttribute("x1", "10");
+    line2.setAttribute("y1", "14");
+    line2.setAttribute("x2", "21");
+    line2.setAttribute("y2", "3");
+
+    svg2.appendChild(path2);
+    svg2.appendChild(polyline2);
+    svg2.appendChild(line2);
+    linkBtn.appendChild(svg2);
+
     linkBtn.title = "Open Activity Queue in Sonarr";
     linkBtn.style.cssText = "background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); cursor: pointer; padding: 6px 8px; border-radius: 6px; transition: all 0.2s; display: flex; align-items: center; justify-content: center;";
     linkBtn.onmouseover = () => { linkBtn.style.background = "rgba(255,255,255,0.1)"; linkBtn.style.color = "var(--accent-sonarr)"; };
@@ -302,13 +360,39 @@ function renderSonarrQueue(records, state) {
         e.stopPropagation();
         let cleanUrl = state.configs.sonarrUrl;
         if(cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
-        chrome.tabs.create({ url: `${cleanUrl}/activity/queue` });
+        const queueUrl = `${cleanUrl}/activity/queue`;
+        if (validateUrl(queueUrl)) chrome.tabs.create({ url: queueUrl });
     };
 
     // Refresh button (icon only)
     const refreshBtn = document.createElement('button');
     refreshBtn.className = "refresh-btn";
-    refreshBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`;
+
+    // Create SVG for refresh icon
+    const svg3 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg3.setAttribute("width", "16");
+    svg3.setAttribute("height", "16");
+    svg3.setAttribute("viewBox", "0 0 24 24");
+    svg3.setAttribute("fill", "none");
+    svg3.setAttribute("stroke", "currentColor");
+    svg3.setAttribute("stroke-width", "2");
+    svg3.setAttribute("stroke-linecap", "round");
+    svg3.setAttribute("stroke-linejoin", "round");
+
+    const polyline3a = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    polyline3a.setAttribute("points", "23 4 23 10 17 10");
+
+    const polyline3b = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    polyline3b.setAttribute("points", "1 20 1 14 7 14");
+
+    const path3 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path3.setAttribute("d", "M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15");
+
+    svg3.appendChild(polyline3a);
+    svg3.appendChild(polyline3b);
+    svg3.appendChild(path3);
+    refreshBtn.appendChild(svg3);
+
     refreshBtn.title = "Refresh Queue";
     refreshBtn.style.cssText = "background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); cursor: pointer; padding: 6px 8px; border-radius: 6px; transition: all 0.2s; display: flex; align-items: center; justify-content: center;";
     refreshBtn.onmouseover = () => { if(!refreshBtn.disabled) { refreshBtn.style.background = "rgba(255,255,255,0.1)"; refreshBtn.style.color = "var(--text-primary)"; } };
@@ -330,10 +414,14 @@ function renderSonarrQueue(records, state) {
     if (records.length === 0) {
         const emptyDiv = document.createElement('div');
         emptyDiv.className = 'queue-empty';
-        emptyDiv.innerHTML = `
-            <div class="queue-empty-icon">📭</div>
-            <div class="queue-empty-text">Queue is empty</div>
-        `;
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'queue-empty-icon';
+        iconDiv.textContent = '📭';
+        const textDiv = document.createElement('div');
+        textDiv.className = 'queue-empty-text';
+        textDiv.textContent = 'Queue is empty';
+        emptyDiv.appendChild(iconDiv);
+        emptyDiv.appendChild(textDiv);
         container.appendChild(emptyDiv);
         return;
     }
@@ -389,46 +477,134 @@ function renderSonarrQueue(records, state) {
         const card = document.createElement('div');
         card.className = `queue-card${isWarning ? ' ' + tStatus : ''}`;
 
-        const displayTitle = escapeHtml(series.title || 'Unknown');
-        const escapedQuality = escapeHtml(quality);
-        const escapedItemTitle = escapeHtml(item.title);
-        const escapedStatusMessage = escapeHtml(statusMessage);
-        const escapedStatusText = escapeHtml(statusText);
+        // Poster container
+        const posterDiv = document.createElement('div');
+        posterDiv.className = 'queue-poster';
 
-        card.innerHTML = `
-            <div class="queue-poster">
-                <img id="queue-poster-${item.id}" src="${escapeHtml(posterUrl)}" alt="" onerror="this.src='icons/icon48.png'">
-            </div>
-            <div class="queue-content">
-                <div class="queue-header">
-                    <div id="queue-title-${item.id}" class="queue-title" title="${displayTitle}">${displayTitle}</div>
-                </div>
-                <div class="queue-subtitle">
-                    <span id="queue-epstring-${item.id}" style="font-weight:700; color:var(--text-primary); margin-right:6px;">${escapeHtml(epString)}</span>
-                    ${quality ? `<span class="queue-quality">${escapedQuality}</span>` : ''}
-                </div>
+        const img = document.createElement('img');
+        img.id = `queue-poster-${item.id}`;
+        img.src = posterUrl;
+        img.alt = '';
+        img.addEventListener('error', function() { this.src = 'icons/icon48.png'; });
 
-                <div class="queue-progress-row">
-                    <div class="queue-progress-bar">
-                        <div class="queue-progress-fill" style="width: ${percent}%"></div>
-                    </div>
-                    <span class="queue-percentage">${Math.round(percent)}%</span>
-                </div>
+        posterDiv.appendChild(img);
+        card.appendChild(posterDiv);
 
-                <div style="font-size:10px; color:var(--text-secondary); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.8;" title="${escapedItemTitle}">
-                    <span style="font-weight:600; opacity:0.7;">Release Name:</span> ${escapedItemTitle}
-                </div>
+        // Content container
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'queue-content';
 
-                <div class="queue-details">
-                    <span class="queue-size">${escapeHtml(formatSize(item.sizeleft))} left</span>
-                    <span class="queue-status-chip ${statusClass}" title="${escapedStatusMessage}" style="cursor:help;">${escapedStatusText}</span>
-                </div>
-            </div>
-            <div class="queue-actions">
-                ${isWarning ? `<button class="queue-action-btn import-btn" title="Manual Import">🔧</button>` : '<div></div>'}
-                <button class="queue-action-btn delete-btn" title="Remove from Queue">×</button>
-            </div>
-        `;
+        // Header
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'queue-header';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.id = `queue-title-${item.id}`;
+        titleDiv.className = 'queue-title';
+        titleDiv.title = series.title || 'Unknown';
+        titleDiv.textContent = series.title || 'Unknown';
+
+        headerDiv.appendChild(titleDiv);
+        contentDiv.appendChild(headerDiv);
+
+        // Subtitle
+        const subtitleDiv = document.createElement('div');
+        subtitleDiv.className = 'queue-subtitle';
+
+        const epStringSpan = document.createElement('span');
+        epStringSpan.id = `queue-epstring-${item.id}`;
+        epStringSpan.style.cssText = 'font-weight:700; color:var(--text-primary); margin-right:6px;';
+        epStringSpan.textContent = epString;
+
+        subtitleDiv.appendChild(epStringSpan);
+
+        if (quality) {
+            const qualitySpan = document.createElement('span');
+            qualitySpan.className = 'queue-quality';
+            qualitySpan.textContent = quality;
+            subtitleDiv.appendChild(qualitySpan);
+        }
+
+        contentDiv.appendChild(subtitleDiv);
+
+        // Progress row
+        const progressRowDiv = document.createElement('div');
+        progressRowDiv.className = 'queue-progress-row';
+
+        const progressBarDiv = document.createElement('div');
+        progressBarDiv.className = 'queue-progress-bar';
+
+        const progressFillDiv = document.createElement('div');
+        progressFillDiv.className = 'queue-progress-fill';
+        progressFillDiv.style.width = `${percent}%`;
+
+        progressBarDiv.appendChild(progressFillDiv);
+        progressRowDiv.appendChild(progressBarDiv);
+
+        const percentageSpan = document.createElement('span');
+        percentageSpan.className = 'queue-percentage';
+        percentageSpan.textContent = `${Math.round(percent)}%`;
+
+        progressRowDiv.appendChild(percentageSpan);
+        contentDiv.appendChild(progressRowDiv);
+
+        // Release name
+        const releaseNameDiv = document.createElement('div');
+        releaseNameDiv.style.cssText = 'font-size:10px; color:var(--text-secondary); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.8;';
+        releaseNameDiv.title = item.title;
+
+        const releaseLabelSpan = document.createElement('span');
+        releaseLabelSpan.style.cssText = 'font-weight:600; opacity:0.7;';
+        releaseLabelSpan.textContent = 'Release Name: ';
+
+        const releaseValueText = document.createTextNode(item.title);
+
+        releaseNameDiv.appendChild(releaseLabelSpan);
+        releaseNameDiv.appendChild(releaseValueText);
+        contentDiv.appendChild(releaseNameDiv);
+
+        // Details
+        const detailsDiv = document.createElement('div');
+        detailsDiv.className = 'queue-details';
+
+        const sizeSpan = document.createElement('span');
+        sizeSpan.className = 'queue-size';
+        sizeSpan.textContent = `${formatSize(item.sizeleft)} left`;
+
+        const statusChipSpan = document.createElement('span');
+        statusChipSpan.className = `queue-status-chip ${statusClass}`;
+        statusChipSpan.title = statusMessage;
+        statusChipSpan.style.cssText = 'cursor:help;';
+        statusChipSpan.textContent = statusText;
+
+        detailsDiv.appendChild(sizeSpan);
+        detailsDiv.appendChild(statusChipSpan);
+        contentDiv.appendChild(detailsDiv);
+
+        card.appendChild(contentDiv);
+
+        // Actions
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'queue-actions';
+
+        if (isWarning) {
+            const importBtn = document.createElement('button');
+            importBtn.className = 'queue-action-btn import-btn';
+            importBtn.title = 'Manual Import';
+            importBtn.textContent = '🔧';
+            actionsDiv.appendChild(importBtn);
+        } else {
+            const placeholderDiv = document.createElement('div');
+            actionsDiv.appendChild(placeholderDiv);
+        }
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'queue-action-btn delete-btn';
+        deleteBtn.title = 'Remove from Queue';
+        deleteBtn.textContent = '×';
+
+        actionsDiv.appendChild(deleteBtn);
+        card.appendChild(actionsDiv);
 
         if (!series || !series.title) {
             Sonarr.parseTitle(state.configs.sonarrUrl, state.configs.sonarrKey, item.title)
@@ -457,7 +633,12 @@ function renderSonarrQueue(records, state) {
                             
                             // Start by displaying the unmapped string
                             if (titleEl) {
-                                titleEl.innerHTML = escapeHtml(rawTitle) + ' <span style="font-size: 0.8em; color: #ff9800;">(Unmapped)</span>';
+                                titleEl.textContent = '';
+                                titleEl.appendChild(document.createTextNode(rawTitle));
+                                const span = document.createElement('span');
+                                span.style.cssText = 'font-size: 0.8em; color: #ff9800;';
+                                span.textContent = '(Unmapped)';
+                                titleEl.appendChild(span);
                                 titleEl.title = rawTitle + " (Series not matched in DB)";
                             }
 
@@ -507,7 +688,12 @@ function renderSonarrQueue(records, state) {
                                     // If we matched the first word
                                     if (bestMatch && bestScore > 0) {
                                         if (titleEl) {
-                                            titleEl.innerHTML = escapeHtml(bestMatch.title) + ' <span style="font-size: 0.8em; color: #4caf50;">(Fuzzy)</span>';
+                                            titleEl.textContent = '';
+                                            titleEl.appendChild(document.createTextNode(bestMatch.title));
+                                            const span = document.createElement('span');
+                                            span.style.cssText = 'font-size: 0.8em; color: #4caf50;';
+                                            span.textContent = '(Fuzzy)';
+                                            titleEl.appendChild(span);
                                             titleEl.title = `Mapped from first word of: ${rawTitle}`;
                                         }
                                         
@@ -520,7 +706,7 @@ function renderSonarrQueue(records, state) {
                                         }
                                     }
 
-                                }).catch(err => console.log("Fuzzy match fetch failed", err));
+                                }).catch(err => console.warn("Fuzzy match fetch failed", err));
                         }
 
                         // Try to update Season/Episode number whether mapped or unmapped
@@ -542,7 +728,7 @@ function renderSonarrQueue(records, state) {
                         }
                     }
                 }).catch(err => {
-                    console.log("Failed to parse unknown queue item title:", err);
+                    console.warn("Failed to parse unknown queue item title:", err);
                 });
         }
 
@@ -859,33 +1045,54 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         // Left side: Delete options
         const leftActions = document.createElement('div');
         leftActions.style.cssText = 'display: flex; align-items: center; gap: 5px;';
-        
+
         const trashBtn = document.createElement('button');
-        trashBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+
+        // Create trash SVG
+        const trashSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        trashSvg.setAttribute("width", "18");
+        trashSvg.setAttribute("height", "18");
+        trashSvg.setAttribute("viewBox", "0 0 24 24");
+        trashSvg.setAttribute("fill", "none");
+        trashSvg.setAttribute("stroke", "currentColor");
+        trashSvg.setAttribute("stroke-width", "2");
+        trashSvg.setAttribute("stroke-linecap", "round");
+        trashSvg.setAttribute("stroke-linejoin", "round");
+
+        const trashPolyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+        trashPolyline.setAttribute("points", "3 6 5 6 21 6");
+
+        const trashPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        trashPath.setAttribute("d", "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2");
+
+        trashSvg.appendChild(trashPolyline);
+        trashSvg.appendChild(trashPath);
+        trashBtn.appendChild(trashSvg);
+
         trashBtn.title = "Remove from Queue";
         trashBtn.style.cssText = 'background: #f44336; color: white; border: none; border-radius: 4px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;';
         trashBtn.onmouseover = () => trashBtn.style.background = "#d32f2f";
         trashBtn.onmouseout = () => trashBtn.style.background = "#f44336";
-        
+
         trashBtn.onclick = (e) => {
              e.stopPropagation();
              // Expand options
-             leftActions.innerHTML = '';
-             
+             leftActions.textContent = '';
+
              const btnRemove = document.createElement('button');
-             btnRemove.innerHTML = '🗑️ Remove';
+             btnRemove.textContent = '🗑️ Remove';
              btnRemove.title = "Remove from Client";
              btnRemove.style.cssText = "background: #f44336; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-right: 5px;";
-             
+
              const btnBlock = document.createElement('button');
-             btnBlock.innerHTML = '🚫 Blocklist';
+             btnBlock.textContent = '🚫 Blocklist';
              btnBlock.title = "Remove, Blocklist & Search";
              btnBlock.style.cssText = "background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-right: 5px;";
-             
+
              const btnCancel = document.createElement('button');
              btnCancel.textContent = "×";
              btnCancel.style.cssText = "background: #9e9e9e; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;";
-             
+
              btnRemove.onclick = async () => {
                 if(confirm('Confirm Remove from Queue?')) {
                     try {
@@ -899,7 +1106,7 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
                     }
                 }
              };
-             
+
              btnBlock.onclick = async () => {
                  if(confirm('Confirm Blocklist release and search for new one?')) {
                     try {
@@ -913,12 +1120,12 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
                     }
                  }
              };
-             
+
              btnCancel.onclick = () => {
-                 leftActions.innerHTML = '';
+                 leftActions.textContent = '';
                  leftActions.appendChild(trashBtn);
              };
-             
+
              leftActions.appendChild(btnRemove);
              leftActions.appendChild(btnBlock);
              leftActions.appendChild(btnCancel);
@@ -1131,7 +1338,8 @@ function renderSonarrHistory(records, state) {
       if (series.titleSlug) {
           card.onclick = () => {
               const url = state.configs.sonarrUrl;
-              chrome.tabs.create({ url: `${url}/series/${series.titleSlug}` });
+              const seriesUrl = `${url}/series/${series.titleSlug}`;
+              if (validateUrl(seriesUrl)) chrome.tabs.create({ url: seriesUrl });
           };
           card.onmouseenter = () => card.style.transform = "translateY(-3px)";
           card.onmouseleave = () => card.style.transform = "translateY(0)";
@@ -1344,7 +1552,24 @@ function renderSonarrMissing(records, state) {
     countBadge.style.cssText = "font-weight: bold; color: var(--text-secondary); font-size: 0.9em;";
     
     const refreshBtn = document.createElement('button');
-    refreshBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>`;
+
+    // Create refresh SVG
+    const refreshSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    refreshSvg.setAttribute("width", "16");
+    refreshSvg.setAttribute("height", "16");
+    refreshSvg.setAttribute("viewBox", "0 0 24 24");
+    refreshSvg.setAttribute("fill", "none");
+    refreshSvg.setAttribute("stroke", "currentColor");
+    refreshSvg.setAttribute("stroke-width", "2");
+    refreshSvg.setAttribute("stroke-linecap", "round");
+    refreshSvg.setAttribute("stroke-linejoin", "round");
+
+    const refreshPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    refreshPath.setAttribute("d", "M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3");
+
+    refreshSvg.appendChild(refreshPath);
+    refreshBtn.appendChild(refreshSvg);
+
     refreshBtn.title = "Refresh Cache";
     refreshBtn.classList.add("icon-btn");
     refreshBtn.style.cssText = "background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 0; border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;";
@@ -1357,7 +1582,36 @@ function renderSonarrMissing(records, state) {
     };
 
     const searchAllBtn = document.createElement('button');
-    searchAllBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search All`;
+
+    // Create search SVG
+    const searchSvg1 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    searchSvg1.setAttribute("width", "16");
+    searchSvg1.setAttribute("height", "16");
+    searchSvg1.setAttribute("viewBox", "0 0 24 24");
+    searchSvg1.setAttribute("fill", "none");
+    searchSvg1.setAttribute("stroke", "currentColor");
+    searchSvg1.setAttribute("stroke-width", "2");
+    searchSvg1.setAttribute("stroke-linecap", "round");
+    searchSvg1.setAttribute("stroke-linejoin", "round");
+
+    const searchCircle1 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    searchCircle1.setAttribute("cx", "11");
+    searchCircle1.setAttribute("cy", "11");
+    searchCircle1.setAttribute("r", "8");
+
+    const searchLine1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    searchLine1.setAttribute("x1", "21");
+    searchLine1.setAttribute("y1", "21");
+    searchLine1.setAttribute("x2", "16.65");
+    searchLine1.setAttribute("y2", "16.65");
+
+    searchSvg1.appendChild(searchCircle1);
+    searchSvg1.appendChild(searchLine1);
+    searchAllBtn.appendChild(searchSvg1);
+
+    const searchAllText = document.createTextNode(' Search All');
+    searchAllBtn.appendChild(searchAllText);
+
     searchAllBtn.title = "Search All Missing Episodes";
     searchAllBtn.classList.add("btn-primary");
     searchAllBtn.style.cssText = "background: var(--accent-sonarr); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-size: 0.9em; font-weight: bold;";
@@ -1388,7 +1642,36 @@ function renderSonarrMissing(records, state) {
         }
         
         setTimeout(() => {
-            searchAllBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search All`;
+            // Restore button content
+            searchAllBtn.textContent = '';
+            const searchSvg2 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            searchSvg2.setAttribute("width", "16");
+            searchSvg2.setAttribute("height", "16");
+            searchSvg2.setAttribute("viewBox", "0 0 24 24");
+            searchSvg2.setAttribute("fill", "none");
+            searchSvg2.setAttribute("stroke", "currentColor");
+            searchSvg2.setAttribute("stroke-width", "2");
+            searchSvg2.setAttribute("stroke-linecap", "round");
+            searchSvg2.setAttribute("stroke-linejoin", "round");
+
+            const searchCircle2 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            searchCircle2.setAttribute("cx", "11");
+            searchCircle2.setAttribute("cy", "11");
+            searchCircle2.setAttribute("r", "8");
+
+            const searchLine2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            searchLine2.setAttribute("x1", "21");
+            searchLine2.setAttribute("y1", "21");
+            searchLine2.setAttribute("x2", "16.65");
+            searchLine2.setAttribute("y2", "16.65");
+
+            searchSvg2.appendChild(searchCircle2);
+            searchSvg2.appendChild(searchLine2);
+            searchAllBtn.appendChild(searchSvg2);
+
+            const searchAllText2 = document.createTextNode(' Search All');
+            searchAllBtn.appendChild(searchAllText2);
+
             searchAllBtn.style.pointerEvents = 'auto';
             searchAllBtn.style.opacity = '1';
         }, 2000);
@@ -1477,7 +1760,33 @@ function renderSonarrMissing(records, state) {
         infoDiv.appendChild(dateDiv);
 
         const searchBtn = document.createElement("div");
-        searchBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
+
+        // Create search SVG
+        const searchSvg3 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        searchSvg3.setAttribute("width", "14");
+        searchSvg3.setAttribute("height", "14");
+        searchSvg3.setAttribute("viewBox", "0 0 24 24");
+        searchSvg3.setAttribute("fill", "none");
+        searchSvg3.setAttribute("stroke", "currentColor");
+        searchSvg3.setAttribute("stroke-width", "2");
+        searchSvg3.setAttribute("stroke-linecap", "round");
+        searchSvg3.setAttribute("stroke-linejoin", "round");
+
+        const searchCircle3 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        searchCircle3.setAttribute("cx", "11");
+        searchCircle3.setAttribute("cy", "11");
+        searchCircle3.setAttribute("r", "8");
+
+        const searchLine3 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        searchLine3.setAttribute("x1", "21");
+        searchLine3.setAttribute("y1", "21");
+        searchLine3.setAttribute("x2", "16.65");
+        searchLine3.setAttribute("y2", "16.65");
+
+        searchSvg3.appendChild(searchCircle3);
+        searchSvg3.appendChild(searchLine3);
+        searchBtn.appendChild(searchSvg3);
+
         searchBtn.title = "Search for Episode";
         searchBtn.style.cssText = `
             position: absolute; top: 5px; right: 5px; 
@@ -1524,7 +1833,8 @@ function renderSonarrMissing(records, state) {
         card.onclick = () => {
              if (item.series && item.series.titleSlug) {
                  const url = state.configs.sonarrUrl;
-                 chrome.tabs.create({ url: `${url}/series/${item.series.titleSlug}` });
+                 const seriesUrl = `${url}/series/${item.series.titleSlug}`;
+                 if (validateUrl(seriesUrl)) chrome.tabs.create({ url: seriesUrl });
              }
         };
 

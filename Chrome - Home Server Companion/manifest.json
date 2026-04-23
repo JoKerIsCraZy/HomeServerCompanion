@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Home Server Companion",
-  "version": "3.9",
-  "description": "Manage SABnzbd, Sonarr, Radarr, Tautulli, and Unraid",
+  "version": "4.0.0",
+  "description": "Unified dashboard for your home server services with Dark Pro UI",
   "permissions": ["storage", "contextMenus", "declarativeNetRequest"],
   "optional_host_permissions": [
     "http://*/*",
@@ -30,6 +30,6 @@
     "128": "icons/icon128.png"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'self'; form-action 'none'; frame-src 'none'"
   }
 }

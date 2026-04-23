@@ -1,5 +1,5 @@
 import * as Tautulli from "../../services/tautulli.js";
-import { showNotification, showPromptModal, showIpInfoModal } from "../utils.js";
+import { showNotification, showPromptModal, showIpInfoModal, validateUrl } from "../utils.js";
 
 /**
  * Initializes the Tautulli service view.
@@ -105,7 +105,7 @@ function renderTautulliActivity(sessions, url, key, state) {
               userNameEl.addEventListener('click', (e) => {
                   e.stopPropagation();
                   const userUrl = `${url}/user?user_id=${session.user_id}`;
-                  chrome.tabs.create({ url: userUrl });
+                  if (validateUrl(userUrl)) chrome.tabs.create({ url: userUrl });
               });
           }
 
@@ -143,7 +143,7 @@ function renderTautulliActivity(sessions, url, key, state) {
           const itemLink = `${url}/info?rating_key=${linkKey}`;
           const openMedia = (e) => {
               e.stopPropagation();
-              chrome.tabs.create({ url: itemLink });
+              if (validateUrl(itemLink)) chrome.tabs.create({ url: itemLink });
           };
           
           // Target the span created earlier
@@ -255,7 +255,7 @@ function renderTautulliActivity(sessions, url, key, state) {
           valUser.addEventListener('click', (e) => {
               e.stopPropagation();
               const userUrl = `${url}/user?user_id=${session.user_id}`;
-              chrome.tabs.create({ url: userUrl });
+              if (validateUrl(userUrl)) chrome.tabs.create({ url: userUrl });
           });
           valUser.dataset.listenerAttached = "true";
       }

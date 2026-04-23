@@ -1,4 +1,152 @@
-const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'overseerr', 'prowlarr', 'wizarr', 'portainer'];
+const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'seerr', 'prowlarr', 'wizarr', 'portainer', 'tracearr'];
+
+/**
+ * v4.0 storage migrations. Mirrors `js/core/migrations.js` for the module-based
+ * popup context — kept inline here because options.js is loaded as a classic
+ * script. Both implementations must stay in sync.
+ *
+ * - Moves `overseerr*` keys to `seerr*` (copy, then drop legacy keys).
+ * - Renames `overseerr` -> `seerr` in `serviceOrder`.
+ * - Inserts `tracearr` into `serviceOrder` after `tautulli` if missing.
+ */
+function runStorageMigrations(items) {
+    let changed = false;
+    const removedKeys = [];
+
+    const overseerrKeys = Object.keys(items).filter(k => k.startsWith('overseerr'));
+    if (overseerrKeys.length > 0) {
+        overseerrKeys.forEach(key => {
+            const seerrKey = key.replace(/^overseerr/, 'seerr');
+            const targetEmpty = !(seerrKey in items)
+                || items[seerrKey] === undefined
+                || items[seerrKey] === null
+                || items[seerrKey] === '';
+            if (targetEmpty) items[seerrKey] = items[key];
+            delete items[key];
+            removedKeys.push(key);
+        });
+        changed = true;
+    }
+
+    if (Array.isArray(items.serviceOrder)) {
+        const overseerrIdx = items.serviceOrder.indexOf('overseerr');
+        if (overseerrIdx !== -1) {
+            if (!items.serviceOrder.includes('seerr')) {
+                items.serviceOrder[overseerrIdx] = 'seerr';
+            } else {
+                items.serviceOrder.splice(overseerrIdx, 1);
+            }
+            changed = true;
+        }
+        if (!items.serviceOrder.includes('tracearr')) {
+            const tautulliIdx = items.serviceOrder.indexOf('tautulli');
+            if (tautulliIdx !== -1) {
+                items.serviceOrder.splice(tautulliIdx + 1, 0, 'tracearr');
+            } else {
+                items.serviceOrder.push('tracearr');
+            }
+            changed = true;
+        }
+    }
+
+    return { changed, removedKeys };
+}
+
+// ==================== CHANGELOG POPUP ====================
+/**
+ * Changelog entries shown in the "Show What's New" modal and in the
+ * auto-popup on first launch after an update.
+ *
+ * Kept in sync with `checkAndShowChangelog()` in `js/utils.js` — same list,
+ * just also reachable from the options page which runs as a classic script.
+ */
+const CHANGELOG_ITEMS = [
+    { title: 'Tracearr:', desc: 'New service for monitoring Plex streams with live progress bars, stream details, and a statistics dashboard.' },
+    { title: 'Seerr (formerly Overseerr):', desc: 'Rebranded with Multi-Auth support (API Key, Local Account, Plex Sign-In). Your existing settings migrate automatically on first launch.' },
+    { title: 'Unraid Temperatures:', desc: 'Live CPU, Motherboard, and Hottest Disk temperature cards on the Unraid dashboard (requires Unraid OS 7.3+ / API v4.30).' },
+    { title: 'Docker Template Icons:', desc: 'Unraid containers now show their template icons directly in the list — no more two-letter placeholders.' },
+    { title: 'Instant Load:', desc: 'Unraid tab renders from the last snapshot immediately while fetching fresh data in the background. No more blank screens.' },
+    { title: 'Responsive Design:', desc: 'Mobile and tablet optimized interface with touch-friendly navigation and a reusable component library.' },
+    { title: 'Security Hardening:', desc: 'Tighter Content Security Policy, DOM injection protection, and confirmation prompts before opening external links from Docker labels.' },
+    { title: 'Performance:', desc: 'Up to 3× faster dashboard refresh — smarter polling, staggered badge updates, and fewer API roundtrips.' },
+    { title: 'Bug Fixes:', desc: 'Fullscreen button now opens correctly, Seerr request statuses display accurately, Tracearr empty state clears when streams start.' }
+];
+
+/**
+ * Shows the changelog popup without touching the `last_run_version` flag,
+ * so the user can re-read it any time from the options page.
+ *
+ * Uses JS-assigned styles (not CSS classes) so it renders correctly even
+ * though options.html doesn't load components.css.
+ */
+function showChangelogPopup() {
+    const version = chrome.runtime.getManifest().version;
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s ease;';
+
+    const content = document.createElement('div');
+    content.style.cssText = 'background:#1e1e1e;color:#fff;width:90%;max-width:500px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);transform:scale(0.95);transition:transform 0.2s cubic-bezier(0.175,0.885,0.32,1.275);overflow:hidden;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'padding:15px 20px;font-size:16px;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);';
+    header.textContent = `What's New in v${version}`;
+
+    const body = document.createElement('div');
+    body.style.cssText = 'padding:20px;font-size:14px;color:rgba(255,255,255,0.7);line-height:1.5;text-align:left;max-height:60vh;overflow-y:auto;';
+
+    const ul = document.createElement('ul');
+    ul.style.cssText = 'padding-left:20px;margin:0;list-style-type:disc;';
+
+    CHANGELOG_ITEMS.forEach(item => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '8px';
+        const b = document.createElement('b');
+        b.style.color = '#fff';
+        b.textContent = item.title;
+        li.appendChild(b);
+        li.appendChild(document.createTextNode(' ' + item.desc));
+        ul.appendChild(li);
+    });
+
+    body.appendChild(ul);
+
+    const footer = document.createElement('div');
+    footer.style.cssText = 'padding:15px 20px;display:flex;justify-content:flex-end;gap:10px;background:rgba(0,0,0,0.1);';
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.style.cssText = 'background:#2196f3;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-weight:600;cursor:pointer;font-size:14px;';
+    confirmBtn.textContent = 'Close';
+    confirmBtn.addEventListener('mouseenter', () => { confirmBtn.style.opacity = '0.9'; });
+    confirmBtn.addEventListener('mouseleave', () => { confirmBtn.style.opacity = '1'; });
+    footer.appendChild(confirmBtn);
+
+    content.appendChild(header);
+    content.appendChild(body);
+    content.appendChild(footer);
+    modal.appendChild(content);
+
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+        content.style.transform = 'scale(1)';
+    });
+
+    const cleanup = () => {
+        modal.style.opacity = '0';
+        content.style.transform = 'scale(0.95)';
+        setTimeout(() => modal.remove(), 200);
+        document.removeEventListener('keydown', keyHandler);
+    };
+
+    const keyHandler = (e) => {
+        if (e.key === 'Escape' || e.key === 'Enter') cleanup();
+    };
+
+    confirmBtn.addEventListener('click', cleanup);
+    modal.addEventListener('click', (e) => { if (e.target === modal) cleanup(); });
+    document.addEventListener('keydown', keyHandler);
+}
 
 // ==================== PORTAINER MULTI-INSTANCE ====================
 let portainerInstances = [];
@@ -11,7 +159,7 @@ function generateId() {
 function renderPortainerTabs() {
     const container = document.getElementById('portainer-instance-tabs');
     if (!container) return;
-    container.innerHTML = '';
+    container.replaceChildren();
 
     portainerInstances.forEach((inst, idx) => {
         const tab = document.createElement('button');
@@ -126,14 +274,14 @@ function deletePortainerInstance() {
     chrome.storage.sync.get(['serviceOrder'], (orderItems) => {
         let serviceOrder = orderItems.serviceOrder || [];
         const instanceOrderId = 'portainer_' + deletedId;
-        
+
         // Remove this instance from the order
         serviceOrder = serviceOrder.filter(s => s !== instanceOrderId);
-        
+
         // Save both instances and order
         chrome.storage.sync.set({ portainerInstances, serviceOrder }, () => {
             showStatus('Portainer', 'Instance deleted!', 'success');
-            
+
             // Refresh the order list
             window.orderPortainerInstances = portainerInstances;
             renderOrderList(true);
@@ -183,11 +331,11 @@ function savePortainerInstance() {
         chrome.storage.sync.get(['serviceOrder'], (orderItems) => {
             let serviceOrder = orderItems.serviceOrder || [...services];
             const instanceOrderId = 'portainer_' + inst.id;
-            
+
             // Check if this instance is already in the order
             const hasThisInstance = serviceOrder.includes(instanceOrderId);
             const hasLegacyPortainer = serviceOrder.includes('portainer');
-            
+
             if (!hasThisInstance) {
                 if (hasLegacyPortainer) {
                     // Replace legacy 'portainer' with this instance
@@ -198,12 +346,12 @@ function savePortainerInstance() {
                     serviceOrder.push(instanceOrderId);
                 }
             }
-            
+
             // Save both instances and order
             chrome.storage.sync.set({ portainerInstances, serviceOrder }, () => {
                 showStatus('Portainer', 'Instance saved!', 'success');
                 renderPortainerTabs();
-                
+
                 // Refresh the order list to show updated name/icon
                 window.orderPortainerInstances = portainerInstances;
                 renderOrderList(true);
@@ -331,11 +479,11 @@ const moveGlider = (el) => {
     const subTabs = el.parentElement;
     const subTabsRect = subTabs.getBoundingClientRect();
     const elRect = el.getBoundingClientRect();
-    
+
     // Calculate position relative to parent
     const left = elRect.left - subTabsRect.left - 6; // 6px padding
     const top = elRect.top - subTabsRect.top - 6;
-    
+
     glider.style.width = `${el.offsetWidth}px`;
     glider.style.transform = `translate(${left}px, ${top}px)`;
 };
@@ -358,7 +506,7 @@ tabs.forEach(item => {
         // Active Tab
         tabs.forEach(el => el.classList.remove('active'));
         item.classList.add('active');
-        
+
         moveGlider(item);
 
         // Active Section
@@ -374,19 +522,19 @@ document.addEventListener('keydown', (e) => {
     if (document.activeElement.tagName === 'INPUT' || 
         document.activeElement.tagName === 'SELECT' || 
         document.activeElement.tagName === 'TEXTAREA') return;
-    
+
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         const tabsArray = Array.from(tabs);
         const currentIndex = tabsArray.findIndex(t => t.classList.contains('active'));
         let newIndex;
-        
+
         if (e.key === 'ArrowLeft') {
             newIndex = currentIndex > 0 ? currentIndex - 1 : tabsArray.length - 1;
         } else {
             newIndex = currentIndex < tabsArray.length - 1 ? currentIndex + 1 : 0;
         }
-        
+
         tabsArray[newIndex].click();
     }
 });
@@ -394,6 +542,17 @@ document.addEventListener('keydown', (e) => {
 // --- Save & Load ---
 const loadOptions = () => {
     chrome.storage.sync.get(null, (items) => {
+        // v4.0 storage migrations (idempotent — safe to re-run)
+        const migration = runStorageMigrations(items);
+        if (migration.changed) {
+            chrome.storage.sync.set(items, () => {
+                if (migration.removedKeys.length > 0) {
+                    chrome.storage.sync.remove(migration.removedKeys);
+                }
+            });
+            console.info(`Migration v4.0 applied (removed ${migration.removedKeys.length} legacy keys)`);
+        }
+
         // Apply Dark Mode
         // Apply Dark Mode (Forced)
         document.body.classList.add('dark-mode');
@@ -403,7 +562,7 @@ const loadOptions = () => {
         if (startPageSelect) {
             // Clear existing except first (Last Active) if needed, but easier to rebuild or append
             // Assuming first option is static in HTML
-            
+
             services.forEach(s => {
                 const opt = document.createElement('option');
                 opt.value = s;
@@ -436,7 +595,7 @@ const loadOptions = () => {
             const keyEl = document.getElementById(`${service}Key`);
             const protocolEl = document.getElementById(`${service}Protocol`);
             const enabledEl = document.getElementById(`${service}Enabled`);
-            
+
             // Load Enabled State (Default true)
             if (enabledEl) {
                 if (items[`${service}Enabled`] === undefined) {
@@ -445,23 +604,23 @@ const loadOptions = () => {
                     enabledEl.checked = items[`${service}Enabled`];
                 }
             }
-            
+
             if (urlEl && items[`${service}Url`]) {
                 let fullUrl = items[`${service}Url`];
                 let protocol = 'http://';
-                
+
                 if (fullUrl.startsWith('https://')) {
                     protocol = 'https://';
                     fullUrl = fullUrl.substring(8);
                 } else if (fullUrl.startsWith('http://')) {
                     fullUrl = fullUrl.substring(7);
                 }
-                
+
                 if (protocolEl) protocolEl.value = protocol;
                 urlEl.value = fullUrl;
             }
             if (keyEl && items[`${service}Key`]) keyEl.value = items[`${service}Key`];
-			
+
 			// Load Extra Boolean Settings (e.g. Tautulli IP Lookup)
             const activeIpEl = document.getElementById(`${service}EnableIpLookup`);
             if (activeIpEl) {
@@ -477,15 +636,15 @@ const loadOptions = () => {
         const plexRedirectModeEl = document.getElementById('plexRedirectMode');
         const plexAppSettingsEl = document.getElementById('plexAppSettings');
         const plexTokenEl = document.getElementById('plexToken');
-        
+
         if (plexRedirectModeEl) {
             plexRedirectModeEl.value = items.plexRedirectMode || 'web';
-            
+
             // Toggle app settings visibility
             if (plexAppSettingsEl) {
                 plexAppSettingsEl.style.display = plexRedirectModeEl.value === 'app' ? 'block' : 'none';
             }
-            
+
             // Add change listener for toggle
             plexRedirectModeEl.addEventListener('change', () => {
                 if (plexAppSettingsEl) {
@@ -498,21 +657,21 @@ const loadOptions = () => {
         if (plexTokenEl && items.plexToken) {
             plexTokenEl.value = items.plexToken;
         }
-        
+
         // Load Plex URL
         const plexUrlEl = document.getElementById('plexUrl');
         const plexProtocolEl = document.getElementById('plexProtocol');
         if (plexUrlEl && items.plexUrl) {
             let fullUrl = items.plexUrl;
             let protocol = 'http://';
-            
+
             if (fullUrl.startsWith('https://')) {
                 protocol = 'https://';
                 fullUrl = fullUrl.substring(8);
             } else if (fullUrl.startsWith('http://')) {
                 fullUrl = fullUrl.substring(7);
             }
-            
+
             if (plexProtocolEl) plexProtocolEl.value = protocol;
             plexUrlEl.value = fullUrl;
         }
@@ -524,7 +683,7 @@ const saveService = (service) => {
     const keyId = `${service}Key`;
     const protocolId = `${service}Protocol`;
     const enabledId = `${service}Enabled`;
-    
+
     const urlEl = document.getElementById(urlId);
     const keyEl = document.getElementById(keyId);
     const protocolEl = document.getElementById(protocolId);
@@ -546,52 +705,52 @@ const saveService = (service) => {
 
     if (urlEl) {
         let val = urlEl.value.trim().replace(/\/$/, ""); // Strip trailing slash
-        
+
         // If service is enabled, we require a URL
         // If disabled, we allow empty (and save it as empty)
-        
+
         if (isActive) {
             // Basic sanitization - remove dangerous characters
             if (val.includes('<') || val.includes('>') || val.includes('"') || val.includes("'")) {
                 showStatus(service, 'Invalid characters in URL!', 'error');
                 return;
             }
-            
+
             // Clean protocol if user pasted it
             val = val.replace(/^https?:\/\//, '');
-            
+
             // Check if empty after cleaning
             if (!val || val.length === 0) {
                 showStatus(service, 'Please enter a valid URL!', 'error');
                 return;
             }
-            
+
             const protocol = protocolEl ? protocolEl.value : 'http://';
             const fullUrl = protocol + val;
-            
+
             try {
                 // Validate URL format
                 const urlObj = new URL(fullUrl);
-                
+
                 // Ensure protocol is http or https
                 if (!['http:', 'https:'].includes(urlObj.protocol)) {
                     showStatus(service, 'Only HTTP/HTTPS protocols allowed!', 'error');
                     return;
                 }
-                
+
                 // Validate hostname exists
                 if (!urlObj.hostname || urlObj.hostname.length === 0) {
                     showStatus(service, 'Invalid hostname!', 'error');
                     return;
                 }
-                
+
                 // Check for valid hostname format (basic check)
                 const hostnameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$|^localhost$/;
                 if (!hostnameRegex.test(urlObj.hostname)) {
                     showStatus(service, 'Invalid hostname format!', 'error');
                     return;
                 }
-                
+
                 data[urlId] = fullUrl;
                 originsToRequest.push(`${urlObj.origin}/*`);
             } catch (e) {
@@ -603,21 +762,21 @@ const saveService = (service) => {
             // Disabled: Allow saving existing value OR empty value
             // We still want to validate if they DID enter something, but if it's empty, that's fine.
             if (val.length > 0) {
-                 // They entered something, let's try to validate/save it, but be lenient? 
+                 // They entered something, let's try to validate/save it, but be lenient?
                  // Actually, if they typed garbage, we probably shouldn't save it even if disabled to avoid issues later.
                  // let's stick to: If empty -> save empty. If not empty -> validate.
-                 
+
                 // Clean protocol if user pasted it
                 val = val.replace(/^https?:\/\//, '');
                 const protocol = protocolEl ? protocolEl.value : 'http://';
                 const fullUrl = protocol + val;
-                
+
                 try {
                     const urlObj = new URL(fullUrl); // Just check if it parses
                      data[urlId] = fullUrl;
                      originsToRequest.push(`${urlObj.origin}/*`);
                 } catch(e) {
-                     // If it's invalid but disabled, maybe just don't save the URL update? 
+                     // If it's invalid but disabled, maybe just don't save the URL update?
                      // Or block? logic: "If you type it, it must be valid."
                      showStatus(service, 'Invalid URL format (even if disabled)!', 'error');
                      return;
@@ -628,18 +787,18 @@ const saveService = (service) => {
             }
         }
     }
-    
+
     // Validate API Key if present
     if (keyEl) {
         const apiKey = keyEl.value.trim();
-        
+
         if (isActive) {
              // If enabled, enforces rules
-             // Special case: Unraid might not need a key (optional)? 
+             // Special case: Unraid might not need a key (optional)?
              // The user prompt said: "Wenn aktiviert muss man einen api und url eintragen"
              // So we enforce it for everyone for now to be safe, unless it's strictly optional in logic.
              // Looking at testConnection, Unraid CAN work without key.
-             
+
              if (service !== 'unraid' && (!apiKey || apiKey.length === 0)) {
                  showStatus(service, 'API Key is required!', 'error');
                  return;
@@ -651,19 +810,19 @@ const saveService = (service) => {
                     showStatus(service, 'Invalid characters in API key!', 'error');
                     return;
                 }
-                
+
                 // Check minimum length (most API keys are at least 20 chars) - Relaxed to 10
                 if (apiKey.length < 10 && service !== 'unraid') { // Unraid might have short password/keys?
                     showStatus(service, 'API key seems too short!', 'error');
                     return;
                 }
-                
+
                 // Check maximum length
                 if (apiKey.length > 500) {
                     showStatus(service, 'API key seems too long!', 'error');
                     return;
                 }
-                
+
                 data[keyId] = apiKey;
              } else {
                  // Unraid allowed empty
@@ -709,13 +868,13 @@ const saveService = (service) => {
                              enableIpLookupEl.checked = false;
                         }
                         // Still save to storage so they don't lose the text
-                        chrome.storage.sync.set(data); 
+                        chrome.storage.sync.set(data);
                     }
                 });
             }
         });
     } else {
-        // Check if we should REMOVE permissions if unchecked? 
+        // Check if we should REMOVE permissions if unchecked?
         // Optional: If user unchecked IP lookup, we could remove 'https://ipwho.is/*'.
         // But usually better to keep permissions unless explicitly revoked to avoid re-prompting.
         performSave();
@@ -749,7 +908,7 @@ const testConnection = async (service) => {
     }
 
     let testUrl = '';
-    
+
     // Construct Test URL based on Service
     switch(service) {
         case 'sabnzbd':
@@ -764,15 +923,15 @@ const testConnection = async (service) => {
         case 'tautulli':
             testUrl = `${url}/api/v2?apikey=${apiKey}&cmd=get_activity`;
             break;
-        case 'overseerr':
-            testUrl = `${url}/api/v1/status`; // Overseerr status endpoint
+        case 'seerr':
+            testUrl = `${url}/api/v1/status`; // Seerr status endpoint
             break;
         case 'unraid':
             if (apiKey) {
                 // Test Auth with a simple GraphQL query
-                testUrl = `${url}/graphql`; 
+                testUrl = `${url}/graphql`;
             } else {
-                 testUrl = url; 
+                 testUrl = url;
             }
             break;
         case 'prowlarr':
@@ -783,6 +942,9 @@ const testConnection = async (service) => {
             break;
         case 'portainer':
             testUrl = `${url}/api/status`;
+            break;
+        case 'tracearr':
+            testUrl = `${url}/api/v1/public/health`;
             break;
         case 'plex':
             // Plex uses X-Plex-Token in query param
@@ -796,7 +958,7 @@ const testConnection = async (service) => {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
+
         let options = {
             method: 'GET',
             signal: controller.signal,
@@ -805,14 +967,14 @@ const testConnection = async (service) => {
 
         if (service === 'unraid' && apiKey) {
              options.method = 'POST';
-             options.headers = { 
-                 'Content-Type': 'application/json', 
-                 'X-API-Key': apiKey 
+             options.headers = {
+                 'Content-Type': 'application/json',
+                 'X-API-Key': apiKey
              };
              options.body = JSON.stringify({ query: "{ info { versions { core { unraid } } } }" }); // Simple query
         }
 
-        if (service === 'overseerr') {
+        if (service === 'seerr') {
              options.headers = {
                  'X-Api-Key': apiKey
              };
@@ -832,8 +994,15 @@ const testConnection = async (service) => {
              };
         }
 
+        if (service === 'tracearr') {
+             options.headers = {
+                 'Authorization': `Bearer ${apiKey}`,
+                 'accept': 'application/json'
+             };
+        }
+
         const response = await fetch(testUrl, options);
-        
+
         clearTimeout(timeoutId);
 
         if (service === 'unraid') {
@@ -896,9 +1065,18 @@ document.addEventListener('DOMContentLoaded', () => {
              });
         });
     }
+
+    // Show Changelog Button
+    const showChangelogBtn = document.getElementById('showChangelogBtn');
+    if (showChangelogBtn) {
+        showChangelogBtn.addEventListener('click', showChangelogPopup);
+    }
 });
 
 services.forEach(service => {
+    // Skip Seerr - uses custom auth with override
+    if (service === 'seerr') return;
+
     const saveBtn = document.getElementById(`save${service.charAt(0).toUpperCase() + service.slice(1)}`);
     const testBtn = document.getElementById(`test${service.charAt(0).toUpperCase() + service.slice(1)}`);
 
@@ -920,11 +1098,11 @@ const savePlexSettings = () => {
     const plexProtocol = document.getElementById('plexProtocol')?.value || 'http://';
     const plexUrl = document.getElementById('plexUrl')?.value.trim().replace(/\/$/, '') || '';
     const plexToken = document.getElementById('plexToken')?.value.trim() || '';
-    
+
     const data = {
         plexRedirectMode: plexRedirectMode
     };
-    
+
     // Only require URL/Token if app mode is selected
     if (plexRedirectMode === 'app') {
         if (!plexUrl) {
@@ -935,16 +1113,16 @@ const savePlexSettings = () => {
             showStatus('Plex', 'Plex Token required for App mode!', 'error');
             return;
         }
-        
+
         // Clean and validate URL
         const cleanUrl = plexUrl.replace(/^https?:\/\//, '');
         const fullUrl = plexProtocol + cleanUrl;
-        
+
         try {
             const urlObj = new URL(fullUrl);
             data.plexUrl = fullUrl;
             data.plexToken = plexToken;
-            
+
             // Request permission for Plex server
             chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, (granted) => {
                 if (granted || true) { // Save even if permission denied
@@ -959,7 +1137,7 @@ const savePlexSettings = () => {
             return;
         }
     }
-    
+
     // Web mode - just save the mode
     chrome.storage.sync.set(data, () => {
         showStatus('Plex', 'Settings saved!', 'success');
@@ -974,14 +1152,14 @@ const renderOrderList = (initialLoad = true) => {
     const render = () => {
         const container = document.getElementById('service-order-list');
         container.replaceChildren();
-        
+
         window.currentOrder.forEach((serviceId, index) => {
             const row = document.createElement('div');
             row.className = 'draggable-item';
             row.setAttribute('draggable', 'true');
             row.dataset.index = index;
             row.dataset.serviceId = serviceId;
-            
+
             // Handle Drop Events
             row.addEventListener('dragstart', dragStart);
             row.addEventListener('dragover', dragOver);
@@ -993,7 +1171,7 @@ const renderOrderList = (initialLoad = true) => {
             // Add Hamburger Icon (Drag Handle)
             const handle = document.createElement('div');
             handle.style.cssText = "cursor: grab; display: flex; align-items: center; opacity: 0.5; margin-right: 15px;";
-            
+
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             svg.setAttribute("width", "16");
             svg.setAttribute("height", "16");
@@ -1076,7 +1254,7 @@ const renderOrderList = (initialLoad = true) => {
         chrome.storage.sync.get(['serviceOrder', 'portainerInstances'], (items) => {
             // Load Portainer instances first
             window.orderPortainerInstances = items.portainerInstances || [];
-            
+
             if (items.serviceOrder) {
                 // Filter out any services that are no longer valid
                 window.currentOrder = items.serviceOrder.filter(s => {
@@ -1090,7 +1268,7 @@ const renderOrderList = (initialLoad = true) => {
                     }
                     return false;
                 });
-                
+
                 // Ensure all known services are present (except portainer which is handled specially)
                 services.forEach(s => {
                     if (s === 'portainer') {
@@ -1177,7 +1355,7 @@ function dragDrop(e) {
     if (e.stopPropagation) {
         e.stopPropagation();
     }
-    
+
     const srcIndex = parseInt(dragSrcEl.dataset.index);
     const destIndex = parseInt(this.dataset.index);
 
@@ -1185,11 +1363,11 @@ function dragDrop(e) {
         // Reorder Array
         const item = window.currentOrder.splice(srcIndex, 1)[0];
         window.currentOrder.splice(destIndex, 0, item);
-        
+
         // Re-render
         renderOrderList(false);
     }
-    
+
     return false;
 }
 
@@ -1201,7 +1379,7 @@ function dragEnd(e) {
 }
 
 
-// ==================== OVERSEERR MULTI-AUTH ====================
+// ==================== SEERR MULTI-AUTH ====================
 
 // Plex OAuth configuration
 const PLEX_AUTH_CONFIG = {
@@ -1211,36 +1389,45 @@ const PLEX_AUTH_CONFIG = {
     version: '1.0'
 };
 
-// Initialize Overseerr auth UI
-function initOverseerrAuth() {
-    const authMethodSelect = document.getElementById('overseerrAuthMethod');
-    const apiKeyPanel = document.getElementById('overseerrAuthApiKey');
-    const localPanel = document.getElementById('overseerrAuthLocal');
-    const plexPanel = document.getElementById('overseerrAuthPlex');
-    const plexLoginBtn = document.getElementById('overseerrPlexLogin');
-    
+// Initialize Seerr auth UI
+function initSeerrAuth() {
+    const authMethodSelect = document.getElementById('seerrAuthMethod');
+    const apiKeyPanel = document.getElementById('seerrAuthApiKey');
+    const localPanel = document.getElementById('seerrAuthLocal');
+    const plexPanel = document.getElementById('seerrAuthPlex');
+    const plexLoginBtn = document.getElementById('seerrPlexLogin');
+
     if (!authMethodSelect) return;
-    
+
     // Toggle panels based on auth method
     authMethodSelect.addEventListener('change', (e) => {
         const method = e.target.value;
-        
+
         apiKeyPanel.style.display = method === 'apikey' ? 'block' : 'none';
         localPanel.style.display = method === 'local' ? 'block' : 'none';
         plexPanel.style.display = method === 'plex' ? 'block' : 'none';
     });
-    
+
     // Plex login button
     if (plexLoginBtn) {
         plexLoginBtn.addEventListener('click', startPlexOAuth);
     }
 }
 
+// Helper function to safely set status with colored span
+function setPlexStatus(statusEl, color, message) {
+    statusEl.replaceChildren();
+    const span = document.createElement('span');
+    span.style.color = color;
+    span.textContent = message;
+    statusEl.appendChild(span);
+}
+
 // Start Plex OAuth flow
 async function startPlexOAuth() {
-    const statusEl = document.getElementById('overseerrPlexStatus');
-    statusEl.innerHTML = '<span style="color: var(--accent-primary);">Opening Plex login...</span>';
-    
+    const statusEl = document.getElementById('seerrPlexStatus');
+    setPlexStatus(statusEl, 'var(--accent-primary)', 'Opening Plex login...');
+
     try {
         // Get a PIN from Plex
         const pinRes = await fetch('https://plex.tv/api/v2/pins', {
@@ -1255,33 +1442,33 @@ async function startPlexOAuth() {
             },
             body: JSON.stringify({ strong: true })
         });
-        
+
         if (!pinRes.ok) throw new Error('Failed to get Plex PIN');
-        
+
         const pinData = await pinRes.json();
         const pinId = pinData.id;
         const pinCode = pinData.code;
-        
+
         // Open Plex auth window
         const authUrl = `https://app.plex.tv/auth#?clientID=${PLEX_AUTH_CONFIG.clientId}&code=${pinCode}&context%5Bdevice%5D%5Bproduct%5D=${encodeURIComponent(PLEX_AUTH_CONFIG.product)}`;
-        
+
         const authWindow = window.open(authUrl, 'PlexAuth', 'width=800,height=600');
-        
-        statusEl.innerHTML = '<span style="color: #E5A00D;">Waiting for Plex login... Close the popup when done.</span>';
-        
+
+        setPlexStatus(statusEl, '#E5A00D', 'Waiting for Plex login... Close the popup when done.');
+
         // Poll for completion
         let attempts = 0;
         const maxAttempts = 60; // 2 minutes
-        
+
         const pollInterval = setInterval(async () => {
             attempts++;
-            
+
             if (attempts > maxAttempts) {
                 clearInterval(pollInterval);
-                statusEl.innerHTML = '<span style="color: #fc8181;">Timeout. Please try again.</span>';
+                setPlexStatus(statusEl, '#fc8181', 'Timeout. Please try again.');
                 return;
             }
-            
+
             // Check if window was closed
             if (authWindow && authWindow.closed) {
                 // Check the PIN status
@@ -1292,18 +1479,18 @@ async function startPlexOAuth() {
                             'X-Plex-Client-Identifier': PLEX_AUTH_CONFIG.clientId
                         }
                     });
-                    
+
                     if (checkRes.ok) {
                         const checkData = await checkRes.json();
-                        
+
                         if (checkData.authToken) {
                             clearInterval(pollInterval);
-                            
+
                             // Save the Plex auth token
-                            chrome.storage.sync.set({ 
-                                overseerrPlexToken: checkData.authToken 
+                            chrome.storage.sync.set({
+                                seerrPlexToken: checkData.authToken
                             }, () => {
-                                statusEl.innerHTML = '<span style="color: #48bb78;">✓ Plex account linked successfully!</span>';
+                                setPlexStatus(statusEl, '#48bb78', '✓ Plex account linked successfully!');
                             });
                             return;
                         }
@@ -1311,60 +1498,60 @@ async function startPlexOAuth() {
                 } catch (e) {
                     console.error('PIN check error:', e);
                 }
-                
+
                 clearInterval(pollInterval);
-                statusEl.innerHTML = '<span style="color: #fc8181;">Login cancelled or failed.</span>';
+                setPlexStatus(statusEl, '#fc8181', 'Login cancelled or failed.');
                 return;
             }
         }, 2000);
-        
+
     } catch (e) {
         console.error('Plex OAuth error:', e);
-        statusEl.innerHTML = `<span style="color: #fc8181;">Error: ${e.message}</span>`;
+        setPlexStatus(statusEl, '#fc8181', `Error: ${e.message}`);
     }
 }
 
-// Save Overseerr with multi-auth support
-async function saveOverseerrAuth() {
-    const authMethod = document.getElementById('overseerrAuthMethod')?.value || 'apikey';
-    const protocol = document.getElementById('overseerrProtocol')?.value || 'http://';
-    const urlInput = document.getElementById('overseerrUrl')?.value.trim() || '';
-    const enabled = document.getElementById('overseerrEnabled')?.checked ?? true;
-    
+// Save Seerr with multi-auth support
+async function saveSeerrAuth() {
+    const authMethod = document.getElementById('seerrAuthMethod')?.value || 'apikey';
+    const protocol = document.getElementById('seerrProtocol')?.value || 'http://';
+    const urlInput = document.getElementById('seerrUrl')?.value.trim() || '';
+    const enabled = document.getElementById('seerrEnabled')?.checked ?? true;
+
     if (!urlInput) {
-        showStatus('Overseerr', 'URL is required!', 'error');
+        showStatus('Seerr', 'URL is required!', 'error');
         return;
     }
-    
+
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const fullUrl = protocol + cleanUrl;
-    
+
     const data = {
-        overseerrEnabled: enabled,
-        overseerrUrl: fullUrl,
-        overseerrAuthMethod: authMethod
+        seerrEnabled: enabled,
+        seerrUrl: fullUrl,
+        seerrAuthMethod: authMethod
     };
-    
+
     // Save auth-specific data
     if (authMethod === 'apikey') {
-        const apiKey = document.getElementById('overseerrKey')?.value.trim() || '';
+        const apiKey = document.getElementById('seerrKey')?.value.trim() || '';
         if (!apiKey) {
-            showStatus('Overseerr', 'API Key is required!', 'error');
+            showStatus('Seerr', 'API Key is required!', 'error');
             return;
         }
-        data.overseerrKey = apiKey;
-        
+        data.seerrKey = apiKey;
+
     } else if (authMethod === 'local') {
-        const email = document.getElementById('overseerrEmail')?.value.trim() || '';
-        const password = document.getElementById('overseerrPassword')?.value || '';
-        
+        const email = document.getElementById('seerrEmail')?.value.trim() || '';
+        const password = document.getElementById('seerrPassword')?.value || '';
+
         if (!email || !password) {
-            showStatus('Overseerr', 'Email and password are required!', 'error');
+            showStatus('Seerr', 'Email and password are required!', 'error');
             return;
         }
-        
+
         // Test local login
-        showStatus('Overseerr', 'Logging in...', 'success');
+        showStatus('Seerr', 'Logging in...', 'success');
         try {
             const res = await fetch(`${fullUrl}/api/v1/auth/local`, {
                 method: 'POST',
@@ -1372,50 +1559,50 @@ async function saveOverseerrAuth() {
                 body: JSON.stringify({ email, password }),
                 credentials: 'include'
             });
-            
+
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err.message || `Login failed: ${res.status}`);
             }
-            
+
             // Store credentials for re-login
-            data.overseerrEmail = email;
-            data.overseerrPassword = password;
-            
+            data.seerrEmail = email;
+            data.seerrPassword = password;
+
         } catch (e) {
-            showStatus('Overseerr', `Login failed: ${e.message}`, 'error');
+            showStatus('Seerr', `Login failed: ${e.message}`, 'error');
             return;
         }
-        
+
     } else if (authMethod === 'plex') {
         // Plex auth - check if token exists
-        const stored = await new Promise(r => chrome.storage.sync.get(['overseerrPlexToken'], r));
-        if (!stored.overseerrPlexToken) {
-            showStatus('Overseerr', 'Please sign in with Plex first!', 'error');
+        const stored = await new Promise(r => chrome.storage.sync.get(['seerrPlexToken'], r));
+        if (!stored.seerrPlexToken) {
+            showStatus('Seerr', 'Please sign in with Plex first!', 'error');
             return;
         }
-        
-        // Test Plex login to Overseerr
-        showStatus('Overseerr', 'Authenticating with Plex...', 'success');
+
+        // Test Plex login to Seerr
+        showStatus('Seerr', 'Authenticating with Plex...', 'success');
         try {
             const res = await fetch(`${fullUrl}/api/v1/auth/plex`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ authToken: stored.overseerrPlexToken }),
+                body: JSON.stringify({ authToken: stored.seerrPlexToken }),
                 credentials: 'include'
             });
-            
+
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err.message || `Plex auth failed: ${res.status}`);
             }
-            
+
         } catch (e) {
-            showStatus('Overseerr', `Plex login failed: ${e.message}`, 'error');
+            showStatus('Seerr', `Plex login failed: ${e.message}`, 'error');
             return;
         }
     }
-    
+
     // Request permissions
     try {
         const urlObj = new URL(fullUrl);
@@ -1423,113 +1610,117 @@ async function saveOverseerrAuth() {
             chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, resolve);
         });
     } catch {}
-    
+
     // Save to storage
     chrome.storage.sync.set(data, () => {
-        showStatus('Overseerr', 'Settings saved!', 'success');
+        showStatus('Seerr', 'Settings saved!', 'success');
     });
 }
 
-// Test Overseerr connection with any auth method
-async function testOverseerrConnection() {
-    const authMethod = document.getElementById('overseerrAuthMethod')?.value || 'apikey';
-    const protocol = document.getElementById('overseerrProtocol')?.value || 'http://';
-    const urlInput = document.getElementById('overseerrUrl')?.value.trim() || '';
-    
+// Test Seerr connection with any auth method
+async function testSeerrConnection() {
+    const authMethod = document.getElementById('seerrAuthMethod')?.value || 'apikey';
+    const protocol = document.getElementById('seerrProtocol')?.value || 'http://';
+    const urlInput = document.getElementById('seerrUrl')?.value.trim() || '';
+
     if (!urlInput) {
-        showStatus('Overseerr', 'URL is required!', 'error');
+        showStatus('Seerr', 'URL is required!', 'error');
         return;
     }
-    
+
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const fullUrl = protocol + cleanUrl;
-    
-    showStatus('Overseerr', 'Testing...', 'success');
-    
+
+    showStatus('Seerr', 'Testing...', 'success');
+
     try {
         let options = { method: 'GET' };
-        
+
         if (authMethod === 'apikey') {
-            const apiKey = document.getElementById('overseerrKey')?.value.trim() || '';
+            const apiKey = document.getElementById('seerrKey')?.value.trim() || '';
             options.headers = { 'X-Api-Key': apiKey };
         } else {
             // Cookie auth - use credentials
             options.credentials = 'include';
         }
-        
+
         const res = await fetch(`${fullUrl}/api/v1/auth/me`, options);
-        
+
         if (res.ok) {
             const user = await res.json();
-            showStatus('Overseerr', `✓ Connected as: ${user.displayName || user.email}`, 'success');
+            showStatus('Seerr', `✓ Connected as: ${user.displayName || user.email}`, 'success');
         } else if (res.status === 401) {
-            showStatus('Overseerr', 'Not authenticated. Please save settings first.', 'error');
+            showStatus('Seerr', 'Not authenticated. Please save settings first.', 'error');
         } else {
-            showStatus('Overseerr', `Error: ${res.status}`, 'error');
+            showStatus('Seerr', `Error: ${res.status}`, 'error');
         }
-        
+
     } catch (e) {
-        showStatus('Overseerr', `Connection failed: ${e.message}`, 'error');
+        showStatus('Seerr', `Connection failed: ${e.message}`, 'error');
     }
 }
 
-// Load Overseerr auth settings
-function loadOverseerrAuth(items) {
-    const authMethodSelect = document.getElementById('overseerrAuthMethod');
-    const apiKeyPanel = document.getElementById('overseerrAuthApiKey');
-    const localPanel = document.getElementById('overseerrAuthLocal');
-    const plexPanel = document.getElementById('overseerrAuthPlex');
-    const plexStatus = document.getElementById('overseerrPlexStatus');
-    
+// Load Seerr auth settings
+function loadSeerrAuth(items) {
+    const authMethodSelect = document.getElementById('seerrAuthMethod');
+    const apiKeyPanel = document.getElementById('seerrAuthApiKey');
+    const localPanel = document.getElementById('seerrAuthLocal');
+    const plexPanel = document.getElementById('seerrAuthPlex');
+    const plexStatus = document.getElementById('seerrPlexStatus');
+
     if (!authMethodSelect) return;
-    
+
     // Set auth method
-    const method = items.overseerrAuthMethod || 'apikey';
+    const method = items.seerrAuthMethod || 'apikey';
     authMethodSelect.value = method;
-    
+
     // Show correct panel
     apiKeyPanel.style.display = method === 'apikey' ? 'block' : 'none';
     localPanel.style.display = method === 'local' ? 'block' : 'none';
     plexPanel.style.display = method === 'plex' ? 'block' : 'none';
-    
+
     // Load local auth fields
-    if (items.overseerrEmail) {
-        document.getElementById('overseerrEmail').value = items.overseerrEmail;
+    if (items.seerrEmail) {
+        document.getElementById('seerrEmail').value = items.seerrEmail;
     }
-    if (items.overseerrPassword) {
-        document.getElementById('overseerrPassword').value = items.overseerrPassword;
+    if (items.seerrPassword) {
+        document.getElementById('seerrPassword').value = items.seerrPassword;
     }
-    
+
     // Update Plex status
-    if (items.overseerrPlexToken && plexStatus) {
-        plexStatus.innerHTML = '<span style="color: #48bb78;">✓ Plex account linked</span>';
+    if (items.seerrPlexToken && plexStatus) {
+        plexStatus.replaceChildren();
+        const span = document.createElement('span');
+        span.style.color = '#48bb78';
+        span.textContent = '✓ Plex account linked';
+        plexStatus.appendChild(span);
     }
 }
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
-    initOverseerrAuth();
-    
-    // Override Overseerr save/test buttons
-    const saveBtn = document.getElementById('saveOverseerr');
-    const testBtn = document.getElementById('testOverseerr');
-    
+    initSeerrAuth();
+
+    // Override Seerr save/test buttons
+    const saveBtn = document.getElementById('saveSeerr');
+    const testBtn = document.getElementById('testSeerr');
+
     if (saveBtn) {
         saveBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            saveOverseerrAuth();
+            saveSeerrAuth();
         });
     }
-    
+
     if (testBtn) {
         testBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            testOverseerrConnection();
+            testSeerrConnection();
         });
     }
 });
 
-// Load Overseerr auth on storage load (called from loadOptions)
+// Load Seerr auth on storage load (called from loadOptions)
 chrome.storage.sync.get(null, (items) => {
-    setTimeout(() => loadOverseerrAuth(items), 100);
+    setTimeout(() => loadSeerrAuth(items), 100);
 });

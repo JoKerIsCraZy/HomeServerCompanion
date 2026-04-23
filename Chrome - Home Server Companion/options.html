@@ -126,7 +126,8 @@
         font-weight: 600;
         font-size: 13px;
         position: relative;
-        z-index: 1;
+        z-index: 2;
+        pointer-events: auto;
         transition: all var(--transition-smooth);
         white-space: nowrap;
       }
@@ -768,10 +769,11 @@
             <button class="tab-btn" data-target="tautulli">Tautulli</button>
             <button class="tab-btn" data-target="plex">Plex</button>
 
-            <button class="tab-btn" data-target="overseerr">Overseerr</button>
+            <button class="tab-btn" data-target="seerr">Seerr</button>
             <button class="tab-btn" data-target="prowlarr">Prowlarr</button>
             <button class="tab-btn" data-target="wizarr">Wizarr</button>
             <button class="tab-btn" data-target="portainer">Portainer</button>
+            <button class="tab-btn" data-target="tracearr">Tracearr</button>
           </div>
 
           <div class="header-links">
@@ -896,6 +898,17 @@
             </button>
           </div>
           <div id="statusGeneral" class="status"></div>
+
+          <div class="form-group" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+            <label>About</label>
+            <div class="help-text" style="margin-bottom: 8px;">
+              See what's new in this release. The changelog is normally shown
+              automatically once after every update.
+            </div>
+            <button id="showChangelogBtn" class="btn-secondary" type="button">
+              Show What's New
+            </button>
+          </div>
         </div>
 
         <!-- Dashboard Section -->
@@ -1182,17 +1195,17 @@
           <div id="statusPlex" class="status"></div>
         </div>
 
-        <!-- Overseerr Section -->
-        <div id="overseerr" class="section">
-          <h2>Overseerr Settings</h2>
+        <!-- Seerr Section -->
+        <div id="seerr" class="section">
+          <h2>Seerr Settings</h2>
           <div class="form-group">
             <label style="display: flex; align-items: center; cursor: pointer">
               <input
                 type="checkbox"
-                id="overseerrEnabled"
+                id="seerrEnabled"
                 style="width: auto; margin-right: 10px"
               />
-              Enable Overseerr
+              Enable Seerr
             </label>
             <div class="help-text">
               Disabling the service will remove it from the sidebar and
@@ -1200,15 +1213,15 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="overseerrUrl">Server URL</label>
+            <label for="seerrUrl">Server URL</label>
             <div class="input-group" style="display: flex">
-              <select id="overseerrProtocol" style="width: auto">
+              <select id="seerrProtocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
               </select>
               <input
                 type="text"
-                id="overseerrUrl"
+                id="seerrUrl"
                 placeholder="localhost:5055"
                 style="flex: 1"
               />
@@ -1220,8 +1233,8 @@
           
           <!-- Auth Method Selector -->
           <div class="form-group">
-            <label for="overseerrAuthMethod">Authentication Method</label>
-            <select id="overseerrAuthMethod" style="width: 100%;">
+            <label for="seerrAuthMethod">Authentication Method</label>
+            <select id="seerrAuthMethod" style="width: 100%;">
               <option value="apikey">API Key (Admin Access)</option>
               <option value="local">Local Account (Email/Password)</option>
               <option value="plex">Plex Sign-In</option>
@@ -1232,36 +1245,36 @@
           </div>
           
           <!-- API Key Auth (default) -->
-          <div id="overseerrAuthApiKey" class="auth-panel">
+          <div id="seerrAuthApiKey" class="auth-panel">
             <div class="form-group">
-              <label for="overseerrKey">API Key</label>
-              <input type="password" id="overseerrKey" />
+              <label for="seerrKey">API Key</label>
+              <input type="password" id="seerrKey" />
               <div class="help-text">
-                Find your API key in Overseerr → Settings → General
+                Find your API key in Seerr → Settings → General
               </div>
             </div>
           </div>
           
           <!-- Local Auth -->
-          <div id="overseerrAuthLocal" class="auth-panel" style="display: none;">
+          <div id="seerrAuthLocal" class="auth-panel" style="display: none;">
             <div style="background: rgba(252, 129, 129, 0.1); border: 1px solid rgba(252, 129, 129, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px;">
               <span style="font-size: 16px;">⚠️</span>
               <p style="color: #fc8181; font-size: 12px; margin: 0;">
-                <strong>Security Notice:</strong> Your password will be stored in plain text in the browser's local storage. Use a unique password for Overseerr.
+                <strong>Security Notice:</strong> Your password will be stored in plain text in the browser's local storage. Use a unique password for Seerr.
               </p>
             </div>
             <div class="form-group">
-              <label for="overseerrEmail">Email</label>
-              <input type="email" id="overseerrEmail" placeholder="your@email.com" />
+              <label for="seerrEmail">Email</label>
+              <input type="email" id="seerrEmail" placeholder="your@email.com" />
             </div>
             <div class="form-group">
-              <label for="overseerrPassword">Password</label>
-              <input type="password" id="overseerrPassword" placeholder="Password" />
+              <label for="seerrPassword">Password</label>
+              <input type="password" id="seerrPassword" placeholder="Password" />
             </div>
           </div>
           
           <!-- Plex Auth -->
-          <div id="overseerrAuthPlex" class="auth-panel" style="display: none;">
+          <div id="seerrAuthPlex" class="auth-panel" style="display: none;">
             <div class="plex-auth-container" style="background: rgba(229, 160, 13, 0.1); border: 1px solid rgba(229, 160, 13, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
               <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="#E5A00D">
@@ -1270,26 +1283,26 @@
                 <span style="font-weight: 600; color: #E5A00D;">Plex Authentication</span>
               </div>
               <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
-                Sign in with your Plex account to authenticate with Overseerr.
+                Sign in with your Plex account to authenticate with Seerr.
               </p>
-              <button type="button" id="overseerrPlexLogin" class="btn-secondary" style="background: #E5A00D; color: #000; border: none; width: 100%;">
+              <button type="button" id="seerrPlexLogin" class="btn-secondary" style="background: #E5A00D; color: #000; border: none; width: 100%;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
                   <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 17.08l-5.894-5.08-5.894 5.08V6.92l5.894 5.08 5.894-5.08v10.16z"/>
                 </svg>
                 Sign in with Plex
               </button>
-              <div id="overseerrPlexStatus" style="margin-top: 12px; font-size: 13px;"></div>
+              <div id="seerrPlexStatus" style="margin-top: 12px; font-size: 13px;"></div>
             </div>
           </div>
           <div class="actions">
-            <button id="saveOverseerr" class="btn-primary">
-              Save Overseerr
+            <button id="saveSeerr" class="btn-primary">
+              Save Seerr
             </button>
-            <button id="testOverseerr" class="btn-secondary">
+            <button id="testSeerr" class="btn-secondary">
               Test Connection
             </button>
           </div>
-          <div id="statusOverseerr" class="status"></div>
+          <div id="statusSeerr" class="status"></div>
         </div>
 
         <!-- Unraid Section -->
@@ -1569,7 +1582,6 @@
 
             <!-- Hide in Sidebar Option -->
             <div class="config-row">
-              <label
               <label class="config-label" style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
                 <input type="checkbox" id="portainerHideInSidebar" style="width: 18px; height: 18px; cursor: pointer;" />
                 <span>Hide</span>
@@ -1598,6 +1610,57 @@
             </button>
           </div>
           <div id="statusPortainer" class="status"></div>
+        </div>
+
+        <!-- Tracearr Section -->
+        <div id="tracearr" class="section">
+          <h2>Tracearr Settings</h2>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; cursor: pointer">
+              <input
+                type="checkbox"
+                id="tracearrEnabled"
+                style="width: auto; margin-right: 10px"
+              />
+              Enable Tracearr
+            </label>
+            <div class="help-text">
+              Disabling the service will remove it from the sidebar and
+              navigation.
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="tracearrUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="tracearrProtocol" style="width: auto">
+                <option value="http://">http://</option>
+                <option value="https://">https://</option>
+              </select>
+              <input
+                type="text"
+                id="tracearrUrl"
+                placeholder="localhost:port"
+                style="flex: 1"
+              />
+            </div>
+            <div class="help-text">
+              Enter host and port, e.g., 192.168.1.10:port
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="tracearrKey">API Key</label>
+            <input type="password" id="tracearrKey" />
+            <div class="help-text">
+              Get your API key from Tracearr Settings
+            </div>
+          </div>
+          <div class="actions">
+            <button id="saveTracearr" class="btn-primary">Save Tracearr</button>
+            <button id="testTracearr" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusTracearr" class="status"></div>
         </div>
       </div>
     </div>

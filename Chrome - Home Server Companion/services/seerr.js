@@ -3,7 +3,7 @@ import { normalizeUrl } from './utils.js';
 // ==================== AUTHENTICATION ====================
 
 /**
- * Login with local Overseerr account (email/password)
+ * Login with local Seerr account (email/password)
  * @param {string} baseUrl
  * @param {string} email
  * @param {string} password
@@ -69,7 +69,7 @@ export async function checkSession(baseUrl) {
 }
 
 /**
- * Logout from Overseerr
+ * Logout from Seerr
  * @param {string} baseUrl
  */
 export async function logout(baseUrl) {
@@ -91,66 +91,91 @@ export async function logout(baseUrl) {
  * @returns {Object} Fetch options with appropriate headers
  */
 export function getAuthFetchOptions(authMethod, apiKey) {
-    if (authMethod === 'apikey') {
+    if (authMethod === 'apikey' && apiKey) {
         return {
             headers: { 'X-Api-Key': apiKey }
         };
     } else {
-        // Cookie-based auth
+        // Cookie-based auth for local/plex
         return {
             credentials: 'include'
         };
     }
 }
 
+// ==================== API FUNCTIONS ====================
+
+/**
+ * Fetches trending media from Seerr (TMDB discover/trending wrapper).
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {number} page - Page number
+ * @param {string} authMethod - 'apikey', 'local', or 'plex'
+ * @returns {Promise<Array>} List of trending items
+ */
+export async function getTrending(url, apiKey, page = 1, authMethod = 'apikey') {
+    url = normalizeUrl(url);
+    const fetchOptions = getAuthFetchOptions(authMethod, apiKey);
+
+    try {
+        const response = await fetch(`${url}/api/v1/discover/trending?page=${page}`, fetchOptions);
+
+        if (!response.ok) {
+            throw new Error(`Seerr Trending Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.results || [];
+    } catch (error) {
+        console.error('Failed to fetch Seerr trending:', error);
+        return [];
+    }
+}
 
 /**
  * Fetches requests (pending, approved, etc.).
  * @param {string} url
  * @param {string} apiKey
  * @param {string} status - Filter status (pending, all, processing, available, unavailable)
+ * @param {string} authMethod - 'apikey', 'local', or 'plex'
  * @returns {Promise<Object>} Object containing 'results' array
  */
-export const getRequests = async (url, apiKey, status = 'pending') => {
-  if (!url || !apiKey) return { results: [] };
-  url = normalizeUrl(url);
+export async function getRequests(url, apiKey, status = 'pending', authMethod = 'apikey') {
+    if (!url) return { results: [] };
+    url = normalizeUrl(url);
+    const fetchOptions = getAuthFetchOptions(authMethod, apiKey);
 
-  try {
-    const filterParam = status === 'all' ? 'all' : status;
-    const response = await fetch(`${url}/api/v1/request?take=50&filter=${filterParam}&sort=added&skip=0`, {
-      headers: {
-        'X-Api-Key': apiKey,
-      },
-    });
+    try {
+        const filterParam = status === 'all' ? 'all' : status;
+        const response = await fetch(`${url}/api/v1/request?take=50&filter=${filterParam}&sort=added&skip=0`, fetchOptions);
 
-    if (!response.ok) {
-      throw new Error(`Overseerr API Error: ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`Seerr API Error: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to fetch Seerr requests:', error);
+        return { results: [] };
     }
-
-    const data = await response.json();
-
-    return data;
-  } catch (error) {
-    console.error('Failed to fetch Overseerr requests:', error);
-    return { results: [] };
-  }
-};
+}
 
 /**
  * Approves a request.
  * @param {string} url
  * @param {string} apiKey
  * @param {number} requestId
+ * @param {string} authMethod
  * @returns {Promise<boolean>} Success status
  */
-export const approveRequest = async (url, apiKey, requestId) => {
+export async function approveRequest(url, apiKey, requestId, authMethod = 'apikey') {
     url = normalizeUrl(url);
+    const fetchOptions = getAuthFetchOptions(authMethod, apiKey);
+
     try {
         const response = await fetch(`${url}/api/v1/request/${requestId}/approve`, {
             method: 'POST',
-            headers: {
-                'X-Api-Key': apiKey,
-            }
+            ...fetchOptions
         });
         if (!response.ok) throw new Error('Failed to approve');
         return true;
@@ -158,106 +183,85 @@ export const approveRequest = async (url, apiKey, requestId) => {
         console.error(e);
         return false;
     }
-};
+}
 
 /**
  * Declines a request.
  * @param {string} url
  * @param {string} apiKey
  * @param {number} requestId
+ * @param {string} authMethod
  * @returns {Promise<boolean>} Success status
  */
-export const declineRequest = async (url, apiKey, requestId) => {
+export async function declineRequest(url, apiKey, requestId, authMethod = 'apikey') {
     url = normalizeUrl(url);
+    const fetchOptions = getAuthFetchOptions(authMethod, apiKey);
+
     try {
         const response = await fetch(`${url}/api/v1/request/${requestId}/decline`, {
             method: 'POST',
-            headers: {
-                'X-Api-Key': apiKey,
-            }
+            ...fetchOptions
         });
-         if (!response.ok) throw new Error('Failed to decline');
+        if (!response.ok) throw new Error('Failed to decline');
         return true;
     } catch (e) {
         console.error(e);
         return false;
     }
-};
+}
 
 /**
- * Searches Overseerr (TMDB wrapper).
+ * Searches Seerr (TMDB wrapper).
  * @param {string} url
  * @param {string} apiKey
  * @param {string} query
+ * @param {string} authMethod
  * @returns {Promise<Array>} List of results
  */
-export async function search(url, apiKey, query) {
+export async function search(url, apiKey, query, authMethod = 'apikey') {
     url = normalizeUrl(url);
+    const fetchOptions = getAuthFetchOptions(authMethod, apiKey);
 
-    const endpoint = `${url}/api/v1/search?query=${encodeURIComponent(query)}`;
-
+    // Merge Content-Type header with auth headers
+    const headers = { 'Content-Type': 'application/json', ...(fetchOptions.headers || {}) };
 
     try {
-        const response = await fetch(endpoint, {
+        const response = await fetch(`${url}/api/v1/search?query=${encodeURIComponent(query)}`, {
             method: 'GET',
-            headers: {
-                'X-Api-Key': apiKey,
-                'Content-Type': 'application/json'
-            }
+            headers,
+            credentials: fetchOptions.credentials
         });
 
         if (!response.ok) {
-            console.error("Overseerr Service: Search response not OK", response.status);
-            throw new Error(`Overseerr Search Error: ${response.status}`);
+            console.error("Seerr Service: Search response not OK", response.status);
+            throw new Error(`Seerr Search Error: ${response.status}`);
         }
 
         const data = await response.json();
-
         return data.results || [];
     } catch (error) {
-        console.error("Overseerr Service: Search logic failed", error);
+        console.error("Seerr Service: Search logic failed", error);
         throw error;
     }
 }
 
 // Helper to get default profile/rootFolder
-async function getDefaults(url, apiKey, mediaType) {
+async function getDefaults(url, apiKey, mediaType, authMethod = 'apikey') {
+    const fetchOptions = getAuthFetchOptions(authMethod, apiKey);
+
     try {
         const isMovie = mediaType === 'movie';
         const endpoint = isMovie ? 'radarr' : 'sonarr';
 
-        // 1. Get Services (Servers)
-        const servicesRes = await fetch(`${url}/api/v1/settings/${endpoint}`, {
-            headers: { 'X-Api-Key': apiKey }
-        });
+        const servicesRes = await fetch(`${url}/api/v1/settings/${endpoint}`, fetchOptions);
         if (!servicesRes.ok) return null;
 
         const servicesData = await servicesRes.json();
-        // Find default or first server
         let server = servicesData.find(s => s.isDefault) || servicesData[0];
-
         if (!server) return null;
 
-        // 2. Get Profiles & Root Folders for this server
-        // Endpoint: /api/v1/service/sonarr/{id}  or radarr
-
-        const serverDetailsRes = await fetch(`${url}/api/v1/service/${endpoint}/${server.id}`, {
-            headers: { 'X-Api-Key': apiKey }
-        });
-
+        const serverDetailsRes = await fetch(`${url}/api/v1/service/${endpoint}/${server.id}`, fetchOptions);
         if (!serverDetailsRes.ok) return null;
-        const serverData = await serverDetailsRes.json();
-
-        // Find default profile
-        // serverData.profiles: []
-        // serverData.rootFolders: []
-
-        // How does Overseerr store defaults?
-        // It seems they are inside the service settings object itself?
-        // Let's recheck the first response.
-
-        // Actually, the defaults are usually stored on the server object in the array "servicesData"
-        // properties: activeProfileId, activeDirectory, isDefault
 
         const profileId = server.activeProfileId;
         const rootFolder = server.activeDirectory;
@@ -270,12 +274,7 @@ async function getDefaults(url, apiKey, mediaType) {
             };
         }
 
-        // If not set on the server object, maybe detailed object?
-        // Let's assume serverData has profiles and rootFolders, we pick first if defaults are missing?
-        // No, that's dangerous.
-
         return null;
-
     } catch(e) {
         console.error("Failed to fetch defaults", e);
         return null;
@@ -284,57 +283,57 @@ async function getDefaults(url, apiKey, mediaType) {
 
 /**
  * Submits a new media request.
- * - Fetches defaults (Root Folder, Quality Profile) if needed to prevent errors.
  * @param {string} url
  * @param {string} apiKey
  * @param {Object} payload - { mediaId, mediaType, seasons? }
+ * @param {string} authMethod
  * @returns {Promise<Object>} Response data
  */
-export async function request(url, apiKey, payload) {
+export async function request(url, apiKey, payload, authMethod = 'apikey') {
     url = normalizeUrl(url);
+    const fetchOptions = getAuthFetchOptions(authMethod, apiKey);
 
-    // Ensure mediaType is lowercase
     if (payload.mediaType) payload.mediaType = payload.mediaType.toLowerCase();
 
-    // SERVER CRASH FIX:
-    // If the server crashes with "filter of undefined", it's likely missing defaults.
-    // We try to fetch and inject them if user didn't provide them.
     if (!payload.rootFolder || !payload.profileId) {
-
-         const defaults = await getDefaults(url, apiKey, payload.mediaType);
-         if (defaults) {
-             if (!payload.profileId) payload.profileId = defaults.profileId;
-             if (!payload.rootFolder) payload.rootFolder = defaults.rootFolder;
-             // Overseerr request endpoint also accepts 'serverId' sometimes?
-             // API docs say: mediaId, mediaType, rootFolder, profileId, serverId (optional)
-             if (!payload.serverId) payload.serverId = defaults.serverId;
-         }
+        const defaults = await getDefaults(url, apiKey, payload.mediaType, authMethod);
+        if (defaults) {
+            if (!payload.profileId) payload.profileId = defaults.profileId;
+            if (!payload.rootFolder) payload.rootFolder = defaults.rootFolder;
+            if (!payload.serverId) payload.serverId = defaults.serverId;
+        }
     }
 
-
+    const headers = { 'Content-Type': 'application/json', ...(fetchOptions.headers || {}) };
 
     const response = await fetch(`${url}/api/v1/request`, {
         method: 'POST',
-        headers: {
-            'X-Api-Key': apiKey,
-            'Content-Type': 'application/json'
-        },
+        headers,
+        credentials: fetchOptions.credentials,
         body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
-         const errData = await response.json();
-         throw new Error(errData.message || `Status ${response.status}`);
+        const errData = await response.json();
+        throw new Error(errData.message || `Status ${response.status}`);
     }
     return await response.json();
 }
 
-export async function getMovie(url, apiKey, id) {
+/**
+ * Get movie details by TMDB ID.
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {number} id - TMDB movie ID
+ * @param {string} authMethod
+ * @returns {Promise<Object|null>}
+ */
+export async function getMovie(url, apiKey, id, authMethod = 'apikey') {
     url = normalizeUrl(url);
+    const fetchOptions = getAuthFetchOptions(authMethod, apiKey);
+
     try {
-        const response = await fetch(`${url}/api/v1/movie/${id}`, {
-            headers: { 'X-Api-Key': apiKey }
-        });
+        const response = await fetch(`${url}/api/v1/movie/${id}`, fetchOptions);
         if (!response.ok) return null;
         return await response.json();
     } catch (e) {
@@ -343,12 +342,20 @@ export async function getMovie(url, apiKey, id) {
     }
 }
 
-export async function getTv(url, apiKey, id) {
+/**
+ * Get TV show details by TMDB ID.
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {number} id - TMDB TV ID
+ * @param {string} authMethod
+ * @returns {Promise<Object|null>}
+ */
+export async function getTv(url, apiKey, id, authMethod = 'apikey') {
     url = normalizeUrl(url);
+    const fetchOptions = getAuthFetchOptions(authMethod, apiKey);
+
     try {
-        const response = await fetch(`${url}/api/v1/tv/${id}`, {
-            headers: { 'X-Api-Key': apiKey }
-        });
+        const response = await fetch(`${url}/api/v1/tv/${id}`, fetchOptions);
         if (!response.ok) return null;
         return await response.json();
     } catch (e) {

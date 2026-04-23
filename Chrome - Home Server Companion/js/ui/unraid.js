@@ -1,10 +1,11 @@
 import {
   getSystemData,
+  getCachedSystemData,
   controlContainer,
   getVms,
   controlVm
 } from "../../services/unraid.js";
-import { showNotification } from "../utils.js";
+import { showNotification, validateUrl, openUrlSafely } from "../utils.js";
 
 /**
  * Initializes the Unraid service view.
@@ -83,6 +84,17 @@ export async function initUnraid(url, key, state) {
              debounceTimer = setTimeout(triggerUpdate, 300); // 300ms debounce
         });
         searchInput.dataset.initListener = "true";
+    }
+
+    // Instant render from cache (stale-while-revalidate) — avoids blank UI on popup open
+    try {
+        const cached = await getCachedSystemData(url);
+        if (cached?.data && !lastData) {
+            lastData = cached.data;
+            renderUnraidSystem(cached.data, url, key, state);
+        }
+    } catch (e) {
+        console.debug("Unraid cache read skipped:", e.message);
     }
 
     await update();
@@ -225,16 +237,55 @@ function renderUnraidSystem(data, url, key, state) {
         // --- Uptime Card (next to RAM) ---
         const uptimeCard = mkDiv('unraid-card system-stat-card');
         uptimeCard.appendChild(mkDiv('stat-label', 'UPTIME'));
-        
+
         const uptimeVal = mkDiv('stat-value', '--');
         uptimeVal.style.fontSize = '18px';
         uptimeVal.id = 'dash-uptime';
         uptimeCard.appendChild(uptimeVal);
-        
+
         const uptimeIcon = mkDiv('stat-sub', '⏱ System Uptime');
         uptimeCard.appendChild(uptimeIcon);
-        
+
         dashGrid.appendChild(uptimeCard);
+
+        // --- CPU Temperature Card (Unraid API v4.30+) — hidden until data arrives ---
+        const cpuTempCard = mkDiv('unraid-card system-stat-card hidden');
+        cpuTempCard.id = 'dash-cpu-temp-card';
+        const cpuTempLabel = mkDiv('stat-label', 'CPU TEMP');
+        cpuTempLabel.id = 'dash-cpu-temp-label';
+        cpuTempCard.appendChild(cpuTempLabel);
+
+        const cpuTempVal = mkDiv('stat-value', '--');
+        cpuTempVal.id = 'dash-cpu-temp-value';
+        cpuTempCard.appendChild(cpuTempVal);
+
+        dashGrid.appendChild(cpuTempCard);
+
+        // --- Motherboard Temperature Card — hidden until data arrives ---
+        const mbTempCard = mkDiv('unraid-card system-stat-card hidden');
+        mbTempCard.id = 'dash-mb-temp-card';
+        const mbTempLabel = mkDiv('stat-label', 'MB TEMP');
+        mbTempLabel.id = 'dash-mb-temp-label';
+        mbTempCard.appendChild(mbTempLabel);
+
+        const mbTempVal = mkDiv('stat-value', '--');
+        mbTempVal.id = 'dash-mb-temp-value';
+        mbTempCard.appendChild(mbTempVal);
+
+        dashGrid.appendChild(mbTempCard);
+
+        // --- Hottest Disk/NVMe Temperature Card — hidden until data arrives ---
+        const diskTempCard = mkDiv('unraid-card system-stat-card hidden');
+        diskTempCard.id = 'dash-disk-temp-card';
+        const diskTempLabel = mkDiv('stat-label', 'HOTTEST DISK');
+        diskTempLabel.id = 'dash-disk-temp-label';
+        diskTempCard.appendChild(diskTempLabel);
+
+        const diskTempVal = mkDiv('stat-value', '--');
+        diskTempVal.id = 'dash-disk-temp-value';
+        diskTempCard.appendChild(diskTempVal);
+
+        dashGrid.appendChild(diskTempCard);
 
         systemTab.appendChild(dashGrid);
 
@@ -360,6 +411,146 @@ function renderUnraidSystem(data, url, key, state) {
 
     // Uptime
     document.getElementById('dash-uptime').textContent = getUptime(data.system.uptimeBoot);
+
+    // Temperature (v4.30+) — three cards: CPU, Motherboard, Hottest Disk
+    const cpuTempCard = document.getElementById('dash-cpu-temp-card');
+    const cpuTempValEl = document.getElementById('dash-cpu-temp-value');
+    const cpuTempLabelEl = document.getElementById('dash-cpu-temp-label');
+    const mbTempCard = document.getElementById('dash-mb-temp-card');
+    const mbTempValEl = document.getElementById('dash-mb-temp-value');
+    const mbTempLabelEl = document.getElementById('dash-mb-temp-label');
+    const diskTempCard = document.getElementById('dash-disk-temp-card');
+    const diskTempValEl = document.getElementById('dash-disk-temp-value');
+    const diskTempLabelEl = document.getElementById('dash-disk-temp-label');
+    const cpuTemp = data.system?.cpuTemp;
+    const summary = data.system?.temperatureSummary;
+    const sensors = data.system?.temperatures || [];
+
+    // Sensor selection across all supported Unraid setups.
+    //
+    // Some chip drivers (e.g. nct6798) expose voltages and fan RPMs in the
+    // same payload and the Unraid API currently tags them all with unit
+    // CELSIUS, so the selection has to be defensive:
+    //   - filter to values in a plausible temperature range
+    //   - ignore sensors whose name hints at voltage ("in0".."inN") or fan
+    const unit = sensors[0]?.unit;
+    const degree = unit === 'FAHRENHEIT' ? '°F' : '°C';
+    const minReasonable = unit === 'FAHRENHEIT' ? 50 : 15;
+    const maxReasonable = unit === 'FAHRENHEIT' ? 250 : 120;
+
+    const isPlausibleTemp = (s) => {
+        if (typeof s.value !== 'number') return false;
+        if (s.value < minReasonable || s.value > maxReasonable) return false;
+        const name = (s.name || '').toLowerCase();
+        if (/\bin\d+\b/.test(name)) return false;
+        if (/\b(fan|rpm|vddgfx|vddnb|vcore|vbat)\b/.test(name)) return false;
+        return true;
+    };
+
+    const matchesName = (s, pattern) =>
+        isPlausibleTemp(s) && pattern.test((s.name || '').toLowerCase());
+
+    // Strip lm-sensors chip prefix "driver-bus-address Name" → "Name"
+    // e.g. "nct6798-isa-0290 CPU Temp" → "CPU Temp", "k10temp-pci-00c3 Tctl" → "Tctl"
+    const cleanName = (raw) => (raw || '').replace(/^[a-z0-9]+-[a-z0-9-]+\s+/i, '').trim();
+
+    // --- CPU sensor selection ---
+    // Priority: explicit "CPU" label from superio chip (most accurate on systems
+    // that have both nct6xxx and k10temp), then Intel Package/Core, then AMD
+    // Tctl/Tdie as the last resort for systems without a superio CPU sensor.
+    let cpuPick = null;
+    if (typeof cpuTemp === 'number') {
+        cpuPick = { value: cpuTemp, name: 'CPU' };
+    } else if (sensors.length > 0) {
+        cpuPick =
+            sensors.find(s => matchesName(s, /\bcpu\s*temp\b/)) ||
+            sensors.find(s => matchesName(s, /\bcpu\b/)) ||
+            sensors.find(s => matchesName(s, /\bpackage\s*id\b/)) ||
+            sensors.find(s => matchesName(s, /\bpackage\b/)) ||
+            sensors.find(s => matchesName(s, /\bcore\s*\d/)) ||
+            sensors.find(s => matchesName(s, /\b(tctl|tdie)\b/)) ||
+            null;
+    }
+
+    // --- Motherboard sensor selection ---
+    // Priority: explicit "MB" label, then MOTHERBOARD sensor type, then common
+    // superio ambient labels (SYSTIN = system temperature internal).
+    const mbPick =
+        sensors.find(s => matchesName(s, /\bmb\b|motherboard/)) ||
+        sensors.find(s => s.type === 'MOTHERBOARD' && isPlausibleTemp(s)) ||
+        sensors.find(s => matchesName(s, /\bsystin\b/)) ||
+        null;
+
+    // --- Hottest Disk/NVMe selection ---
+    // Prefer named drives (drive model) over generic chip-internal sensors like
+    // "Composite" or "Sensor 1/2/3", fall back to whatever is available.
+    const diskCandidates = sensors.filter(s =>
+        (s.type === 'DISK' || s.type === 'NVME') && isPlausibleTemp(s)
+    );
+    const namedDrives = diskCandidates.filter(s => {
+        const name = (s.name || '').toLowerCase();
+        return !/\b(composite|sensor\s*\d)\b/.test(name);
+    });
+    const diskPool = namedDrives.length > 0 ? namedDrives : diskCandidates;
+    const diskPick = diskPool.slice().sort((a, b) => b.value - a.value)[0] || null;
+
+    // Colour helper — drives red/orange/green off API status where available
+    const colourClass = (sensorStatus) => {
+        if (sensorStatus === 'CRITICAL') return 'text-red';
+        if (sensorStatus === 'WARNING') return 'text-orange';
+        return 'text-green';
+    };
+
+    // Suppress redundant sensor names so the card doesn't read "CPU TEMP · CPU Temp"
+    const isRedundantName = (name, kind) => {
+        const n = (name || '').toLowerCase().trim();
+        if (!n) return true;
+        if (kind === 'cpu') return /^(cpu|cpu\s*temp|cpu\s*temperature)$/.test(n);
+        if (kind === 'mb')  return /^(mb|mb\s*temp|motherboard|board)$/.test(n);
+        return false;
+    };
+
+    const buildLabel = (title, sensorName, kind) => {
+        const clean = cleanName(sensorName);
+        if (!clean || isRedundantName(clean, kind)) return title;
+        return `${title} · ${clean}`;
+    };
+
+    // --- Render CPU card ---
+    if (cpuTempCard && cpuTempValEl && cpuTempLabelEl) {
+        if (cpuPick) {
+            cpuTempLabelEl.textContent = buildLabel('CPU TEMP', cpuPick.name, 'cpu');
+            cpuTempValEl.textContent = `${Math.round(cpuPick.value)}${degree}`;
+            cpuTempValEl.className = 'stat-value ' + colourClass(cpuPick.status);
+            cpuTempCard.classList.remove('hidden');
+        } else {
+            cpuTempCard.classList.add('hidden');
+        }
+    }
+
+    // --- Render MB card ---
+    if (mbTempCard && mbTempValEl && mbTempLabelEl) {
+        if (mbPick) {
+            mbTempLabelEl.textContent = buildLabel('MB TEMP', mbPick.name, 'mb');
+            mbTempValEl.textContent = `${Math.round(mbPick.value)}${degree}`;
+            mbTempValEl.className = 'stat-value ' + colourClass(mbPick.status);
+            mbTempCard.classList.remove('hidden');
+        } else {
+            mbTempCard.classList.add('hidden');
+        }
+    }
+
+    // --- Render Hottest Disk card ---
+    if (diskTempCard && diskTempValEl && diskTempLabelEl) {
+        if (diskPick) {
+            diskTempLabelEl.textContent = buildLabel('HOTTEST DISK', diskPick.name, 'disk');
+            diskTempValEl.textContent = `${Math.round(diskPick.value)}${degree}`;
+            diskTempValEl.className = 'stat-value ' + colourClass(diskPick.status);
+            diskTempCard.classList.remove('hidden');
+        } else {
+            diskTempCard.classList.add('hidden');
+        }
+    }
 
     // Array Status
     const arrayStatus = document.getElementById('dash-array-status');
@@ -792,21 +983,36 @@ function updateDockerCard(card, container, url, key) {
     const dotClass = `status-dot ${isRunning ? 'started' : 'stopped'}`;
     if(dot.className !== dotClass) dot.className = dotClass; 
     
-    // Icon
+    // Icon — prefer template icon from API (v4.30+), fall back to name initials
     const iconDiv = card.querySelector('.card-icon');
-    const iconLetter = container.name.substring(0,2).toUpperCase();
-    if (iconDiv.textContent !== iconLetter) {
-         iconDiv.textContent = iconLetter;
-         // Static styles that don't change frequently can typically stay in CSS or be set once
-         // But ensuring they are set if we recreated the card (which we didn't) or if js overwrote them
-         if(!iconDiv.style.display) {
-             iconDiv.style.display = "flex";
-             iconDiv.style.alignItems = "center";
-             iconDiv.style.justifyContent = "center";
-             iconDiv.style.backgroundColor = "rgba(255,255,255,0.1)";
-             iconDiv.style.fontSize = "10px";
-             iconDiv.style.fontWeight = "bold";
-         }
+    const existingImg = iconDiv.querySelector('img');
+    if (container.icon) {
+        if (!existingImg || existingImg.src !== container.icon) {
+            iconDiv.textContent = '';
+            const img = document.createElement('img');
+            img.src = container.icon;
+            img.alt = '';
+            img.setAttribute('aria-hidden', 'true');
+            img.style.cssText = 'width:100%;height:100%;object-fit:contain;border-radius:4px;';
+            img.onerror = () => {
+                // Template icon unreachable — fall back to initials
+                iconDiv.textContent = container.name.substring(0, 2).toUpperCase();
+            };
+            iconDiv.appendChild(img);
+        }
+    } else {
+        const iconLetter = container.name.substring(0, 2).toUpperCase();
+        if (iconDiv.textContent !== iconLetter || existingImg) {
+            iconDiv.textContent = iconLetter;
+            if (!iconDiv.style.display) {
+                iconDiv.style.display = "flex";
+                iconDiv.style.alignItems = "center";
+                iconDiv.style.justifyContent = "center";
+                iconDiv.style.backgroundColor = "rgba(255,255,255,0.1)";
+                iconDiv.style.fontSize = "10px";
+                iconDiv.style.fontWeight = "bold";
+            }
+        }
     }
 
     // Title
@@ -912,9 +1118,12 @@ function updateDockerCard(card, container, url, key) {
          e.stopPropagation();
          e.preventDefault();
          if (container.webui) {
-             chrome.tabs.create({ url: container.webui, active: true });
+             // WebUI URL is pulled from Docker labels / template — a compromised
+             // container can point this at anything. openUrlSafely prompts the
+             // user if the host isn't local/private and isn't the Unraid server.
+             openUrlSafely(container.webui, { unraidUrl: url }, 'Docker container');
          } else {
-             chrome.tabs.create({ url: url, active: true });
+             if (validateUrl(url)) chrome.tabs.create({ url: url, active: true });
          }
     };
 }

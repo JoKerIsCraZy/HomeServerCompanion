@@ -2,13 +2,17 @@ import { initSabnzbd } from "./ui/sabnzbd.js";
 import { initSonarr } from "./ui/sonarr.js";
 import { initRadarr } from "./ui/radarr.js";
 import { initTautulli } from "./ui/tautulli.js";
-import { initOverseerr } from "./ui/overseerr.js";
+import { initSeerr } from "./ui/seerr.js";
 import { initUnraid } from "./ui/unraid.js";
 import { initProwlarr } from "./ui/prowlarr.js";
 import { initWizarr } from "./ui/wizarr.js";
 import { initDashboard } from "./ui/dashboard.js";
 import { initPortainer } from "./ui/portainer.js";
-import { checkAndShowChangelog } from "./utils.js";
+import { checkAndShowChangelog, validateUrl } from "./utils.js";
+
+// V4.0 Core Modules
+import appState from './core/AppState.js';
+import badgeManager from './core/BadgeManager.js';
 
 /**
  * Creates multiple sidebar entries for each Portainer instance.
@@ -74,10 +78,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Fullscreen Button Handler - opens extension as standalone dashboard tab
   document.getElementById('fullscreen-btn')?.addEventListener('click', () => {
-    chrome.tabs.create({
-      url: chrome.runtime.getURL('popup.html?fullscreen=true')
-    });
+    const url = chrome.runtime.getURL('popup.html?fullscreen=true');
+    if (validateUrl(url)) {
+      chrome.tabs.create({ url });
+    }
     window.close();
+  });
+
+  // Exit Fullscreen Button Handler
+  const exitFullscreenBtn = document.getElementById('exit-fullscreen');
+  if (exitFullscreenBtn) {
+    exitFullscreenBtn.addEventListener('click', () => {
+      window.close();
+    });
+  }
+
+  // Handle escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && new URLSearchParams(window.location.search).get('fullscreen') === 'true') {
+      window.close();
+    }
   });
 
   // State
@@ -99,274 +119,205 @@ document.addEventListener("DOMContentLoaded", async () => {
   const navItems = document.querySelectorAll(".sidebar .nav-item[data-target]");
 
   // --- Initialization ---
-  chrome.storage.sync.get(null, (items) => {
-    state.configs = items;
+  // Initialize AppState
+  await appState.init();
+  Object.assign(state, appState.state);
 
-    // Determine Service Order
-    let order = [
-      "dashboard",
-      "unraid",
-      "sabnzbd",
-      "sonarr",
-      "radarr",
-      "tautulli",
-      "overseerr",
-      "prowlarr",
-      "wizarr",
-    ];
-    if (items.serviceOrder && Array.isArray(items.serviceOrder)) {
-      order = items.serviceOrder;
-    }
-    
-    // Safety: Ensure Dashboard is always in the order (it might be missing in custom sorts)
-    if (!order.includes('dashboard')) {
-        order.unshift('dashboard');
-    }
+  // Determine Service Order
+  let order = [
+    "dashboard",
+    "unraid",
+    "sabnzbd",
+    "sonarr",
+    "radarr",
+    "tautulli",
+    "seerr",
+    "prowlarr",
+    "wizarr",
+    "tracearr",
+    "portainer",
+  ];
+  if (state.configs.serviceOrder && Array.isArray(state.configs.serviceOrder)) {
+    order = state.configs.serviceOrder;
+  }
 
-    // Reorder Sidebar
-    const sidebar = document.querySelector(".sidebar");
-    const spacer = sidebar.querySelector(".spacer");
+  // Safety: Ensure Dashboard is always in the order (it might be missing in custom sorts)
+  if (!order.includes('dashboard')) {
+      order.unshift('dashboard');
+  }
 
-    // First, create dynamic Portainer entries for each instance
-    createPortainerSidebarEntries(items, sidebar, spacer);
-    
-    // CRITICAL: Hide ALL disabled services FIRST (regardless of order array)
-    // This ensures services disabled via Setup Wizard are properly hidden
-    const allServiceNavItems = sidebar.querySelectorAll('.nav-item[data-target]');
-    allServiceNavItems.forEach(navItem => {
-        const service = navItem.dataset.target;
-        // Skip portainer instances (handled separately)
-        if (navItem.dataset.portainerId) {
-            if (items.portainerEnabled === false) {
-                navItem.style.display = 'none';
-            }
-            return;
-        }
-        // Hide if service is explicitly disabled
-        if (items[`${service}Enabled`] === false) {
-            navItem.style.display = 'none';
-        }
-    });
+  // Reorder Sidebar
+  const sidebar = document.querySelector(".sidebar");
+  const spacer = sidebar.querySelector(".spacer");
 
-    // Collect all portainer instances for reordering
-    const portainerInstances = items.portainerInstances || [];
-    const portainerIdMap = new Map();
-    portainerInstances.forEach(inst => {
-        portainerIdMap.set('portainer_' + inst.id, inst.id);
-    });
+  // First, create dynamic Portainer entries for each instance
+  createPortainerSidebarEntries(state.configs, sidebar, spacer);
 
-    order.forEach((service) => {
-      // Handle portainer instances - find the specific portainer element by its data-portainer-id
-      if (service.startsWith('portainer_')) {
-          const instId = service.replace('portainer_', '');
-          if (items.portainerEnabled !== false) {
-              const el = sidebar.querySelector(`.nav-item[data-portainer-id="${instId}"]`);
-              if (el) sidebar.insertBefore(el, spacer);
-          } else {
-              const el = sidebar.querySelector(`.nav-item[data-portainer-id="${instId}"]`);
-              if (el) el.style.display = "none";
+  // CRITICAL: Hide ALL disabled services FIRST (regardless of order array)
+  // This ensures services disabled via Setup Wizard are properly hidden
+  const allServiceNavItems = sidebar.querySelectorAll('.nav-item[data-target]');
+  allServiceNavItems.forEach(navItem => {
+      const service = navItem.dataset.target;
+      // Skip portainer instances (handled separately)
+      if (navItem.dataset.portainerId) {
+          if (state.configs.portainerEnabled === false) {
+              navItem.style.display = 'none';
           }
-      } else if (service === 'portainer') {
-          // Legacy portainer - show all instances
-          if (items.portainerEnabled !== false) {
-              portainerInstances.forEach(inst => {
-                  const el = sidebar.querySelector(`.nav-item[data-portainer-id="${inst.id}"]`);
-                  if (el) sidebar.insertBefore(el, spacer);
-              });
-          }
-      } else {
-          // Regular services - only reorder if enabled (already hidden above if disabled)
-          if (items[`${service}Enabled`] !== false) {
-              const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
-              if (el) sidebar.insertBefore(el, spacer);
-          }
+          return;
       }
-    });
-
-    // Re-calculate visible order for defaulting
-    const visibleOrder = order.filter((s) => items[`${s}Enabled`] !== false);
-
-    // Default to first service in order
-    let defaultService = visibleOrder.length > 0 ? visibleOrder[0] : "dashboard";
-
-    // START PAGE LOGIC
-    // Options: 'last-active' (default) or specific service id
-    const startPage = items.startPage || (items.enablePersistence === false ? 'dashboard' : 'last-active');
-
-    if (startPage === 'last-active') {
-        const lastService = localStorage.getItem("lastActiveService");
-        if (
-            lastService &&
-            items[`${lastService}Enabled`] !== false &&
-            order.includes(lastService)
-        ) {
-            defaultService = lastService;
-        }
-    } else {
-        // Specific start page requested
-        if (
-            items[`${startPage}Enabled`] !== false &&
-            order.includes(startPage)
-        ) {
-            defaultService = startPage;
-        }
-    }
-
-    initNavigation();
-
-    // Reset all views to hidden initially to prevent overlap/splitscreen
-    views.forEach(v => {
-        v.classList.remove('active');
-        v.classList.add('hidden');
-    });
-
-    state.activeService = defaultService;
-    
-    // Load local storage states for sub-tabs before loading service
-    restoreView(defaultService);
-
-    // Load Default Service
-    loadService(defaultService);
-
-    // BADGE PRE-LOAD: Load other services in background to show badges
-    ["sabnzbd", "radarr", "sonarr", "tautulli"].forEach((svc) => {
-      if (svc !== defaultService && items[`${svc}Enabled`] !== false) {
-        const svcUrl = items[`${svc}Url`];
-        const svcKey = items[`${svc}Key`];
-        if (svcUrl && svcKey) {
-          // Pre-fetch in background with slight delay to not block main service
-          setTimeout(async () => {
-            try {
-              if (svc === "tautulli") {
-                await initTautulli(svcUrl, svcKey, state);
-              } else if (svc === "sabnzbd") {
-                await initSabnzbd(svcUrl, svcKey, state);
-              } else if (svc === "sonarr") {
-                await initSonarr(svcUrl, svcKey, state);
-              } else if (svc === "radarr") {
-                await initRadarr(svcUrl, svcKey, state);
-              }
-            } catch (e) {
-              console.debug(`[Pre-fetch] ${svc} failed:`, e.message);
-            }
-          }, 500);
-        }
+      // Hide if service is explicitly disabled
+      if (state.configs[`${service}Enabled`] === false) {
+          navItem.style.display = 'none';
       }
-    });
+  });
 
-    // Start background badge updates
-    startBackgroundBadgeUpdates();
+  // Collect all portainer instances for reordering
+  const portainerInstances = state.configs.portainerInstances || [];
+  const portainerIdMap = new Map();
+  portainerInstances.forEach(inst => {
+      portainerIdMap.set('portainer_' + inst.id, inst.id);
+  });
 
-    // --- CHECK FOR PENDING SEARCH (Context Menu) ---
-    chrome.storage.local.get(['pendingSearch'], (result) => {
-        const searchQuery = result.pendingSearch;
-        
-        if (searchQuery) {
-            // Clear immediately
-            chrome.storage.local.remove('pendingSearch');
-
-            // Trigger Unified Search
-            import("./ui/searchUI.js").then((module) => {
-                // Ensure UI is initialized
-                module.initSearchUI(state).then(() => {
-                    module.openSearch();
-                    
-                    setTimeout(() => {
-                        const input = document.getElementById('unified-search-input');
-                        if (input) {
-                            input.value = searchQuery;
-                            // Trigger input event to fire the debounce listener
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
-                        }
-                    }, 100);
-                });
+  order.forEach((service) => {
+    // Handle portainer instances - find the specific portainer element by its data-portainer-id
+    if (service.startsWith('portainer_')) {
+        const instId = service.replace('portainer_', '');
+        if (state.configs.portainerEnabled !== false) {
+            const el = sidebar.querySelector(`.nav-item[data-portainer-id="${instId}"]`);
+            if (el) sidebar.insertBefore(el, spacer);
+        } else {
+            const el = sidebar.querySelector(`.nav-item[data-portainer-id="${instId}"]`);
+            if (el) el.style.display = "none";
+        }
+    } else if (service === 'portainer') {
+        // Legacy portainer - show all instances
+        if (state.configs.portainerEnabled !== false) {
+            portainerInstances.forEach(inst => {
+                const el = sidebar.querySelector(`.nav-item[data-portainer-id="${inst.id}"]`);
+                if (el) sidebar.insertBefore(el, spacer);
             });
         }
+    } else {
+        // Regular services - only reorder if enabled (already hidden above if disabled)
+        if (state.configs[`${service}Enabled`] !== false) {
+            const el = sidebar.querySelector(`.nav-item[data-target="${service}"]`);
+            if (el) sidebar.insertBefore(el, spacer);
+        }
+    }
+  });
 
-        // Start background badge updates
-        startBackgroundBadgeUpdates();
+  // Re-calculate visible order for defaulting
+  const visibleOrder = order.filter((s) => state.configs[`${s}Enabled`] !== false);
 
-        // Initialize Search UI (Background Warmup)
-        import("./ui/searchUI.js").then((module) => {
-            module.initSearchUI(state);
-        });
-    });
+  // Default to first service in order
+  let defaultService = visibleOrder.length > 0 ? visibleOrder[0] : "dashboard";
+
+  // START PAGE LOGIC
+  // Options: 'last-active' (default) or specific service id
+  const startPage = state.configs.startPage || (state.configs.enablePersistence === false ? 'dashboard' : 'last-active');
+
+  if (startPage === 'last-active') {
+      const lastService = localStorage.getItem("lastActiveService");
+      if (
+          lastService &&
+          state.configs[`${lastService}Enabled`] !== false &&
+          order.includes(lastService)
+      ) {
+          defaultService = lastService;
+      }
+  } else {
+      // Specific start page requested
+      if (
+          state.configs[`${startPage}Enabled`] !== false &&
+          order.includes(startPage)
+      ) {
+          defaultService = startPage;
+      }
+  }
+
+  initNavigation();
+
+  // Reset all views to hidden initially to prevent overlap/splitscreen
+  views.forEach(v => {
+      v.classList.remove('active');
+      v.classList.add('hidden');
+  });
+
+  state.activeService = defaultService;
+
+  // Load local storage states for sub-tabs before loading service
+  restoreView(defaultService);
+
+  // Load Default Service
+  loadService(defaultService);
+
+  // BADGE PRE-LOAD: Load other services in background to show badges
+  ["sabnzbd", "radarr", "sonarr", "tautulli", "tracearr"].forEach((svc) => {
+    if (svc !== defaultService && state.configs[`${svc}Enabled`] !== false) {
+      const svcUrl = state.configs[`${svc}Url`];
+      const svcKey = state.configs[`${svc}Key`];
+      if (svcUrl && svcKey) {
+        // Pre-fetch in background with slight delay to not block main service
+        setTimeout(async () => {
+          try {
+            if (svc === "tautulli") {
+              await initTautulli(svcUrl, svcKey, state);
+            } else if (svc === "sabnzbd") {
+              await initSabnzbd(svcUrl, svcKey, state);
+            } else if (svc === "sonarr") {
+              await initSonarr(svcUrl, svcKey, state);
+            } else if (svc === "radarr") {
+              await initRadarr(svcUrl, svcKey, state);
+            } else if (svc === "tracearr") {
+              await import('./ui/tracearr.js').then(m => m.initTracearr(svcUrl, svcKey, state));
+            }
+          } catch (e) {
+            console.debug(`[Pre-fetch] ${svc} failed:`, e.message);
+          }
+        }, 500);
+      }
+    }
+  });
+
+  // Start background badge updates
+  startBackgroundBadgeUpdates();
+
+  // --- CHECK FOR PENDING SEARCH (Context Menu) ---
+  chrome.storage.local.get(['pendingSearch'], (result) => {
+      const searchQuery = result.pendingSearch;
+
+      if (searchQuery) {
+          // Clear immediately
+          chrome.storage.local.remove('pendingSearch');
+
+          // Trigger Unified Search
+          import("./ui/searchUI.js").then((module) => {
+              // Ensure UI is initialized
+              module.initSearchUI(state).then(() => {
+                  module.openSearch();
+
+                  setTimeout(() => {
+                      const input = document.getElementById('unified-search-input');
+                      if (input) {
+                          input.value = searchQuery;
+                          // Trigger input event to fire the debounce listener
+                          input.dispatchEvent(new Event('input', { bubbles: true }));
+                      }
+                  }, 100);
+              });
+          });
+      }
+
+      // Start background badge updates
+      startBackgroundBadgeUpdates();
+
+      // Initialize Search UI (Background Warmup)
+      import("./ui/searchUI.js").then((module) => {
+          module.initSearchUI(state);
+      });
   });
   function startBackgroundBadgeUpdates() {
-    // Clear any existing intervals
-    Object.values(state.badgeIntervals).forEach((interval) =>
-      clearInterval(interval)
-    );
-    state.badgeIntervals = {};
-
-    // Get configured interval (default 5000ms)
-    const interval = state.configs.badgeCheckInterval || 5000;
-
-    // Services Definition
-    const services = [
-      { id: "sabnzbd", module: "./ui/sabnzbd.js", badgeFn: "updateSabnzbdBadge" },
-      { id: "sonarr", module: "./ui/sonarr.js", badgeFn: "updateSonarrBadge" },
-      { id: "radarr", module: "./ui/radarr.js", badgeFn: "updateRadarrBadge" },
-      { id: "tautulli", module: "./ui/tautulli.js", badgeFn: "updateTautulliBadge" },
-      { id: "portainer", module: "./ui/portainer.js", badgeFn: "updatePortainerBadge_Dashboard" },
-    ];
-
-    // Track consecutive failures per service (for error indication)
-    const failureCounts = {};
-    const MAX_FAILURES_BEFORE_WARNING = 3;
-
-    // Stagger interval offset to prevent all services updating simultaneously
-    const STAGGER_OFFSET = 1000; // 1 second between each service
-
-    services.forEach((svc, index) => {
-        if (
-            state.configs[`${svc.id}Enabled`] !== false &&
-            state.configs[`${svc.id}Url`] &&
-            state.configs[`${svc.id}Key`]
-        ) {
-            failureCounts[svc.id] = 0;
-
-            const updateFn = async () => {
-                // SKIP if this is the active service (already being polled by main loop)
-                if (state.activeService === svc.id) return;
-
-                try {
-                    const module = await import(svc.module);
-                    if (module[svc.badgeFn]) {
-                        await module[svc.badgeFn](
-                            state.configs[`${svc.id}Url`],
-                            state.configs[`${svc.id}Key`]
-                        );
-                    }
-                    // Reset failure count on success
-                    failureCounts[svc.id] = 0;
-                    // Remove error indicator if present
-                    const navItem = document.querySelector(`.nav-item[data-target="${svc.id}"]`);
-                    if (navItem) navItem.classList.remove('badge-error');
-                } catch (e) {
-                    failureCounts[svc.id]++;
-
-                    // Log error occasionally (not every time to avoid spam)
-                    if (failureCounts[svc.id] === 1 || failureCounts[svc.id] % 10 === 0) {
-                        console.warn(`[Badge] ${svc.id} update failed (${failureCounts[svc.id]}x):`, e.message);
-                    }
-
-                    // Add visual indicator after multiple failures
-                    if (failureCounts[svc.id] >= MAX_FAILURES_BEFORE_WARNING) {
-                        const navItem = document.querySelector(`.nav-item[data-target="${svc.id}"]`);
-                        if (navItem) navItem.classList.add('badge-error');
-                    }
-                }
-            };
-
-            // Staggered initial call and interval to prevent simultaneous updates
-            const staggerDelay = index * STAGGER_OFFSET;
-            setTimeout(() => {
-                updateFn(); // Initial call (staggered)
-                state.badgeIntervals[svc.id] = setInterval(updateFn, interval);
-            }, staggerDelay);
-        }
-    });
+    badgeManager.startAll(state.activeService, state.configs);
   }
 
 
@@ -374,7 +325,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("open-link-btn").addEventListener("click", () => {
     const service = state.activeService;
     const url = state.configs[`${service}Url`];
-    if (url) {
+    if (url && validateUrl(url)) {
       chrome.tabs.create({ url: url });
     } else {
       console.error("No URL configured for", service);
@@ -544,33 +495,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
 
-    // --- Overseerr Search Listener (Global) ---
+    // --- Seerr Search Listener (Global) ---
     // Search input elements are static in popup.html.
-    // We delegate the search action to the overseerr module.
-    const overseerrSearchBtn = document.getElementById("overseerr-search-btn");
-    const overseerrSearchInput = document.getElementById(
-      "overseerr-search-input"
+    // We delegate the search action to the seerr module.
+    const seerrSearchBtn = document.getElementById("seerr-search-btn");
+    const seerrSearchInput = document.getElementById(
+      "seerr-search-input"
     );
 
-    if (overseerrSearchBtn) {
-      overseerrSearchBtn.addEventListener("click", () => {
-        const url = state.configs.overseerrUrl;
-        const key = state.configs.overseerrKey;
-        const query = overseerrSearchInput.value;
-        import("./ui/overseerr.js").then((module) => {
-          module.doSearch(url, key, query);
+    if (seerrSearchBtn) {
+      seerrSearchBtn.addEventListener("click", () => {
+        const url = state.configs.seerrUrl;
+        const key = state.configs.seerrKey;
+        const authMethod = state.configs.seerrAuthMethod || 'apikey';
+        const query = seerrSearchInput.value;
+        import("./ui/seerr.js").then((module) => {
+          module.doSearch(url, key, query, authMethod);
         });
       });
     }
 
-    if (overseerrSearchInput) {
-      overseerrSearchInput.addEventListener("keydown", (e) => {
+    if (seerrSearchInput) {
+      seerrSearchInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
-          const url = state.configs.overseerrUrl;
-          const key = state.configs.overseerrKey;
-          const query = overseerrSearchInput.value;
-          import("./ui/overseerr.js").then((module) => {
-            module.doSearch(url, key, query);
+          const url = state.configs.seerrUrl;
+          const key = state.configs.seerrKey;
+          const authMethod = state.configs.seerrAuthMethod || 'apikey';
+          const query = seerrSearchInput.value;
+          import("./ui/seerr.js").then((module) => {
+            module.doSearch(url, key, query, authMethod);
           });
         }
       });
@@ -603,7 +556,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       glider.style.transform = `translateX(${btn.offsetLeft - 5}px)`;
     }
 
-    // --- Generic Sub-Tabs (Unraid & Overseerr) ---
+    // --- Generic Sub-Tabs (Unraid & Seerr) ---
     const subTabBtns = document.querySelectorAll(".sub-tab-btn");
 
     subTabBtns.forEach((btn) => {
@@ -631,7 +584,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Hide all sub-views/tab-content in this View
         parentView
-          .querySelectorAll(".sub-view, .overseerr-tab-content")
+          .querySelectorAll(".sub-view, .seerr-tab-content")
           .forEach((view) => {
             view.classList.add("hidden");
             view.classList.remove("active");
@@ -650,13 +603,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         }
 
-        // Overseerr Filter Visibility Logic
-        if (state.activeService === "overseerr") {
+        // Seerr Filter Visibility Logic
+        if (state.activeService === "seerr") {
           const filterContainer = document.getElementById(
-            "overseerr-filter-container"
+            "seerr-filter-container"
           );
           if (filterContainer) {
-            if (targetId === "overseerr-requests-tab") {
+            if (targetId === "seerr-requests-tab") {
               filterContainer.classList.remove("hidden");
               filterContainer.style.display = "block";
             } else {
@@ -734,6 +687,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
       else window.open("options.html");
     });
+
+    // Mobile Navigation
+    const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+    mobileNavItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const target = item.dataset.target;
+            if (target === 'settings') {
+                if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
+                else window.open('options.html');
+            } else if (target === 'search') {
+                import('./ui/searchUI.js').then(m => {
+                    m.initSearchUI(state);
+                    m.openSearch();
+                });
+            } else {
+                loadService(target);
+            }
+        });
+    });
   }
 
   function restoreView(service) {
@@ -790,6 +762,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Update State
     state.activeService = service;
 
+    // Update Badge Manager
+    badgeManager.setActiveService(service);
+
     // Update Sidebar Active State
     navItems.forEach(item => {
        if (item.dataset.target === service) item.classList.add('active');
@@ -820,7 +795,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    if (service !== "dashboard" && service !== "unraid" && service !== "wizarr" && (!url || !key)) {
+    // Seerr uses Plex auth (no API key) or API key
+    if (service === "seerr") {
+        const hasApiKey = state.configs.seerrKey;
+        const hasPlexAuth = state.configs.seerrAuthMethod === 'plex' && state.configs.seerrPlexToken;
+        const hasLocalAuth = state.configs.seerrAuthMethod === 'local' && state.configs.seerrEmail && state.configs.seerrPassword;
+        if (!url || (!hasApiKey && !hasPlexAuth && !hasLocalAuth)) {
+          showError(`Please configure Seerr in settings.`);
+          return;
+        }
+    } else if (service !== "dashboard" && service !== "unraid" && service !== "wizarr" && (!url || !key)) {
       showError(`Please configure ${service} in settings.`);
       return;
     }
@@ -846,8 +830,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         case "tautulli":
           await initTautulli(url, key, state);
           break;
-        case "overseerr":
-          await initOverseerr(url, key, state);
+        case "seerr":
+          await initSeerr(url, key, state);
           break;
         case "unraid":
           await initUnraid(url, key, state);
@@ -860,6 +844,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           break;
         case "portainer":
           await initPortainer(url, key, state);
+          break;
+        case "tracearr":
+          await import('./ui/tracearr.js').then(m => m.initTracearr(url, key, state));
           break;
       }
     } catch (error) {

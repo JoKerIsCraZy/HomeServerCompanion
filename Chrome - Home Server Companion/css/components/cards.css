@@ -1,0 +1,204 @@
+/* css/components/cards.css */
+/**
+ * Card Component Library
+ * Reusable card styles with variants
+ */
+
+/* === Base Card === */
+.card {
+    background: var(--color-bg-secondary);
+    border-radius: var(--border-radius-lg);
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: all var(--transition-normal);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* === Card Header === */
+.card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4);
+    border-bottom: var(--border-width) solid var(--border-color);
+    background: var(--color-bg-tertiary);
+}
+
+.card__title {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-md);
+    color: var(--color-text-primary);
+}
+
+.card__subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-top: var(--space-1);
+}
+
+/* === Card Body === */
+.card__body {
+    padding: var(--space-4);
+}
+
+/* === Card Footer === */
+.card__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    border-top: var(--border-width) solid var(--border-color);
+    background: var(--color-bg-tertiary);
+}
+
+/* === Card Variants === */
+
+/* Interactive Card */
+.card--interactive {
+    cursor: pointer;
+}
+
+.card--interactive:hover {
+    transform: translateY(-2px);
+}
+
+.card--interactive:active {
+    transform: translateY(0);
+}
+
+/* Compact Card */
+.card--compact {
+    padding: var(--space-3);
+}
+
+.card--compact .card__header,
+.card--compact .card__body,
+.card--compact .card__footer {
+    padding: var(--space-2) var(--space-3);
+}
+
+/* Elevated Card */
+.card--elevated {
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Status Card Variants */
+.card--success {
+    border-left: 3px solid var(--status-success);
+}
+
+.card--warning {
+    border-left: 3px solid var(--status-warning);
+}
+
+.card--error {
+    border-left: 3px solid var(--status-error);
+}
+
+.card--info {
+    border-left: 3px solid var(--status-info);
+}
+
+/* === Card Content Types === */
+
+/* Media Card (with image) */
+.card--media {
+    display: flex;
+    flex-direction: column;
+}
+
+.card__media {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 aspect ratio */
+    background: var(--color-bg-tertiary);
+    overflow: hidden;
+}
+
+.card__media img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card__media-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-4);
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+}
+
+/* Progress Card */
+.card__progress {
+    margin-top: var(--space-3);
+}
+
+.card__progress-bar {
+    height: 4px;
+    background: var(--color-bg-tertiary);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.card__progress-fill {
+    height: 100%;
+    background: var(--accent-sonarr);
+    border-radius: 2px;
+    transition: width var(--transition-normal);
+}
+
+/* === Loading State === */
+.card--loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.card--loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.05),
+        transparent
+    );
+    animation: card-shimmer 1.5s infinite;
+}
+
+@keyframes card-shimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+}
+
+/* === Empty State === */
+.card__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8) var(--space-4);
+    text-align: center;
+}
+
+.card__empty-icon {
+    font-size: 48px;
+    margin-bottom: var(--space-4);
+    opacity: 0.5;
+}
+
+.card__empty-text {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-md);
+}

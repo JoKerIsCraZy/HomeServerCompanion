@@ -1,3 +1,5 @@
+import { validateSearchQuery } from './inputValidation.js';
+
 /**
  * Fetches the Sonarr calendar for the next 14 days.
  * @param {string} url 
@@ -268,6 +270,11 @@ export const deleteSonarrBlocklistItem = async (url, apiKey, id) => {
  */
 export const parseTitle = async (url, apiKey, title) => {
     try {
+        const validation = validateSearchQuery(title);
+        if (!validation.valid) {
+            throw new Error(`Invalid title: ${validation.error}`);
+        }
+
         const response = await fetch(`${url}/api/v3/parse?title=${encodeURIComponent(title)}`, {
             headers: { 'X-Api-Key': apiKey }
         });

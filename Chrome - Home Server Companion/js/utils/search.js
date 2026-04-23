@@ -1,6 +1,6 @@
 import * as Sonarr from '../../services/sonarr.js';
 import * as Radarr from '../../services/radarr.js';
-import * as Overseerr from '../../services/overseerr.js';
+import * as Seerr from '../../services/seerr.js';
 
 let seriesCache = null;
 let moviesCache = null;
@@ -22,32 +22,36 @@ export async function warmUpSearchCache(configs) {
 export async function aggregatedSearch(query, configs) {
     if (!query) return [];
 
-    // 1. Discovery Search via Overseerr
-    let overseerrResults = [];
-    if (configs.overseerrUrl && configs.overseerrKey) {
+    // 1. Discovery Search via Seerr
+    let seerrResults = [];
+    const authMethod = configs.seerrAuthMethod || 'apikey';
+    const hasSeerrAuth = configs.seerrKey || 
+                          (authMethod === 'plex' && configs.seerrPlexToken) || 
+                          (authMethod === 'local' && configs.seerrEmail);
+    if (configs.seerrUrl && hasSeerrAuth) {
         try {
-            const results = await Overseerr.search(configs.overseerrUrl, configs.overseerrKey, query);
-            overseerrResults = results || [];
+            const results = await Seerr.search(configs.seerrUrl, configs.seerrKey, query, authMethod);
+            seerrResults = results || [];
         } catch (e) {
-            console.error("Overseerr search failed:", e);
+            console.error("Seerr search failed:", e);
         }
     }
 
     // 2. Refresh Cache if needed (lightweight check or just assume warmed up)
     // If null, we might try to fetch now, but it could slow down the first search.
     // For now, let's assume we trigger warmUp on app load.
-    
+
     // 3. Merge Results
-    return overseerrResults
+    return seerrResults
         .filter(item => ['movie', 'tv'].includes(item.mediaType))
         .map(item => {
         let status = 'Request';
         let exists = false;
-        
+
         let sonarrSlug = null;
 
         if (item.mediaInfo) {
-            // Overseerr MediaInfo Status:
+            // Seerr MediaInfo Status:
             // 5 = AVAILABLE
             // 4 = PARTIALLY_AVAILABLE
             // 3 = PROCESSING
@@ -56,31 +60,31 @@ export async function aggregatedSearch(query, configs) {
             else if (item.mediaInfo.status === 4) status = 'Partially Available';
             else if (item.mediaInfo.status === 3) status = 'Processing';
             else if (item.mediaInfo.status === 2) status = 'Pending';
-            
+
             if (item.mediaInfo.status >= 2) exists = true;
         }
 
         // --- MAPPING LOGIC START ---
-        // Try to map to Sonarr/Radarr even if Overseerr provided info, 
+        // Try to map to Sonarr/Radarr even if Seerr provided info,
         // because we need the internal ID/Slug for direct links.
-        
+
         if (item.mediaType === 'tv' && seriesCache) {
             // Sonarr Mapping
-            // 1. Try TVDB ID if we have it from Overseerr result externalIds (if available)
-            // Overseerr search result objects 'mediaInfo' might have tvdbId? 
-            // Often search results are slim. 
+            // 1. Try TVDB ID if we have it from Seerr result externalIds (if available)
+            // Seerr search result objects 'mediaInfo' might have tvdbId?
+            // Often search results are slim.
             // Fallback: Match by Title and Year (fuzzy) or strict title?
-            
-            // Best bet: check if we have tvdbId in item (sometimes Overseerr includes it)
+
+            // Best bet: check if we have tvdbId in item (sometimes Seerr includes it)
             // If not, we have to rely on title matching or if 'exists' is true, maybe get details?
             // For search speed, strict title match + year is "okay" fallback.
-            
+
             // Note: seriesCache items have properties: title, year, tvdbId, titleSlug, id
-            
+
             let match = null;
             // Check if item has externalIds
-            /* 
-               Warning: Overseerr search results usually DON'T have externalIds. 
+            /*
+               Warning: Seerr search results usually DON'T have externalIds.
                But if it's "Requested" or "Available", mediaInfo might contain some IDs?
                Actually mediaInfo usually has: id, tmdbId, tvdbId, status, etc.
             */
@@ -93,7 +97,7 @@ export async function aggregatedSearch(query, configs) {
                  const lowerTitle = (item.title || item.name || '').toLowerCase();
                  // Also check year if possible to reduce false positives
                  const itemYear = parseInt(item.releaseDate ? item.releaseDate.split('-')[0] : (item.firstAirDate ? item.firstAirDate.split('-')[0] : '0'));
-                 
+
                  match = seriesCache.find(s => s.title.toLowerCase() === lowerTitle && (itemYear === 0 || s.year === itemYear));
             }
 
@@ -102,7 +106,7 @@ export async function aggregatedSearch(query, configs) {
                 // If status was unknown/request but we found it in Sonarr, update status?
                 // User said: "Partially Available is 100% in Sonarr".
                 // If we found it, it IS in Sonarr used for tracking.
-                if (status === 'Request') status = 'Pending'; // Or Available? Keep 'Request'/Pending logic from Overseerr usually better.
+                if (status === 'Request') status = 'Pending'; // Or Available? Keep 'Request'/Pending logic from Seerr usually better.
                 exists = true;
             }
 
@@ -115,7 +119,7 @@ export async function aggregatedSearch(query, configs) {
              }
         }
         // --- MAPPING LOGIC END ---
-        
+
         // Return normalized object
         return {
             id: item.id,

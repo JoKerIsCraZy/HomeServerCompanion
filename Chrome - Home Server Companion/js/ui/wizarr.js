@@ -444,16 +444,16 @@ async function loadInvitations() {
 
 async function copyInviteLink(code, element) {
     const inviteUrl = Wizarr.getInviteUrl(currentUrl, code);
-    const originalText = element.textContent;
-    
+    const originalHtml = element.innerHTML;
+
     try {
         await navigator.clipboard.writeText(inviteUrl);
         element.classList.add('wizarr-copied');
-        element.textContent = 'âœ“ Copied!';
-        
+        element.innerHTML = '✓ Copied!';
+
         setTimeout(() => {
             element.classList.remove('wizarr-copied');
-            element.textContent = originalText;
+            element.innerHTML = originalHtml;
         }, 1500);
     } catch (error) {
         console.error('Failed to copy:', error);

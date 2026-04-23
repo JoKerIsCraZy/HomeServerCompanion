@@ -81,8 +81,8 @@ const SERVICES = [
         keyHelp: 'Optional: Plex Token for opening media in the Plex app'
     },
     { 
-        id: 'overseerr', 
-        name: 'Overseerr', 
+        id: 'seerr', 
+        name: 'Seerr', 
         icon: '🎯', 
         description: 'Media Request Management',
         hasConfig: true,
@@ -101,20 +101,30 @@ const SERVICES = [
         keyRequired: true,
         keyHelp: 'API Key at: Settings → General → Security'
     },
-    { 
-        id: 'wizarr', 
-        name: 'Wizarr', 
-        icon: '🧙', 
+    {
+        id: 'wizarr',
+        name: 'Wizarr',
+        icon: '🧙',
         description: 'User Invitations',
         hasConfig: true,
         urlPlaceholder: 'localhost:5690',
         keyRequired: true,
         keyHelp: 'API Key from Wizarr Settings'
     },
-    { 
-        id: 'portainer', 
-        name: 'Portainer', 
-        icon: '🐳', 
+    {
+        id: 'tracearr',
+        name: 'Tracearr',
+        icon: '📊',
+        description: 'Content Tracking & Analytics',
+        hasConfig: true,
+        urlPlaceholder: 'localhost:3085',
+        keyRequired: true,
+        keyHelp: 'Public API Key (trr_pub_xxx) at: Settings → General → API'
+    },
+    {
+        id: 'portainer',
+        name: 'Portainer',
+        icon: '🐳',
         description: 'Docker Container Management',
         hasConfig: true,
         urlPlaceholder: 'localhost:9000',
@@ -299,9 +309,9 @@ function renderConfigStep() {
         return;
     }
     
-    // Special handling for Overseerr (multi-auth)
+    // Special handling for Seerr (multi-auth)
     if (service.hasMultiAuth) {
-        renderOverseerrConfigStep();
+        renderSeerrConfigStep();
         return;
     }
     
@@ -477,14 +487,14 @@ function renderPortainerConfigStep() {
     });
 }
 
-// Overseerr Multi-Auth Configuration State
-let overseerrAuthMethod = 'plex';
+// Seerr Multi-Auth Configuration State
+let seerrAuthMethod = 'plex';
 
-function renderOverseerrConfigStep() {
+function renderSeerrConfigStep() {
     const form = document.getElementById('configForm');
-    const service = SERVICES.find(s => s.id === 'overseerr');
-    const existing = serviceConfigs['overseerr'] || {};
-    
+    const service = SERVICES.find(s => s.id === 'seerr');
+    const existing = serviceConfigs['seerr'] || {};
+
     form.innerHTML = `
         <div class="config-header">
             <div class="config-service-icon">${service.icon}</div>
@@ -493,7 +503,7 @@ function renderOverseerrConfigStep() {
                 <span class="config-progress">Service ${currentConfigIndex + 1} of ${configQueue.length}</span>
             </div>
         </div>
-        
+
         <div class="form-group" style="margin-top: 24px;">
             <label>Server URL</label>
             <div class="input-group">
@@ -501,61 +511,61 @@ function renderOverseerrConfigStep() {
                     <option value="http://" ${existing.protocol === 'http://' ? 'selected' : ''}>http://</option>
                     <option value="https://" ${existing.protocol === 'https://' ? 'selected' : ''}>https://</option>
                 </select>
-                <input type="text" id="configUrl" placeholder="${service.urlPlaceholder}" 
+                <input type="text" id="configUrl" placeholder="${service.urlPlaceholder}"
                        value="${escapeHtml(existing.url || '')}">
             </div>
             <p class="help-text">e.g. ${service.urlPlaceholder} or 192.168.1.100:5055</p>
         </div>
-        
+
         <div class="form-group">
             <label>Authentication Method</label>
-            <select id="overseerrAuthMethodSelect" style="width: 100%; padding: 12px; border-radius: 8px; background: var(--input-background); border: 1px solid var(--glass-border); color: var(--text-primary);">
-                <option value="apikey" ${overseerrAuthMethod === 'apikey' ? 'selected' : ''}>API Key (Admin Access)</option>
-                <option value="local" ${overseerrAuthMethod === 'local' ? 'selected' : ''}>Local Account (Email/Password)</option>
-                <option value="plex" ${overseerrAuthMethod === 'plex' ? 'selected' : ''}>Plex Sign-In</option>
+            <select id="seerrAuthMethodSelect" style="width: 100%; padding: 12px; border-radius: 8px; background: var(--input-background); border: 1px solid var(--glass-border); color: var(--text-primary);">
+                <option value="apikey" ${seerrAuthMethod === 'apikey' ? 'selected' : ''}>API Key (Admin Access)</option>
+                <option value="local" ${seerrAuthMethod === 'local' ? 'selected' : ''}>Local Account (Email/Password)</option>
+                <option value="plex" ${seerrAuthMethod === 'plex' ? 'selected' : ''}>Plex Sign-In</option>
             </select>
             <p class="help-text">API Key = Admin access. Local/Plex = Your personal account.</p>
         </div>
-        
+
         <!-- API Key Panel -->
-        <div id="authPanelApiKey" class="auth-panel" style="${overseerrAuthMethod === 'apikey' ? '' : 'display: none;'}">
+        <div id="authPanelApiKey" class="auth-panel" style="${seerrAuthMethod === 'apikey' ? '' : 'display: none;'}">
             <div class="form-group">
                 <label>API Key</label>
-                <input type="password" id="configKey" placeholder="Enter API Key" 
+                <input type="password" id="configKey" placeholder="Enter API Key"
                        value="${escapeHtml(existing.key || '')}">
-                <p class="help-text">Find in Overseerr → Settings → General</p>
+                <p class="help-text">Find in Seerr → Settings → General</p>
             </div>
         </div>
-        
+
         <!-- Local Auth Panel -->
-        <div id="authPanelLocal" class="auth-panel" style="${overseerrAuthMethod === 'local' ? '' : 'display: none;'}">
+        <div id="authPanelLocal" class="auth-panel" style="${seerrAuthMethod === 'local' ? '' : 'display: none;'}">
             <div style="background: rgba(252, 129, 129, 0.1); border: 1px solid rgba(252, 129, 129, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px;">
                 <span style="font-size: 16px;">⚠️</span>
                 <p style="color: #fc8181; font-size: 12px; margin: 0;">
-                    <strong>Security Notice:</strong> Your password will be stored in plain text in the browser's local storage. Use a unique password for Overseerr.
+                    <strong>Security Notice:</strong> Your password will be stored in plain text in the browser's local storage. Use a unique password for Seerr.
                 </p>
             </div>
             <div class="form-group">
                 <label>Email</label>
-                <input type="email" id="configEmail" placeholder="your@email.com" 
+                <input type="email" id="configEmail" placeholder="your@email.com"
                        value="${escapeHtml(existing.email || '')}">
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="configPassword" placeholder="Password" 
+                <input type="password" id="configPassword" placeholder="Password"
                        value="${escapeHtml(existing.password || '')}">
             </div>
         </div>
-        
+
         <!-- Plex Auth Panel -->
-        <div id="authPanelPlex" class="auth-panel" style="${overseerrAuthMethod === 'plex' ? '' : 'display: none;'}">
+        <div id="authPanelPlex" class="auth-panel" style="${seerrAuthMethod === 'plex' ? '' : 'display: none;'}">
             <div style="background: rgba(229, 160, 13, 0.1); border: 1px solid rgba(229, 160, 13, 0.3); border-radius: 12px; padding: 20px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 24px;">🎬</span>
                     <span style="font-weight: 600; color: #E5A00D;">Plex Authentication</span>
                 </div>
                 <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
-                    Sign in with your Plex account to authenticate with Overseerr.
+                    Sign in with your Plex account to authenticate with Seerr.
                 </p>
                 <button type="button" id="plexSignInBtn" class="test-btn" style="background: #E5A00D; color: #000; border: none; width: 100%;">
                     Sign in with Plex
@@ -563,7 +573,7 @@ function renderOverseerrConfigStep() {
                 <div id="plexAuthStatus" style="margin-top: 12px; font-size: 13px; text-align: center;"></div>
             </div>
         </div>
-        
+
         <div class="test-connection">
             <button type="button" class="test-btn" id="testBtn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
@@ -572,20 +582,33 @@ function renderOverseerrConfigStep() {
             <span class="test-status" id="testStatus"></span>
         </div>
     `;
-    
+
     // Auth method toggle
-    document.getElementById('overseerrAuthMethodSelect').addEventListener('change', (e) => {
-        overseerrAuthMethod = e.target.value;
-        document.getElementById('authPanelApiKey').style.display = overseerrAuthMethod === 'apikey' ? '' : 'none';
-        document.getElementById('authPanelLocal').style.display = overseerrAuthMethod === 'local' ? '' : 'none';
-        document.getElementById('authPanelPlex').style.display = overseerrAuthMethod === 'plex' ? '' : 'none';
+    document.getElementById('seerrAuthMethodSelect').addEventListener('change', (e) => {
+        seerrAuthMethod = e.target.value;
+        document.getElementById('authPanelApiKey').style.display = seerrAuthMethod === 'apikey' ? '' : 'none';
+        document.getElementById('authPanelLocal').style.display = seerrAuthMethod === 'local' ? '' : 'none';
+        document.getElementById('authPanelPlex').style.display = seerrAuthMethod === 'plex' ? '' : 'none';
     });
-    
+
     // Plex sign in
     document.getElementById('plexSignInBtn')?.addEventListener('click', startWizardPlexOAuth);
-    
+
     // Test button
-    document.getElementById('testBtn').addEventListener('click', () => testOverseerrAuth());
+    document.getElementById('testBtn').addEventListener('click', () => testSeerrAuth());
+}
+
+
+
+// Show save status feedback
+function showSaveStatus(message) {
+    const statusEl = document.getElementById('testStatus');
+    if (statusEl) {
+        statusEl.innerHTML = `<span style="color: #48bb78;">✓ ${message}</span>`;
+        setTimeout(() => {
+            statusEl.innerHTML = '';
+        }, 2000);
+    }
 }
 
 // Plex OAuth for Setup Wizard
@@ -632,8 +655,8 @@ async function startWizardPlexOAuth() {
                         const checkData = await checkRes.json();
                         if (checkData.authToken) {
                             // Save token
-                            serviceConfigs['overseerr'] = serviceConfigs['overseerr'] || {};
-                            serviceConfigs['overseerr'].plexToken = checkData.authToken;
+                            serviceConfigs['seerr'] = serviceConfigs['seerr'] || {};
+                            serviceConfigs['seerr'].plexToken = checkData.authToken;
                             statusEl.innerHTML = '<span style="color: #48bb78;">✓ Plex account linked!</span>';
                             return;
                         }
@@ -643,48 +666,117 @@ async function startWizardPlexOAuth() {
                 statusEl.innerHTML = '<span style="color: #fc8181;">Login failed or cancelled.</span>';
             }
         }, 2000);
-        
+
     } catch (e) {
-        statusEl.innerHTML = `<span style="color: #fc8181;">Error: ${e.message}</span>`;
+        statusEl.innerHTML = `<span style="color: #fc8181;">Error: ${escapeHtml(e.message)}</span>`;
     }
 }
 
-// Test Overseerr connection in wizard
-async function testOverseerrAuth() {
+// Save current Seerr config
+function saveCurrentSeerrConfig() {
+    const protocol = document.getElementById('configProtocol').value;
+    const urlInput = document.getElementById('configUrl').value.trim();
+    const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+    serviceConfigs['seerr'] = {
+        protocol,
+        url: cleanUrl
+    };
+
+    if (seerrAuthMethod === 'apikey') {
+        serviceConfigs['seerr'].key = document.getElementById('configKey')?.value.trim() || '';
+    } else if (seerrAuthMethod === 'local') {
+        serviceConfigs['seerr'].email = document.getElementById('configEmail')?.value.trim() || '';
+        serviceConfigs['seerr'].password = document.getElementById('configPassword')?.value.trim() || '';
+    }
+
+    serviceConfigs['seerr'].authMethod = seerrAuthMethod;
+}
+
+// Test Seerr connection in wizard
+async function testSeerrAuth() {
     const statusEl = document.getElementById('testStatus');
     const protocol = document.getElementById('configProtocol').value;
     const urlInput = document.getElementById('configUrl').value.trim();
-    
+
     if (!urlInput) {
         statusEl.innerHTML = '<span style="color: #fc8181;">URL required</span>';
         return;
     }
-    
-    const fullUrl = protocol + urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+    const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const fullUrl = protocol + cleanUrl;
     statusEl.innerHTML = '<span style="color: var(--accent-primary);">Testing...</span>';
-    
+
     try {
-        let options = { method: 'GET' };
-        
-        if (overseerrAuthMethod === 'apikey') {
+        // Request permission first
+        const urlObj = new URL(fullUrl);
+        await new Promise((resolve, reject) => {
+            chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, (granted) => {
+                if (granted) resolve();
+                else reject(new Error('Permission denied'));
+            });
+        });
+
+        if (seerrAuthMethod === 'apikey') {
             const apiKey = document.getElementById('configKey')?.value.trim();
-            options.headers = { 'X-Api-Key': apiKey };
-        } else {
-            options.credentials = 'include';
-        }
-        
-        const res = await fetch(`${fullUrl}/api/v1/auth/me`, options);
-        
-        if (res.ok) {
-            const user = await res.json();
-            statusEl.innerHTML = `<span style="color: #48bb78;">✓ ${user.displayName || user.email}</span>`;
-        } else if (res.status === 401) {
-            statusEl.innerHTML = '<span style="color: #fc8181;">Not authenticated</span>';
-        } else {
-            statusEl.innerHTML = `<span style="color: #fc8181;">Error: ${res.status}</span>`;
+            const res = await fetch(`${fullUrl}/api/v1/auth/me`, {
+                headers: { 'X-Api-Key': apiKey }
+            });
+            if (res.ok) {
+                const user = await res.json();
+                statusEl.innerHTML = `<span style="color: #48bb78;">✓ ${escapeHtml(user.displayName || user.email)}</span>`;
+            } else if (res.status === 401) {
+                statusEl.innerHTML = '<span style="color: #fc8181;">Invalid API Key</span>';
+            } else {
+                statusEl.innerHTML = `<span style="color: #fc8181;">Error: ${escapeHtml(res.status)}</span>`;
+            }
+        } else if (seerrAuthMethod === 'plex') {
+            const plexToken = serviceConfigs['seerr']?.plexToken;
+            if (!plexToken) {
+                statusEl.innerHTML = '<span style="color: #fc8181;">Please sign in with Plex first</span>';
+                return;
+            }
+            // First authenticate with Plex token
+            const authRes = await fetch(`${fullUrl}/api/v1/auth/plex`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken: plexToken })
+            });
+            if (authRes.ok) {
+                const authData = await authRes.json();
+                // Seerr returns user data directly (displayName, id, permissions, etc.)
+                statusEl.innerHTML = `<span style="color: #48bb78;">✓ Connected as ${escapeHtml(authData.displayName || authData.plexUsername || authData.email || 'Authenticated')}</span>`;
+            } else {
+                statusEl.innerHTML = `<span style="color: #fc8181;">Plex auth failed: ${escapeHtml(authRes.status)}</span>`;
+            }
+        } else if (seerrAuthMethod === 'local') {
+            const email = document.getElementById('configEmail')?.value.trim();
+            const password = document.getElementById('configPassword')?.value.trim();
+            if (!email || !password) {
+                statusEl.innerHTML = '<span style="color: #fc8181;">Email and password required</span>';
+                return;
+            }
+            const loginRes = await fetch(`${fullUrl}/api/v1/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            if (loginRes.ok) {
+                const loginData = await loginRes.json();
+                // Seerr returns user data directly
+                statusEl.innerHTML = `<span style="color: #48bb78;">✓ Connected as ${escapeHtml(loginData.displayName || loginData.email || 'Authenticated')}</span>`;
+            } else {
+                const errorData = await loginRes.json().catch(() => ({}));
+                statusEl.innerHTML = `<span style="color: #fc8181;">${escapeHtml(errorData.message || 'Login failed')}</span>`;
+            }
         }
     } catch (e) {
-        statusEl.innerHTML = `<span style="color: #fc8181;">${e.message}</span>`;
+        if (e.message === 'Permission denied') {
+            statusEl.innerHTML = '<span style="color: #fc8181;">Permission required - please allow access</span>';
+        } else {
+            statusEl.innerHTML = `<span style="color: #fc8181;">${escapeHtml(e.message)}</span>`;
+        }
     }
 }
 
@@ -748,7 +840,7 @@ async function testConnection(service) {
         case 'tautulli':
             testUrl = `${fullUrl}/api/v2?apikey=${apiKey}&cmd=get_activity`;
             break;
-        case 'overseerr':
+        case 'seerr':
             testUrl = `${fullUrl}/api/v1/status`;
             options.headers = { 'X-Api-Key': apiKey };
             break;
@@ -758,6 +850,10 @@ async function testConnection(service) {
         case 'wizarr':
             testUrl = `${fullUrl}/api/status`;
             options.headers = { 'X-API-Key': apiKey, 'accept': 'application/json' };
+            break;
+        case 'tracearr':
+            testUrl = `${fullUrl}/api/v1/public/health`;
+            options.headers = { 'Authorization': `Bearer ${apiKey}` };
             break;
         case 'portainer':
             testUrl = `${fullUrl}/api/status`;
@@ -828,8 +924,8 @@ function saveCurrentConfig() {
         return true;
     }
     
-    // Special handling for Overseerr (multi-auth)
-    if (service.id === 'overseerr') {
+    // Special handling for Seerr (multi-auth)
+    if (service.id === 'seerr') {
         const protocol = document.getElementById('configProtocol')?.value || 'http://';
         const urlInput = document.getElementById('configUrl')?.value?.trim() || '';
         
@@ -837,17 +933,17 @@ function saveCurrentConfig() {
         
         const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
         
-        serviceConfigs['overseerr'] = serviceConfigs['overseerr'] || {};
-        serviceConfigs['overseerr'].protocol = protocol;
-        serviceConfigs['overseerr'].url = cleanUrl;
-        serviceConfigs['overseerr'].fullUrl = protocol + cleanUrl;
-        serviceConfigs['overseerr'].authMethod = overseerrAuthMethod;
+        serviceConfigs['seerr'] = serviceConfigs['seerr'] || {};
+        serviceConfigs['seerr'].protocol = protocol;
+        serviceConfigs['seerr'].url = cleanUrl;
+        serviceConfigs['seerr'].fullUrl = protocol + cleanUrl;
+        serviceConfigs['seerr'].authMethod = seerrAuthMethod;
         
-        if (overseerrAuthMethod === 'apikey') {
-            serviceConfigs['overseerr'].key = document.getElementById('configKey')?.value?.trim() || '';
-        } else if (overseerrAuthMethod === 'local') {
-            serviceConfigs['overseerr'].email = document.getElementById('configEmail')?.value?.trim() || '';
-            serviceConfigs['overseerr'].password = document.getElementById('configPassword')?.value || '';
+        if (seerrAuthMethod === 'apikey') {
+            serviceConfigs['seerr'].key = document.getElementById('configKey')?.value?.trim() || '';
+        } else if (seerrAuthMethod === 'local') {
+            serviceConfigs['seerr'].email = document.getElementById('configEmail')?.value?.trim() || '';
+            serviceConfigs['seerr'].password = document.getElementById('configPassword')?.value || '';
         }
         // Plex token is saved in startWizardPlexOAuth
         
@@ -1023,10 +1119,14 @@ async function completeSetup() {
     // Save service configurations (except Portainer which uses instances)
     for (const [serviceId, config] of Object.entries(serviceConfigs)) {
         if (serviceId === 'portainer') continue; // Handled separately
-        
+
+        // Save URL (from fullUrl or construct from protocol + url)
         if (config.fullUrl) {
             dataToSave[`${serviceId}Url`] = config.fullUrl;
+        } else if (config.protocol && config.url) {
+            dataToSave[`${serviceId}Url`] = config.protocol + config.url;
         }
+
         if (config.key) {
             // Special handling for Plex (uses plexToken)
             if (serviceId === 'plex') {
@@ -1038,15 +1138,15 @@ async function completeSetup() {
             }
         }
         
-        // Special handling for Overseerr multi-auth
-        if (serviceId === 'overseerr' && config.authMethod) {
-            dataToSave['overseerrAuthMethod'] = config.authMethod;
+        // Special handling for Seerr multi-auth
+        if (serviceId === 'seerr' && config.authMethod) {
+            dataToSave['seerrAuthMethod'] = config.authMethod;
             
             if (config.authMethod === 'local') {
-                if (config.email) dataToSave['overseerrEmail'] = config.email;
-                if (config.password) dataToSave['overseerrPassword'] = config.password;
+                if (config.email) dataToSave['seerrEmail'] = config.email;
+                if (config.password) dataToSave['seerrPassword'] = config.password;
             } else if (config.authMethod === 'plex' && config.plexToken) {
-                dataToSave['overseerrPlexToken'] = config.plexToken;
+                dataToSave['seerrPlexToken'] = config.plexToken;
             }
         }
         

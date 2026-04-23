@@ -1,5 +1,5 @@
-/* Overseerr Styles */
-.overseerr-header {
+/* Seerr Styles */
+.seerr-header {
   background: transparent; /* Removed bg */
   padding: 0 10px; /* Adjust padding to match standard view padding if needed, or 0 if parent has padding */
   margin-bottom: 15px;
@@ -9,16 +9,16 @@
   justify-content: space-between;
   align-items: center;
 }
-body.dark-mode .overseerr-header {
+body.dark-mode .seerr-header {
   border-bottom-color: transparent;
 }
 
-/* Modern Tabs for Overseerr */
-.overseerr-tab-content.active {
+/* Modern Tabs for Seerr */
+.seerr-tab-content.active {
   animation: tabFadeIn 0.3s ease-out forwards;
 }
 
-#overseerr-view .sub-tabs {
+#seerr-view .sub-tabs {
   display: inline-flex;
   background: rgba(255, 255, 255, 0.05); /* Dark subtle container */
   padding: 5px;
@@ -29,7 +29,7 @@ body.dark-mode .overseerr-header {
   z-index: 1;
 }
 
-#overseerr-view .tab-glider {
+#seerr-view .tab-glider {
   position: absolute;
   top: 5px;
   left: 5px;
@@ -43,7 +43,7 @@ body.dark-mode .overseerr-header {
   width: 0; 
 }
 
-#overseerr-view .sub-tab-btn {
+#seerr-view .sub-tab-btn {
   background: transparent;
   border: none;
   padding: 8px 20px;
@@ -60,13 +60,13 @@ body.dark-mode .overseerr-header {
   transition: color 0.2s;
 }
 
-#overseerr-view .sub-tab-btn:hover {
+#seerr-view .sub-tab-btn:hover {
   background: transparent; /* Glider will handle hover eventually, or just text color */
   color: var(--text-primary);
   opacity: 1;
 }
 
-#overseerr-view .sub-tab-btn.active {
+#seerr-view .sub-tab-btn.active {
   background: transparent; /* Removed bg, handled by glider */
   color: #fff;
   font-weight: 700;
@@ -81,7 +81,7 @@ body.dark-mode .overseerr-header {
   padding: 10px;
 }
 
-.overseerr-card {
+.seerr-card {
   position: relative;
   background: var(--card-bg);
   border-radius: 12px;
@@ -92,24 +92,24 @@ body.dark-mode .overseerr-header {
   display: flex;
   flex-direction: column;
 }
-body.dark-mode .overseerr-card {
+body.dark-mode .seerr-card {
   border-color: #333;
   background: #1e1e1e;
 }
 
-.overseerr-card:hover {
+.seerr-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 2;
 }
 
-.overseerr-backdrop {
+.seerr-backdrop {
   height: 70px;
   background-color: #333;
   background-size: cover;
   position: relative;
 }
-.overseerr-backdrop::after {
+.seerr-backdrop::after {
   content: "";
   position: absolute;
   bottom: 0;
@@ -123,7 +123,7 @@ body.dark-mode .overseerr-card {
   );
 }
 
-.overseerr-content {
+.seerr-content {
   padding: 8px 10px 10px;
   position: relative;
   flex: 1;
@@ -131,7 +131,7 @@ body.dark-mode .overseerr-card {
   flex-direction: column;
 }
 
-.overseerr-card .poster-img {
+.seerr-card .poster-img {
   width: 60px;
   height: 90px;
   object-fit: cover;
@@ -144,7 +144,7 @@ body.dark-mode .overseerr-card {
   align-self: flex-start;
 }
 
-.overseerr-info {
+.seerr-info {
   margin-top: 5px;
 }
 
@@ -182,7 +182,7 @@ body.dark-mode .overseerr-card {
   color: white;
 }
 
-.overseerr-actions {
+.seerr-actions {
   display: flex;
   justify-content: flex-end;
   gap: 5px;
@@ -190,7 +190,7 @@ body.dark-mode .overseerr-card {
   padding-top: 8px;
 }
 
-.overseerr-actions .action-btn {
+.seerr-actions .action-btn {
   width: 28px;
   height: 28px;
   font-size: 14px;
@@ -203,8 +203,8 @@ body.dark-mode .overseerr-card {
   background: #f44336;
   border-color: #f44336;
 }
-/* Specificity boost to override .overseerr-actions .action-btn */
-.overseerr-actions .request-btn {
+/* Specificity boost to override .seerr-actions .action-btn */
+.seerr-actions .request-btn {
   background: linear-gradient(135deg, #AB47BC, #7E57C2);
   border: none;
   width: auto !important; /* Force auto width */
@@ -221,7 +221,7 @@ body.dark-mode .overseerr-card {
   font-size: 12px;
   box-shadow: 0 2px 5px rgba(126, 87, 194, 0.3);
 }
-.overseerr-actions .request-btn:hover {
+.seerr-actions .request-btn:hover {
   background: linear-gradient(135deg, #ba68c8, #9575cd);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(126, 87, 194, 0.4);
@@ -239,7 +239,7 @@ body.dark-mode .overseerr-card {
   box-sizing: border-box;
 }
 
-#overseerr-search-input {
+#seerr-search-input {
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
@@ -257,13 +257,13 @@ body.dark-mode .overseerr-card {
 }
 
 
-#overseerr-search-input:focus {
+#seerr-search-input:focus {
   border-color: #AB47BC;
   box-shadow: 0 0 0 3px rgba(171, 71, 188, 0.25);
   background: rgba(255, 255, 255, 0.08);
 }
 
-#overseerr-search-btn {
+#seerr-search-btn {
   position: absolute;
   right: 20px; /* 15px container padding + 5px spacing */
   top: 50%;
@@ -284,16 +284,16 @@ body.dark-mode .overseerr-card {
   padding: 0;
 }
 
-#overseerr-search-btn:hover {
+#seerr-search-btn:hover {
   background: #9C27B0;
   transform: translateY(-50%) scale(1.05);
 }
 
-#overseerr-search-btn:active {
+#seerr-search-btn:active {
   transform: translateY(-50%) scale(0.95);
 }
 
-#overseerr-search-btn svg {
+#seerr-search-btn svg {
   fill: white;
 }
 

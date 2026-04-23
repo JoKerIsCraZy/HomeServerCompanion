@@ -1,3 +1,5 @@
+import { validateSearchQuery } from './inputValidation.js';
+
 /**
  * Fetches the current activity queue.
  * @param {string} url 
@@ -276,6 +278,11 @@ export const deleteRadarrBlocklistItem = async (url, apiKey, id) => {
  */
 export const parseTitle = async (url, apiKey, title) => {
     try {
+        const validation = validateSearchQuery(title);
+        if (!validation.valid) {
+            throw new Error(`Invalid title: ${validation.error}`);
+        }
+
         const query = encodeURIComponent(title);
         const response = await fetch(`${url}/api/v3/parse?title=${query}`, {
             headers: {

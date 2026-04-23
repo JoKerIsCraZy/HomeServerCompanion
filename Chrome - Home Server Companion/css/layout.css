@@ -122,6 +122,12 @@
   color: #fff;
 }
 
+/* Tracearr Badge - Cyan */
+.nav-item[data-target="tracearr"] .nav-badge {
+  background: #00bcd4;
+  color: #fff;
+}
+
 .nav-item {
   position: relative;
 }

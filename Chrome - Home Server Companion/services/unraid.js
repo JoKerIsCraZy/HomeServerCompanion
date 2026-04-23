@@ -1,5 +1,41 @@
 // Unraid API Service (GraphQL)
 
+import { validateSearchQuery } from './inputValidation.js';
+
+// Cache last successful systemData snapshot for instant-render on popup open.
+// Keyed by URL so switching servers doesn't mix state.
+const CACHE_KEY_PREFIX = 'unraidSystemCache:';
+
+const cacheKey = (url) => CACHE_KEY_PREFIX + (url || '');
+
+/**
+ * Returns the last cached system snapshot for this URL, or null.
+ * Use this to render immediately on popup open while a fresh fetch runs.
+ * @param {string} url
+ * @returns {Promise<{data: Object, timestamp: number} | null>}
+ */
+export const getCachedSystemData = (url) => {
+    return new Promise((resolve) => {
+        try {
+            chrome.storage.local.get([cacheKey(url)], (res) => {
+                resolve(res[cacheKey(url)] || null);
+            });
+        } catch {
+            resolve(null);
+        }
+    });
+};
+
+const saveSystemCache = (url, data) => {
+    try {
+        chrome.storage.local.set({
+            [cacheKey(url)]: { data, timestamp: Date.now() }
+        });
+    } catch (e) {
+        console.debug("Unraid cache write failed:", e.message);
+    }
+};
+
 const graphQL = async (url, apiKey, query) => {
     try {
         const endpoint = `${url}/graphql`; // Official endpoint is usually at root /graphql
@@ -22,7 +58,7 @@ const graphQL = async (url, apiKey, query) => {
 
         if (!response.ok) throw new Error(`Status: ${response.status}`);
         const json = await response.json();
-        
+
         if (json.errors) throw new Error(json.errors[0].message);
         return json.data;
     } catch (error) {
@@ -33,8 +69,8 @@ const graphQL = async (url, apiKey, query) => {
 
 /**
  * Checks if the Unraid API is reachable.
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @returns {Promise<boolean>} True if reachable
  */
 export const checkUnraidStatus = async (url, apiKey) => {
@@ -59,7 +95,7 @@ const normalizeDisk = (d, type) => {
     const used = parse(d.fsUsed) * 1024;
     const total = parse(d.fsSize) * 1024;
     const free = d.fsFree ? (parse(d.fsFree) * 1024) : (total - used);
-    
+
     return {
         type,
         name: d.name || type,
@@ -74,34 +110,23 @@ const normalizeDisk = (d, type) => {
 
 /**
  * Fetches comprehensive system data (System info, Array, Docker, Metrics).
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @returns {Promise<Object>} System data object
  */
-export const getSystemData = async (url, apiKey) => {
-    // Schema assumption: 
-    // - array: status, storage stats
-    // - dockers: list of containers
-    // - network: interface stats
-    // Note: Introspection is disabled. We must rely on standard fields or user feedback.
-    
-    // 1. Connectivity Check (Simple)
-    try {
-        const simpleQuery = `{ info { versions { core { unraid } } } }`;
-        await graphQL(url, apiKey, simpleQuery);
-    } catch (e) {
-        console.error("Connectivity Check Failed:", e);
-        return {
-            array: { status: 'Auth/Connection Failed', totalSize: 0, totalFree: 0 },
-            dockers: [],
-            network: { interfaces: [] },
-            _error: "Connection Failed"
-        };
-    }
-
-    // 2. Data Query 
+/**
+ * Fetches Unraid system data.
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {object} [options]
+ * @param {boolean} [options.skipExtended] - Skip the v4.30+ temperature / docker-template
+ *   query. Use `true` for consumers that only need cpu/ram/array/dockers (e.g. the
+ *   Dashboard aggregator). Cuts one GraphQL roundtrip per refresh.
+ */
+export const getSystemData = async (url, apiKey, options = {}) => {
+    const skipExtended = !!options.skipExtended;
     // Schema verified from source code analysis (api-main/api/src/unraid-api/graph/resolvers)
-    
+
     // Unified Query
     const systemQuery = `
     {
@@ -110,9 +135,9 @@ export const getSystemData = async (url, apiKey) => {
             os { uptime }
         }
         registration { type, state }
-        array { 
-            state 
-            capacity { kilobytes { used total free } } 
+        array {
+            state
+            capacity { kilobytes { used total free } }
             parities { name, temp, status, isSpinning }
             disks { name, temp, status, isSpinning, fsUsed, fsSize, fsFree }
             caches { name, temp, status, isSpinning, fsUsed, fsSize, fsFree }
@@ -141,28 +166,103 @@ export const getSystemData = async (url, apiKey) => {
 
 
 
+    // Extended query (Unraid API v4.30.0+ only: temperature sensors, docker template extras)
+    // Runs in parallel with the main query; if the server is older the whole query fails and
+    // we silently fall back to the legacy data — no user-facing error.
+    const extendedQuery = `
+    {
+        metrics {
+            temperature {
+                sensors {
+                    id
+                    name
+                    type
+                    location
+                    current { value unit status }
+                    warning
+                    critical
+                }
+                summary {
+                    average
+                    hottest { name type current { value unit status } }
+                    coolest { name type current { value unit status } }
+                }
+            }
+        }
+        docker {
+            containers {
+                id
+                webUiUrl
+                iconUrl
+                isOrphaned
+                projectUrl
+                supportUrl
+                autoStart
+            }
+        }
+    }
+    `;
+
     try {
-        const res = await graphQL(url, apiKey, systemQuery);
-        
+        // Dashboard aggregator skips the extended query (saves a roundtrip);
+        // the Unraid tab needs it for temperature + docker template extras.
+        const mainPromise = graphQL(url, apiKey, systemQuery);
+        const extPromise = skipExtended
+            ? Promise.resolve(null)
+            : graphQL(url, apiKey, extendedQuery).catch((e) => {
+                // Silently ignore — older Unraid versions don't have these fields
+                console.debug("Unraid extended query unavailable (pre-4.30 API?):", e.message);
+                return null;
+            });
+        const [res, extRes] = await Promise.all([mainPromise, extPromise]);
+
         const serverHostname = new URL(url).hostname;
         const serverProtocol = new URL(url).protocol; // http: or https:
 
+        // Build lookup map for docker template extras (v4.30+)
+        const dockerExtrasById = new Map();
+        if (extRes?.docker?.containers) {
+            for (const c of extRes.docker.containers) {
+                if (c.id) dockerExtrasById.set(c.id, c);
+            }
+        }
+
+        // Temperature sensors (v4.30+)
+        const sensors = extRes?.metrics?.temperature?.sensors || [];
+        const tempSummary = extRes?.metrics?.temperature?.summary || null;
+        const cpuSensor = sensors.find(s => s.type === 'CPU_PACKAGE')
+            || sensors.find(s => s.type === 'CPU_CORE');
+        const mbSensor = sensors.find(s => s.type === 'MOTHERBOARD');
+
         // Normalize Data
-        return {
+        const result = {
             system: {
                 version: res.info?.versions?.core?.unraid || 'Unknown',
                 registration: res.registration?.type || 'Basic',
                 uptimeBoot: res.info?.os?.uptime, // ISO String
                 memoryTotal: parse(res.metrics?.memory?.total), // Bytes
-                cpuTemp: res.metrics?.cpu?.temperature,
-                motherboardTemp: res.metrics?.motherboard?.temperature
+                cpuTemp: cpuSensor?.current?.value ?? res.metrics?.cpu?.temperature,
+                motherboardTemp: mbSensor?.current?.value ?? res.metrics?.motherboard?.temperature,
+                // New in v4.30: full sensor list + summary for richer UI
+                temperatures: sensors.map(s => ({
+                    id: s.id,
+                    name: s.name,
+                    type: s.type,
+                    location: s.location,
+                    value: s.current?.value,
+                    unit: s.current?.unit,
+                    status: s.current?.status, // NORMAL | WARNING | CRITICAL | UNKNOWN
+                    warning: s.warning,
+                    critical: s.critical
+                })),
+                temperatureSummary: tempSummary
             },
             array: {
                 status: res.array.state,
                 used: parse(res.array.capacity.kilobytes.used) * 1024, // KB -> Bytes
                 total: parse(res.array.capacity.kilobytes.total) * 1024,
                 free: parse(res.array.capacity.kilobytes.free) * 1024,
-                
+
                 // Parity Check Status
                 parity: res.array.parity ? {
                     status: res.array.parity.status,
@@ -171,7 +271,7 @@ export const getSystemData = async (url, apiKey) => {
                     duration: res.array.parity.duration,
                     speed: res.array.parity.speed
                 } : null,
-                
+
                 // Detailed Disks Lists
                 parities: (res.array.parities || []).map(d => normalizeDisk(d, 'Parity')),
                 disks: (res.array.disks || []).map(d => normalizeDisk(d, 'Data')),
@@ -182,37 +282,46 @@ export const getSystemData = async (url, apiKey) => {
             ram: res.metrics.memory.percentTotal,
             // Normalize Docker List
             dockers: (res.docker.containers || []).map(c => {
-                let webuiUrl = null;
-                const labels = c.labels || {};
-                const webuiLabel = labels['net.unraid.docker.webui'];
-                
-                if (webuiLabel) {
-                     // Label found: Replace [IP] with hostname
-                    webuiUrl = webuiLabel.replace('[IP]', serverHostname);
-                    // Replace [PORT:1234] with 1234
-                    webuiUrl = webuiUrl.replace(/\[PORT:(\d+)\]/g, '$1');
-                } else if (c.ports && c.ports.length > 0) {
-                     // Fallback: Use first mapped public port
-                     // Filter for TCP if possible, or just take the first one with a public port
-                     const port = c.ports.find(p => p.publicPort && p.type === 'TCP') || c.ports.find(p => p.publicPort);
-                     if (port && port.publicPort) {
-                         webuiUrl = `${serverProtocol}//${serverHostname}:${port.publicPort}`;
-                     }
+                const extra = dockerExtrasById.get(c.id);
+
+                // Prefer resolved WebUI URL from template (v4.30+), fall back to legacy label parsing
+                let webuiUrl = extra?.webUiUrl || null;
+                if (!webuiUrl) {
+                    const labels = c.labels || {};
+                    const webuiLabel = labels['net.unraid.docker.webui'];
+
+                    if (webuiLabel) {
+                        webuiUrl = webuiLabel.replace('[IP]', serverHostname);
+                        webuiUrl = webuiUrl.replace(/\[PORT:(\d+)\]/g, '$1');
+                    } else if (c.ports && c.ports.length > 0) {
+                        const port = c.ports.find(p => p.publicPort && p.type === 'TCP') || c.ports.find(p => p.publicPort);
+                        if (port && port.publicPort) {
+                            webuiUrl = `${serverProtocol}//${serverHostname}:${port.publicPort}`;
+                        }
+                    }
                 }
-
-
 
                 return {
                     id: c.id,
-                    name: (c.names && c.names[0]) ? c.names[0].replace(/^\//, '') : 'Unknown', 
+                    name: (c.names && c.names[0]) ? c.names[0].replace(/^\//, '') : 'Unknown',
                     image: c.image,
                     running: c.state === 'RUNNING',
                     status: c.status,
                     webui: webuiUrl,
+                    // New fields from v4.30+ (null on older servers)
+                    icon: extra?.iconUrl || null,
+                    projectUrl: extra?.projectUrl || null,
+                    supportUrl: extra?.supportUrl || null,
+                    autoStart: extra?.autoStart ?? null,
+                    isOrphaned: extra?.isOrphaned ?? false,
                     updateAvailable: c.isUpdateAvailable
                 };
             })
         };
+
+        // Cache successful snapshot for instant-render on next popup open
+        saveSystemCache(url, result);
+        return result;
 
     } catch (e) {
         console.warn("Unraid Sync Failed", e);
@@ -227,8 +336,8 @@ export const getSystemData = async (url, apiKey) => {
 
 /**
  * Controls a Docker container (start, stop, restart).
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @param {string} id - Container ID
  * @param {string} action - Action command
  * @returns {Promise<Object>} Mutation result
@@ -236,16 +345,16 @@ export const getSystemData = async (url, apiKey) => {
 export const controlContainer = async (url, apiKey, id, action) => {
     // Schema: mutation { docker { start(id: "...") { id } } }
     // Note: 'restart' is not supported natively in the API, so we simulate it.
-    
+
     // Input validation to prevent GraphQL injection
     const allowedActions = ['start', 'stop', 'restart', 'pause', 'unpause'];
     if (!allowedActions.includes(action)) {
         throw new Error(`Invalid action: ${action}`);
     }
-    
+
     // Sanitize ID (remove quotes and backslashes that could break GraphQL)
     const sanitizedId = String(id).replace(/[\\"\']/g, '');
-    
+
     if (action === 'restart') {
         const stopRes = await controlContainer(url, apiKey, sanitizedId, 'stop');
         await new Promise(r => setTimeout(r, 2000)); // Wait for stop
@@ -267,8 +376,8 @@ export const controlContainer = async (url, apiKey, id, action) => {
 
 /**
  * Fetches list of VMs.
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @returns {Promise<Array>} List of VMs
  */
 export const getVms = async (url, apiKey) => {
@@ -300,8 +409,8 @@ export const getVms = async (url, apiKey) => {
 
 /**
  * Controls a VM (start, stop, etc.).
- * @param {string} url 
- * @param {string} apiKey 
+ * @param {string} url
+ * @param {string} apiKey
  * @param {string} id - VM ID
  * @param {string} action - Action command
  * @returns {Promise<Object>} Mutation result
@@ -309,16 +418,16 @@ export const getVms = async (url, apiKey) => {
 export const controlVm = async (url, apiKey, id, action) => {
     // Mutation: mutation { vm { start(id: "...") } }
     // Action: start, stop, pause, resume, forceStop, reboot, reset
-    
+
     // Input validation to prevent GraphQL injection
     const allowedActions = ['start', 'stop', 'pause', 'resume', 'forceStop', 'reboot', 'reset'];
     if (!allowedActions.includes(action)) {
         throw new Error(`Invalid action: ${action}`);
     }
-    
+
     // Sanitize ID (remove quotes and backslashes that could break GraphQL)
     const sanitizedId = String(id).replace(/[\\"\']/g, '');
-    
+
     const mutation = `
     mutation {
         vm {

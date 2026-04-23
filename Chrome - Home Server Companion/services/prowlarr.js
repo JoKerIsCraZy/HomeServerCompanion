@@ -1,3 +1,4 @@
+import { validateSearchQuery } from './inputValidation.js';
 
 
 /**
@@ -97,6 +98,11 @@ export const getProwlarrCategories = async (url, apiKey) => {
  */
 export const searchProwlarr = async (url, apiKey, query, categories = null, indexerIds = null) => {
   try {
+    const validation = validateSearchQuery(query);
+    if (!validation.valid) {
+      throw new Error(`Invalid search query: ${validation.error}`);
+    }
+
     const type = "search";
     const queryParams = new URLSearchParams();
     queryParams.append("query", query);

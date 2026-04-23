@@ -2,6 +2,7 @@
 
 import * as Unraid from './unraid.js';
 import * as Portainer from './portainer.js';
+import { validateSearchQuery } from './inputValidation.js';
 
 /**
  * Searches all Docker containers across Unraid and all Portainer instances.
@@ -10,6 +11,11 @@ import * as Portainer from './portainer.js';
  * @returns {Promise<Array>} Unified container results
  */
 export async function searchAllContainers(configs, query) {
+    const validation = validateSearchQuery(query);
+    if (!validation.valid) {
+        throw new Error(`Invalid search query: ${validation.error}`);
+    }
+
     const results = [];
     const searchLower = query.toLowerCase();
     const fetchPromises = [];

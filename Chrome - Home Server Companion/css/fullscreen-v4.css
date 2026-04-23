@@ -1,0 +1,93 @@
+/* css/fullscreen-v4.css */
+/**
+ * Fullscreen Mode Styles
+ * Enhanced layout for standalone window
+ */
+
+/* Only apply in fullscreen mode */
+body.fullscreen-mode {
+    overflow: hidden;
+}
+
+body.fullscreen-mode .app-container {
+    max-width: none;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+}
+
+body.fullscreen-mode .sidebar {
+    width: 80px !important;
+    flex-shrink: 0;
+}
+
+body.fullscreen-mode .sidebar .nav-item {
+    flex-direction: column;
+    padding: var(--space-4);
+    gap: var(--space-2);
+}
+
+body.fullscreen-mode .nav-item span {
+    display: block;
+    font-size: var(--font-size-xs);
+}
+
+body.fullscreen-mode .content-area {
+    padding: 0;
+}
+
+body.fullscreen-mode #main-header {
+    height: 70px;
+    padding: 0 var(--space-6);
+}
+
+body.fullscreen-mode .view {
+    height: calc(100vh - 70px);
+    overflow-y: auto;
+}
+
+/* Enhanced Dashboard in fullscreen */
+body.fullscreen-mode .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-6);
+    padding: var(--space-6);
+}
+
+body.fullscreen-mode .widget {
+    min-height: 180px;
+}
+
+/* Enhanced cards in fullscreen */
+body.fullscreen-mode .card {
+    min-height: 200px;
+}
+
+/* Hide fullscreen button in fullscreen mode */
+body.fullscreen-mode #fullscreen-btn {
+    display: none;
+}
+
+/* Add exit fullscreen button */
+body.fullscreen-mode .exit-fullscreen {
+    display: flex !important;
+}
+
+.exit-fullscreen {
+    display: none;
+    position: fixed;
+    top: var(--space-4);
+    right: var(--space-4);
+    z-index: 1000;
+    width: 36px;
+    height: 36px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.exit-fullscreen:hover {
+    background: var(--color-bg-tertiary);
+}

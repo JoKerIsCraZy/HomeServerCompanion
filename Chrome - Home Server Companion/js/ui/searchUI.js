@@ -1,6 +1,6 @@
 import { aggregatedSearch, warmUpSearchCache } from "../utils/search.js";
-import { showNotification } from "../utils.js";
-import * as Overseerr from "../../services/overseerr.js";
+import { showNotification, validateUrl, openUrlSafely } from "../utils.js";
+import * as Seerr from "../../services/seerr.js";
 import * as ProwlarrService from "../../services/prowlarr.js";
 import { renderSearchResults as renderProwlarrResults, populateProwlarrCategories, populateProwlarrIndexers } from "./prowlarr.js";
 import { searchAllContainers, controlContainerFromSearch } from "../../services/dockerSearch.js";
@@ -127,13 +127,32 @@ export async function initSearchUI(state) {
 
         const placeholder = document.createElement('div');
         placeholder.className = 'search-placeholder';
-        placeholder.innerHTML = `
-            <p>Search Movies & TV Shows</p>
-            <div class="search-syntax-hints">
-                <span class="syntax-hint"><code>n:</code> NZB Search (Prowlarr)</span>
-                <span class="syntax-hint"><code>d:</code> Docker Containers</span>
-            </div>
-        `;
+
+        const p = document.createElement('p');
+        p.textContent = 'Search Movies & TV Shows';
+
+        const hintsDiv = document.createElement('div');
+        hintsDiv.className = 'search-syntax-hints';
+
+        const nzbHint = document.createElement('span');
+        nzbHint.className = 'syntax-hint';
+        const nzbCode = document.createElement('code');
+        nzbCode.textContent = 'n:';
+        nzbHint.appendChild(nzbCode);
+        nzbHint.appendChild(document.createTextNode(' NZB Search (Prowlarr)'));
+
+        const dockerHint = document.createElement('span');
+        dockerHint.className = 'syntax-hint';
+        const dockerCode = document.createElement('code');
+        dockerCode.textContent = 'd:';
+        dockerHint.appendChild(dockerCode);
+        dockerHint.appendChild(document.createTextNode(' Docker Containers'));
+
+        hintsDiv.appendChild(nzbHint);
+        hintsDiv.appendChild(dockerHint);
+
+        placeholder.appendChild(p);
+        placeholder.appendChild(hintsDiv);
         results.appendChild(placeholder);
 
         modal.append(header, filters, results);
@@ -223,7 +242,38 @@ export async function initSearchUI(state) {
             }
             
             if (query.length < 2) {
-                document.getElementById('unified-search-results').textContent = '';
+                // Restore placeholder instead of just clearing
+                const resultsContainer = document.getElementById('unified-search-results');
+                resultsContainer.textContent = '';
+                const placeholder = document.createElement('div');
+                placeholder.className = 'search-placeholder';
+
+                const p = document.createElement('p');
+                p.textContent = 'Search Movies & TV Shows';
+
+                const hintsDiv = document.createElement('div');
+                hintsDiv.className = 'search-syntax-hints';
+
+                const nzbHint = document.createElement('span');
+                nzbHint.className = 'syntax-hint';
+                const nzbCode = document.createElement('code');
+                nzbCode.textContent = 'n:';
+                nzbHint.appendChild(nzbCode);
+                nzbHint.appendChild(document.createTextNode(' NZB Search (Prowlarr)'));
+
+                const dockerHint = document.createElement('span');
+                dockerHint.className = 'syntax-hint';
+                const dockerCode = document.createElement('code');
+                dockerCode.textContent = 'd:';
+                dockerHint.appendChild(dockerCode);
+                dockerHint.appendChild(document.createTextNode(' Docker Containers'));
+
+                hintsDiv.appendChild(nzbHint);
+                hintsDiv.appendChild(dockerHint);
+
+                placeholder.appendChild(p);
+                placeholder.appendChild(hintsDiv);
+                resultsContainer.appendChild(placeholder);
                 return;
             }
 
@@ -297,13 +347,34 @@ export function openSearch() {
             resultsContainer.textContent = '';
             const placeholder = document.createElement('div');
             placeholder.className = 'search-placeholder';
-            placeholder.innerHTML = `
-                <p>Search Movies & TV Shows</p>
-                <div class="search-syntax-hints">
-                    <span class="syntax-hint clickable" data-prefix="n:"><code>n:</code> NZB Search</span>
-                    <span class="syntax-hint clickable" data-prefix="d:"><code>d:</code> Docker Containers</span>
-                </div>
-            `;
+
+            const p = document.createElement('p');
+            p.textContent = 'Search Movies & TV Shows';
+
+            const hintsDiv = document.createElement('div');
+            hintsDiv.className = 'search-syntax-hints';
+
+            const nzbHint = document.createElement('span');
+            nzbHint.className = 'syntax-hint clickable';
+            nzbHint.dataset.prefix = 'n:';
+            const nzbCode = document.createElement('code');
+            nzbCode.textContent = 'n:';
+            nzbHint.appendChild(nzbCode);
+            nzbHint.appendChild(document.createTextNode(' NZB Search'));
+
+            const dockerHint = document.createElement('span');
+            dockerHint.className = 'syntax-hint clickable';
+            dockerHint.dataset.prefix = 'd:';
+            const dockerCode = document.createElement('code');
+            dockerCode.textContent = 'd:';
+            dockerHint.appendChild(dockerCode);
+            dockerHint.appendChild(document.createTextNode(' Docker Containers'));
+
+            hintsDiv.appendChild(nzbHint);
+            hintsDiv.appendChild(dockerHint);
+
+            placeholder.appendChild(p);
+            placeholder.appendChild(hintsDiv);
             
             // Make hints clickable
             placeholder.querySelectorAll('.syntax-hint.clickable').forEach(hint => {
@@ -485,20 +556,20 @@ function renderResults(results, container, state) {
         const info = document.createElement('div');
         info.className = 'result-info';
 
-        // Title Row - Clickable to open in Overseerr
+        // Title Row - Clickable to open in Seerr
         const titleDiv = document.createElement('div');
         titleDiv.className = 'result-title clickable-title';
         titleDiv.textContent = item.title + ' ';
         titleDiv.style.cursor = 'pointer';
-        titleDiv.title = 'Open in Overseerr';
+        titleDiv.title = 'Open in Seerr';
         
-        // Click handler to open Overseerr page
+        // Click handler to open Seerr page
         titleDiv.addEventListener('click', () => {
-            const overseerrUrl = state.configs.overseerrUrl;
-            if (overseerrUrl) {
+            const seerrUrl = state.configs.seerrUrl;
+            if (seerrUrl) {
                 const mediaType = item.type === 'tv' ? 'tv' : 'movie';
-                const url = `${overseerrUrl}/${mediaType}/${item.id}`;
-                chrome.tabs.create({ url });
+                const url = `${seerrUrl}/${mediaType}/${item.id}`;
+                if (validateUrl(url)) chrome.tabs.create({ url });
             }
         });
         
@@ -545,7 +616,8 @@ function renderResults(results, container, state) {
                      // Special handling for TV Series
                      if (item.type === 'tv') {
                          try {
-                             const details = await Overseerr.getTv(state.configs.overseerrUrl, state.configs.overseerrKey, item.id);
+                             const authMethod = state.configs.seerrAuthMethod || 'apikey';
+                             const details = await Seerr.getTv(state.configs.seerrUrl, state.configs.seerrKey, item.id, authMethod);
                              if (details && details.seasons) {
                                  const seasonsToRequest = details.seasons
                                      .filter(s => s.seasonNumber > 0)
@@ -560,7 +632,8 @@ function renderResults(results, container, state) {
                          }
                      }
 
-                     await Overseerr.request(state.configs.overseerrUrl, state.configs.overseerrKey, payload);
+                     const reqAuthMethod = state.configs.seerrAuthMethod || 'apikey';
+                     await Seerr.request(state.configs.seerrUrl, state.configs.seerrKey, payload, reqAuthMethod);
                      showNotification('Requested Successfully!', 'success');
                      
                      // Replace button with Pending badge
@@ -605,7 +678,7 @@ function renderResults(results, container, state) {
                          e.stopPropagation();
                          // Use TMDB ID (item.id) - Radarr URLs use /movie/{tmdbId} format
                          const radarrUrl = `${state.configs.radarrUrl}/movie/${item.id}`;
-                         chrome.tabs.create({ url: radarrUrl });
+                         if (validateUrl(radarrUrl)) chrome.tabs.create({ url: radarrUrl });
                      });
                      actions.appendChild(radarrBtn);
                  }
@@ -630,7 +703,7 @@ function renderResults(results, container, state) {
                              // Fallback: Add New Search
                              sonarrUrl = `${state.configs.sonarrUrl}/add/new?term=${encodeURIComponent(item.title)}`;
                          }
-                         chrome.tabs.create({ url: sonarrUrl });
+                         if (validateUrl(sonarrUrl)) chrome.tabs.create({ url: sonarrUrl });
                      });
                      actions.appendChild(sonarrBtn);
                  }
@@ -655,10 +728,11 @@ function renderResults(results, container, state) {
                          if (redirectMode === 'web' || !plexSettings.plexUrl) {
                              // Web mode: Open Plex web URL
                              if (item.plexUrl) {
-                                 chrome.tabs.create({ url: item.plexUrl });
+                                 if (validateUrl(item.plexUrl)) chrome.tabs.create({ url: item.plexUrl });
                              } else {
                                  // Fallback: Search on Plex
-                                 chrome.tabs.create({ url: `https://app.plex.tv/desktop/#!/search?query=${encodeURIComponent(item.title)}` });
+                                 const plexSearchUrl = `https://app.plex.tv/desktop/#!/search?query=${encodeURIComponent(item.title)}`;
+                                 if (validateUrl(plexSearchUrl)) chrome.tabs.create({ url: plexSearchUrl });
                              }
                          } else {
                              // App mode: Fetch Plex GUID and open plex://
@@ -673,19 +747,22 @@ function renderResults(results, container, state) {
                                      if (metadata?.guid) {
                                          // Extract the Plex GUID (format: plex://movie/xxxxx or plex://show/xxxxx)
                                          const plexGuid = metadata.guid;
-                                         console.log('Opening Plex app with GUID:', plexGuid);
-                                         chrome.tabs.create({ url: plexGuid });
+                                         console.debug('Opening Plex app with GUID:', plexGuid);
+                                         if (validateUrl(plexGuid)) chrome.tabs.create({ url: plexGuid });
                                      } else {
                                          // Fallback to web
-                                         chrome.tabs.create({ url: item.plexUrl || `https://app.plex.tv` });
+                                         const fallbackUrl = item.plexUrl || `https://app.plex.tv`;
+                                         if (validateUrl(fallbackUrl)) chrome.tabs.create({ url: fallbackUrl });
                                      }
                                  } else {
                                      // API failed, fallback to web
-                                     chrome.tabs.create({ url: item.plexUrl || `https://app.plex.tv` });
+                                     const fallbackUrl = item.plexUrl || `https://app.plex.tv`;
+                                     if (validateUrl(fallbackUrl)) chrome.tabs.create({ url: fallbackUrl });
                                  }
                              } catch (err) {
                                  console.error('Plex API error:', err);
-                                 chrome.tabs.create({ url: item.plexUrl || `https://app.plex.tv` });
+                                 const fallbackUrl = item.plexUrl || `https://app.plex.tv`;
+                                 if (validateUrl(fallbackUrl)) chrome.tabs.create({ url: fallbackUrl });
                              }
                          }
                      });
@@ -809,7 +886,9 @@ function renderDockerResults(results, container, state) {
             webuiBtn.title = 'Open WebUI';
             webuiBtn.onclick = (e) => {
                 e.stopPropagation();
-                chrome.tabs.create({ url: item.webui });
+                // WebUI URL originates from Docker container labels — may point
+                // anywhere; prompt if it isn't local or one of our trusted bases.
+                openUrlSafely(item.webui, state?.configs || {}, 'Docker container');
             };
             actions.appendChild(webuiBtn);
         }

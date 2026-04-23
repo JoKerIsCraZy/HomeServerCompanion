@@ -1,6 +1,6 @@
 import * as Radarr from "../../services/radarr.js";
 import { formatSize } from "../../services/utils.js";
-import { showNotification, showConfirmModal, escapeHtml } from "../utils.js";
+import { showNotification, showConfirmModal, escapeHtml, validateUrl } from "../utils.js";
 
 /**
  * Initializes the Radarr service view.
@@ -148,7 +148,8 @@ function renderRadarrCalendar(movies, state) {
               e.stopPropagation();
               let cleanUrl = state.configs.radarrUrl;
               if(cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
-              chrome.tabs.create({ url: `${cleanUrl}/calendar` });
+              const calendarUrl = `${cleanUrl}/calendar`;
+              if (validateUrl(calendarUrl)) chrome.tabs.create({ url: calendarUrl });
           };
           header.appendChild(linkBtn);
       }
@@ -233,9 +234,9 @@ function renderRadarrCalendar(movies, state) {
 
         // Status Ribbon
         let statusColor = "#9e9e9e";
-        if (movie.hasFile) statusColor = "#4caf50"; // Downloaded
-        else if (movie.isAvailable) statusColor = "#2196f3"; // Available
-        else statusColor = "#ff9800"; // Upcoming/Cinema
+        if (movie.hasFile) statusColor = "#4caf50"; // Downloaded - green
+        else if (movie.isAvailable) statusColor = "#ff9800"; // Available - orange
+        else statusColor = "#f44336"; // In Cinemas/Upcoming - red
 
         const ribbon = document.createElement("div");
         ribbon.style.cssText = `position: absolute; top: 8px; right: 8px; width: 10px; height: 10px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 5px ${statusColor};`;
@@ -251,7 +252,8 @@ function renderRadarrCalendar(movies, state) {
           card.addEventListener("click", (e) => {
             e.stopPropagation();
             const url = state.configs.radarrUrl;
-            chrome.tabs.create({ url: `${url}/movie/${movie.titleSlug}` });
+            const movieUrl = `${url}/movie/${movie.titleSlug}`;
+            if (validateUrl(movieUrl)) chrome.tabs.create({ url: movieUrl });
           });
         }
         
@@ -327,7 +329,8 @@ function renderRadarrQueue(records, state) {
         e.stopPropagation();
         let cleanUrl = state.configs.radarrUrl;
         if(cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
-        chrome.tabs.create({ url: `${cleanUrl}/activity/queue` });
+        const queueUrl = `${cleanUrl}/activity/queue`;
+        if (validateUrl(queueUrl)) chrome.tabs.create({ url: queueUrl });
     };
     
     // Refresh button (icon only)
@@ -415,14 +418,18 @@ function renderRadarrQueue(records, state) {
         const escapedItemTitle = escapeHtml(item.title);
         const escapedStatusMessage = escapeHtml(statusMessage);
         const escapedStatusText = escapeHtml(statusText);
+        // Radarr API returns a numeric id, but a compromised/malicious server could
+        // return a crafted string. Strip to alphanumeric + dash so it is safe to embed
+        // in both HTML attributes and CSS selectors without further escaping.
+        const safeItemId = String(item.id ?? '').replace(/[^a-zA-Z0-9-]/g, '');
 
         card.innerHTML = `
             <div class="queue-poster">
-                <img id="queue-poster-${item.id}" src="${escapeHtml(posterUrl)}" alt="" onerror="this.src='icons/icon48.png'">
+                <img id="queue-poster-${safeItemId}" src="${escapeHtml(posterUrl)}" alt="" onerror="this.src='icons/icon48.png'">
             </div>
             <div class="queue-content">
                 <div class="queue-header">
-                    <div id="queue-title-${item.id}" class="queue-title" title="${displayTitle}">${displayTitle}</div>
+                    <div id="queue-title-${safeItemId}" class="queue-title" title="${displayTitle}">${displayTitle}</div>
                 </div>
                 <div class="queue-subtitle">
                     ${quality ? `<span class="queue-quality">${escapedQuality}</span>` : ''}
@@ -457,13 +464,13 @@ function renderRadarrQueue(records, state) {
                     if (parsed) {
                         // If Radarr mapped it to a real movie
                         if (parsed.movie && parsed.movie.title) {
-                            const titleEl = card.querySelector('#queue-title-' + item.id);
+                            const titleEl = card.querySelector('#queue-title-' + safeItemId);
                             if (titleEl) {
                                 titleEl.textContent = parsed.movie.title;
                                 titleEl.title = parsed.movie.title;
                             }
                             
-                            const posterEl = card.querySelector('#queue-poster-' + item.id);
+                            const posterEl = card.querySelector('#queue-poster-' + safeItemId);
                             if (posterEl) {
                                 const newPosterUrl = getPosterUrl(parsed.movie);
                                 if (newPosterUrl && newPosterUrl !== 'icons/icon48.png') {
@@ -473,7 +480,7 @@ function renderRadarrQueue(records, state) {
                         } 
                         // If Radarr couldn't map it, but still extracted a title string
                         else if (parsed.parsedMovieInfo && parsed.parsedMovieInfo.movieTitle) {
-                            const titleEl = card.querySelector('#queue-title-' + item.id);
+                            const titleEl = card.querySelector('#queue-title-' + safeItemId);
                             if (titleEl) {
                                 const rawTitle = parsed.parsedMovieInfo.movieTitle;
                                 // Combine title and year if parsed
@@ -483,7 +490,7 @@ function renderRadarrQueue(records, state) {
                             }
                         }
                     }
-                }).catch(err => console.log("Radarr Parse API error", err));
+                }).catch(err => console.warn("Radarr Parse API error", err));
         }
 
         // Event handlers
@@ -994,7 +1001,8 @@ function renderRadarrRecent(records, state) {
         if (movie.titleSlug) {
             card.onclick = () => {
                 const url = state.configs.radarrUrl;
-                chrome.tabs.create({ url: `${url}/movie/${movie.titleSlug}` });
+                const movieUrl = `${url}/movie/${movie.titleSlug}`;
+                if (validateUrl(movieUrl)) chrome.tabs.create({ url: movieUrl });
             };
             card.onmouseenter = () => card.style.transform = "translateY(-3px)";
             card.onmouseleave = () => card.style.transform = "translateY(0)";
@@ -1406,7 +1414,8 @@ function renderRadarrMissing(records, state) {
         if (movie.titleSlug) {
             card.addEventListener("click", () => {
                 const url = state.configs.radarrUrl;
-                chrome.tabs.create({ url: `${url}/movie/${movie.titleSlug}` });
+                const movieUrl = `${url}/movie/${movie.titleSlug}`;
+                if (validateUrl(movieUrl)) chrome.tabs.create({ url: movieUrl });
             });
         }
 

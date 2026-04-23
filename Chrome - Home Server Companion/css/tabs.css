@@ -90,7 +90,16 @@
     color: #fff;
 }
 
-/* Sub-tabs with Glider (Unraid, Overseerr) */
+/* Tracearr - Cyan */
+#tracearr-view .tab-glider {
+    background: linear-gradient(135deg, #00bcd4, #00acc1);
+    box-shadow: 0 2px 5px rgba(0, 188, 212, 0.3);
+}
+#tracearr-view .tab-btn.active {
+    color: #fff;
+}
+
+/* Sub-tabs with Glider (Unraid, Seerr) */
 .sub-tabs {
     position: relative;
     display: inline-flex;
@@ -145,11 +154,11 @@
     color: #fff;
 }
 
-/* Overseerr - Purple */
-#overseerr-view .sub-tabs .tab-glider {
+/* Seerr - Purple */
+#seerr-view .sub-tabs .tab-glider {
     background: linear-gradient(135deg, #ab47bc, #9c27b0);
     box-shadow: 0 2px 5px rgba(171, 71, 188, 0.3);
 }
-#overseerr-view .sub-tab-btn.active {
+#seerr-view .sub-tab-btn.active {
     color: #fff;
 }

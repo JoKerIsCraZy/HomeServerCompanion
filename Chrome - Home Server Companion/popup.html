@@ -6,6 +6,11 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/layout.css" />
     <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/components/cards.css" />
+    <link rel="stylesheet" href="css/components/buttons.css" />
+    <link rel="stylesheet" href="css/components/badges.css" />
+    <link rel="stylesheet" href="css/components/forms.css" />
+    <link rel="stylesheet" href="css/components/loaders.css" />
     <link rel="stylesheet" href="css/tabs.css" />
     <link rel="stylesheet" href="css/services/dashboard.css" />
     <link rel="stylesheet" href="css/services/search.css" />
@@ -13,12 +18,15 @@
     <link rel="stylesheet" href="css/services/sonarr.css" />
     <link rel="stylesheet" href="css/services/radarr.css" />
     <link rel="stylesheet" href="css/services/tautulli.css" />
-    <link rel="stylesheet" href="css/services/overseerr.css" />
+    <link rel="stylesheet" href="css/services/seerr.css" />
     <link rel="stylesheet" href="css/services/unraid.css" />
     <link rel="stylesheet" href="css/services/prowlarr.css" />
     <link rel="stylesheet" href="css/services/wizarr.css" />
     <link rel="stylesheet" href="css/services/portainer.css" />
+    <link rel="stylesheet" href="css/services/tracearr.css" />
     <link rel="stylesheet" href="css/fullscreen.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+    <link rel="stylesheet" href="css/fullscreen-v4.css" />
   </head>
   <body class="dark-mode">
     <div class="app-container">
@@ -101,14 +109,14 @@
         </div>
         <div
           class="nav-item"
-          data-target="overseerr"
-          title="Overseerr"
+          data-target="seerr"
+          title="Seerr"
           role="button"
           tabindex="0"
-          aria-label="Overseerr"
+          aria-label="Seerr"
         >
           <img
-            src="icons/overseerr.png"
+            src="icons/seerr.png"
             alt=""
             aria-hidden="true"
             class="nav-icon"
@@ -154,6 +162,21 @@
         >
           <img
             src="icons/wizarr.png"
+            class="nav-icon"
+            alt=""
+            aria-hidden="true"
+          />
+        </div>
+        <div
+          class="nav-item"
+          data-target="tracearr"
+          title="Tracearr"
+          role="button"
+          tabindex="0"
+          aria-label="Tracearr"
+        >
+          <img
+            src="icons/tracearr.png"
             class="nav-icon"
             alt=""
             aria-hidden="true"
@@ -217,6 +240,26 @@
       <main class="content-area" role="main">
         <!-- Header -->
         <header id="main-header" style="position: relative">
+          <button
+            id="exit-fullscreen"
+            class="exit-fullscreen"
+            title="Exit fullscreen"
+            style="display: none"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
           <h1 id="page-title">SABnzbd</h1>
 
           <!-- Centered Omnibox -->
@@ -533,10 +576,10 @@
           <div id="tautulli-activity"></div>
         </div>
 
-        <!-- Overseerr View -->
-        <div id="overseerr-view" class="view hidden">
+        <!-- Seerr View -->
+        <div id="seerr-view" class="view hidden">
           <div
-            class="overseerr-header"
+            class="seerr-header"
             style="
               display: flex;
               justify-content: space-between;
@@ -547,20 +590,20 @@
               <div class="tab-glider"></div>
               <button
                 class="sub-tab-btn active"
-                data-target="overseerr-requests-tab"
+                data-target="seerr-requests-tab"
               >
                 Requests
               </button>
-              <button class="sub-tab-btn" data-target="overseerr-search-tab">
+              <button class="sub-tab-btn" data-target="seerr-search-tab">
                 Search
               </button>
-              <button class="sub-tab-btn" data-target="overseerr-trending-tab">
+              <button class="sub-tab-btn" data-target="seerr-trending-tab">
                 Trending
               </button>
             </div>
-            <div id="overseerr-filter-container" class="filter-bar">
+            <div id="seerr-filter-container" class="filter-bar">
               <select
-                id="overseerr-filter"
+                id="seerr-filter"
                 style="
                   padding: 6px;
                   border-radius: 6px;
@@ -581,7 +624,7 @@
             <!-- Toolbar placeholder for Search Tab (empty or moved later) -->
             <!-- Trending Toolbar (Moved here) -->
             <div
-              id="overseerr-trending-toolbar"
+              id="seerr-trending-toolbar"
               class="trending-filter-bar hidden"
               style="display: flex; align-items: center; gap: 10px"
             >
@@ -601,7 +644,7 @@
                   >🎬 Filter:</span
                 >
                 <select
-                  id="overseerr-trending-filter"
+                  id="seerr-trending-filter"
                   style="
                     padding: 4px 24px 4px 8px;
                     border-radius: 8px;
@@ -635,7 +678,7 @@
                 </select>
               </div>
               <button
-                id="overseerr-trending-refresh"
+                id="seerr-trending-refresh"
                 title="Refresh List"
                 class="icon-btn"
                 style="
@@ -673,21 +716,21 @@
           </div>
 
           <!-- Requests Tab -->
-          <div id="overseerr-requests-tab" class="overseerr-tab-content active">
-            <div id="overseerr-requests" class="grid-container">
+          <div id="seerr-requests-tab" class="seerr-tab-content active">
+            <div id="seerr-requests" class="grid-container">
               <!-- Populated by JS -->
             </div>
           </div>
 
           <!-- Search Tab -->
-          <div id="overseerr-search-tab" class="overseerr-tab-content hidden">
+          <div id="seerr-search-tab" class="seerr-tab-content hidden">
             <div class="search-bar">
               <input
                 type="text"
-                id="overseerr-search-input"
+                id="seerr-search-input"
                 placeholder="Search Movies & TV..."
               />
-              <button id="overseerr-search-btn">
+              <button id="seerr-search-btn">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   height="20px"
@@ -701,15 +744,15 @@
                 </svg>
               </button>
             </div>
-            <div id="overseerr-search-results" class="grid-container">
+            <div id="seerr-search-results" class="grid-container">
               <!-- Results -->
             </div>
           </div>
 
           <!-- Trending Tab -->
-          <div id="overseerr-trending-tab" class="overseerr-tab-content hidden">
+          <div id="seerr-trending-tab" class="seerr-tab-content hidden">
             <div
-              id="overseerr-trending-results"
+              id="seerr-trending-results"
               style="
                 display: flex;
                 flex-wrap: wrap;
@@ -1170,6 +1213,21 @@
             <!-- Stacks list populated by JS -->
           </div>
         </div>
+
+        <!-- Tracearr View -->
+        <div id="tracearr-view" class="view hidden">
+          <div class="tabs">
+            <div class="tab-glider"></div>
+            <button class="tab-btn active" data-tab="streams">Streams</button>
+            <button class="tab-btn" data-tab="statistics">Statistics</button>
+          </div>
+          <div class="sub-view active" id="tracearr-streams">
+            <div id="tracearr-activity"></div>
+          </div>
+          <div class="sub-view hidden" id="tracearr-statistics">
+            <div id="tracearr-stats-content"></div>
+          </div>
+        </div>
       </main>
     </div>
 
@@ -1607,13 +1665,13 @@
       </div>
     </template>
 
-    <!-- Overseerr Card Template -->
-    <template id="overseerr-card">
-      <div class="overseerr-card">
-        <div class="overseerr-backdrop"></div>
-        <div class="overseerr-content">
+    <!-- Seerr Card Template -->
+    <template id="seerr-card">
+      <div class="seerr-card">
+        <div class="seerr-backdrop"></div>
+        <div class="seerr-content">
           <img class="poster-img" src="" alt="Poster" />
-          <div class="overseerr-info">
+          <div class="seerr-info">
             <div class="media-title">Title</div>
             <div class="request-info">
               <span class="requester-name">User</span> ·
@@ -1621,7 +1679,7 @@
             </div>
             <div class="request-status">Pending Approval</div>
           </div>
-          <div class="overseerr-actions">
+          <div class="seerr-actions">
             <button class="action-btn approve-btn" title="Approve">✔</button>
             <button class="action-btn decline-btn" title="Decline">✖</button>
           </div>
@@ -1629,13 +1687,13 @@
       </div>
     </template>
 
-    <!-- Overseerr Search Card Template -->
-    <template id="overseerr-search-card">
-      <div class="overseerr-card">
-        <div class="overseerr-backdrop"></div>
-        <div class="overseerr-content">
+    <!-- Seerr Search Card Template -->
+    <template id="seerr-search-card">
+      <div class="seerr-card">
+        <div class="seerr-backdrop"></div>
+        <div class="seerr-content">
           <img class="poster-img" src="" alt="Poster" />
-          <div class="overseerr-info">
+          <div class="seerr-info">
             <div class="media-title">Title</div>
             <div class="request-info">
               <span class="media-year">Year</span> ·
@@ -1643,20 +1701,20 @@
             </div>
             <div class="search-status-container"></div>
           </div>
-          <div class="overseerr-actions">
+          <div class="seerr-actions">
             <button class="action-btn request-btn" title="Request">➕</button>
           </div>
         </div>
       </div>
     </template>
 
-    <!-- Overseerr Trending Card Template -->
-    <template id="overseerr-trending-card">
-      <div class="overseerr-card">
-        <div class="overseerr-backdrop"></div>
-        <div class="overseerr-content">
+    <!-- Seerr Trending Card Template -->
+    <template id="seerr-trending-card">
+      <div class="seerr-card">
+        <div class="seerr-backdrop"></div>
+        <div class="seerr-content">
           <img class="poster-img" src="" alt="Poster" />
-          <div class="overseerr-info">
+          <div class="seerr-info">
             <div class="media-title">Title</div>
             <div class="request-info">
               <span class="media-year">Year</span> ·
@@ -1677,7 +1735,7 @@
               >
             </div>
           </div>
-          <div class="overseerr-actions">
+          <div class="seerr-actions">
             <button class="action-btn request-btn" title="Request">
               Request
             </button>
@@ -1868,6 +1926,32 @@
         </div>
       </div>
     </template>
+
+    <!-- Mobile Navigation -->
+    <div
+      class="mobile-nav"
+      style="
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: var(--color-bg-secondary);
+        border-top: 1px solid var(--border-color);
+        z-index: 100;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0 8px;
+      "
+    >
+      <button class="mobile-nav-item" data-target="dashboard">🏠</button>
+      <button class="mobile-nav-item" data-target="sonarr">📺</button>
+      <button class="mobile-nav-item" data-target="radarr">🎥</button>
+      <button class="mobile-nav-item" data-target="sabnzbd">⬇️</button>
+      <button class="mobile-nav-item" data-target="search">🔍</button>
+      <button class="mobile-nav-item" data-target="settings">⚙️</button>
+    </div>
 
     <script type="module" src="js/popup.js"></script>
   </body>

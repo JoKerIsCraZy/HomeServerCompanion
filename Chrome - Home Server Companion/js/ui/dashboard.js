@@ -77,11 +77,12 @@ import * as Sabnzbd from "../../services/sabnzbd.js";
 import * as Sonarr from "../../services/sonarr.js";
 import * as Radarr from "../../services/radarr.js";
 import * as Tautulli from "../../services/tautulli.js";
-import * as Overseerr from "../../services/overseerr.js";
+import * as Seerr from "../../services/seerr.js";
 import * as Unraid from "../../services/unraid.js";
 import * as Prowlarr from "../../services/prowlarr.js";
 import * as Wizarr from "../../services/wizarr.js";
 import * as Portainer from "../../services/portainer.js";
+import * as Tracearr from "../../services/tracearr.js";
 
 async function renderServiceGrid(container, state, isUpdate = false) {
     // Only clear if NOT updating
@@ -94,7 +95,9 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             name: 'Unraid',
             icon: 'unraid.png',
             check: async (url, key) => {
-                const data = await Unraid.getSystemData(url, key);
+                // Dashboard only needs cpu/ram — skip the v4.30 extended query
+                // (temperature sensors + docker template extras) to halve request time.
+                const data = await Unraid.getSystemData(url, key, { skipExtended: true });
                 const cpu = Math.round(data.cpu || 0);
                 const ram = Math.round(data.ram || 0);
                 return {
@@ -142,14 +145,14 @@ async function renderServiceGrid(container, state, isUpdate = false) {
                 return { status: 'online', metric: activity.stream_count || 0, label: 'Streams' };
             }
         },
-        { 
-            id: 'overseerr', 
-            name: 'Overseerr', 
-            icon: 'overseerr.png',
-            check: async (url, key) => {
-                const requests = await Overseerr.getRequests(url, key);
+        {
+            id: 'seerr',
+            name: 'Seerr',
+            icon: 'seerr.png',
+            check: async (url, key, authMethod = 'apikey') => {
+                const requests = await Seerr.getRequests(url, key, 'pending', authMethod);
                 // Filter for pending
-                const pending = requests.results ? requests.results.filter(r => r.status === 1).length : 0; 
+                const pending = requests.results ? requests.results.filter(r => r.status === 1).length : 0;
                 return { status: 'online', metric: pending, label: 'Pending' };
             }
         },
@@ -170,6 +173,15 @@ async function renderServiceGrid(container, state, isUpdate = false) {
                // Wizarr doesn't always have simple stats, just check connection
                await Wizarr.getInvitations(url, key);
                return { status: 'online', metric: 'OK', label: 'Status' };
+            }
+        },
+        {
+            id: 'tracearr',
+            name: 'Tracearr',
+            icon: 'tracearr.png',
+            check: async (url, key) => {
+                const streams = await Tracearr.getTracearrStreams(url, key);
+                return { status: 'online', metric: streams.length || 0, label: 'Streams' };
             }
         }
         // Note: Portainer is handled dynamically below
@@ -338,15 +350,34 @@ async function renderServiceGrid(container, state, isUpdate = false) {
         const key = state.configs[`${svc.id}Key`];
 
         // Skip validation for services with embedded credentials (Portainer instances)
-        // and for Unraid/Wizarr which have different logic
+        // and for Unraid/Wizarr/Seerr which have different auth logic
         const hasEmbeddedCredentials = svc.instanceId !== undefined;
-        if (!hasEmbeddedCredentials && svc.id !== 'unraid' && svc.id !== 'wizarr' && (!url || !key)) {
-             updateCard(svc.id, 'offline', 'Cfg', 'Missing Config');
-             return;
+        if (!hasEmbeddedCredentials && svc.id !== 'unraid' && svc.id !== 'wizarr') {
+            // Special check for Seerr (supports Plex auth without API key)
+            if (svc.id === 'seerr') {
+                const authMethod = state.configs.seerrAuthMethod || 'apikey';
+                const hasApiKey = state.configs.seerrKey;
+                const hasPlexAuth = authMethod === 'plex' && state.configs.seerrPlexToken;
+                const hasLocalAuth = authMethod === 'local' && state.configs.seerrEmail;
+                if (!url || (!hasApiKey && !hasPlexAuth && !hasLocalAuth)) {
+                    updateCard(svc.id, 'offline', 'Cfg', 'Missing Config');
+                    return;
+                }
+            } else if (!url || !key) {
+                updateCard(svc.id, 'offline', 'Cfg', 'Missing Config');
+                return;
+            }
         }
 
         try {
-            const result = await svc.check(url, key);
+            // For Seerr, pass authMethod to the check function
+            let result;
+            if (svc.id === 'seerr') {
+                const authMethod = state.configs.seerrAuthMethod || 'apikey';
+                result = await svc.check(url, key, authMethod);
+            } else {
+                result = await svc.check(url, key);
+            }
             updateCard(svc.id, result.status, result.metric, result.label);
 
             // Smart Navigation: Go to Queue if items are pending

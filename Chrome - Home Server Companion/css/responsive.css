@@ -1,0 +1,178 @@
+/* css/responsive.css */
+/**
+ * Responsive Design System
+ * Breakpoints and responsive utilities
+ */
+
+/* === Breakpoint Reference === */
+/* Mobile: < 500px */
+/* Tablet: 500px - 800px */
+/* Desktop: 800px - 1200px */
+/* Large: > 1200px */
+
+/* === Container Queries for App === */
+.app-container {
+    --sidebar-width: 60px;
+    --header-height: 60px;
+}
+
+/* === Mobile (< 500px) === */
+@media (max-width: 499px) {
+    .app-container {
+        --sidebar-width: 0px;
+    }
+
+    .sidebar {
+        display: none !important;
+    }
+
+    /* Bottom navigation for mobile */
+    .mobile-nav {
+        display: flex !important;
+    }
+
+    .content-area {
+        padding: var(--space-3) !important;
+    }
+
+    #main-header {
+        padding: var(--space-3) !important;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Make cards full width */
+    .card {
+        margin: 0 !important;
+    }
+
+    /* Stack flex containers */
+    .unraid-list-header-stack {
+        flex-direction: column !important;
+        gap: var(--space-3) !important;
+    }
+
+    /* Stack tab buttons */
+    .tabs {
+        flex-wrap: wrap !important;
+    }
+
+    .tab-btn {
+        flex: 1 0 auto;
+        min-width: 80px;
+        padding: var(--space-2) var(--space-3);
+    }
+}
+
+/* === Tablet (500px - 800px) === */
+@media (min-width: 500px) and (max-width: 799px) {
+    .app-container {
+        --sidebar-width: 60px;
+    }
+
+    .sidebar {
+        width: var(--sidebar-width) !important;
+    }
+
+    .sidebar .nav-item span {
+        display: none;
+    }
+
+    /* Dashboard: 2 columns */
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Compact header */
+    #main-header {
+        padding: var(--space-3) var(--space-4) !important;
+    }
+
+    #omnibox-container {
+        width: 200px !important;
+    }
+}
+
+/* === Desktop (800px - 1200px) === */
+@media (min-width: 800px) and (max-width: 1199px) {
+    /* Dashboard: 3 columns */
+    .dashboard-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+/* === Fullscreen Mode === */
+body.fullscreen-mode .app-container {
+    max-width: 100%;
+    height: 100vh;
+}
+
+body.fullscreen-mode .sidebar {
+    width: 80px !important;
+}
+
+body.fullscreen-mode .sidebar .nav-item span {
+    display: flex;
+}
+
+body.fullscreen-mode .content-area {
+    max-width: none;
+}
+
+/* Larger cards in fullscreen */
+body.fullscreen-mode .dashboard-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: var(--space-6);
+}
+
+body.fullscreen-mode .widget {
+    min-height: 150px;
+}
+
+/* === Touch Optimization === */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .btn,
+    .nav-item,
+    .card {
+        min-height: 44px;
+    }
+
+    /* Remove hover effects */
+    .btn:hover,
+    .card:hover {
+        transform: none !important;
+    }
+
+    /* Add tap feedback */
+    .btn:active {
+        opacity: 0.7;
+    }
+}
+
+/* === Mobile Navigation === */
+.mobile-nav {
+    display: none;
+}
+
+@media (max-width: 499px) {
+    .mobile-nav {
+        display: flex !important;
+    }
+}
+
+.mobile-nav-item {
+    background: none;
+    border: none;
+    font-size: 24px;
+    padding: var(--space-3);
+    cursor: pointer;
+    border-radius: var(--border-radius-md);
+    transition: background var(--transition-fast);
+}
+
+.mobile-nav-item.active {
+    background: var(--color-bg-tertiary);
+}
