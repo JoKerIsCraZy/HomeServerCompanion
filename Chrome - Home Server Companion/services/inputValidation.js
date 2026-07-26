@@ -37,17 +37,14 @@ export function validateSearchQuery(query) {
         return { valid: false, error: `Query exceeds maximum length of ${MAX_QUERY_LENGTH} characters` };
     }
 
-    // Check for potentially dangerous patterns
+    // Check for potentially dangerous patterns.
+    // HTML tags are deliberately NOT matched here: `<` and `>` are absent from
+    // ALLOWED_CHARS_PATTERN below, so any markup is already rejected by the
+    // allowlist. Regex-based tag blocklists are unreliable (`</script >`,
+    // nested tags, encodings) and only add a false sense of coverage.
     const dangerousPatterns = [
-        /<script[^>]*>.*?<\/script>/gi,      // Script tags
         /javascript:/gi,                       // JavaScript protocol
         /on\w+\s*=/gi,                         // Event handlers (onclick=, etc.)
-        /<iframe[^>]*>/gi,                     // Iframe tags
-        /<embed[^>]*>/gi,                      // Embed tags
-        /<object[^>]*>/gi,                     // Object tags
-        /<link[^>]*>/gi,                       // Link tags
-        /<meta[^>]*>/gi,                       // Meta tags
-        /<style[^>]*>.*?<\/style>/gi,          // Style tags
         /@import/gi,                           // CSS imports
         /expression\s*\(/gi,                   // CSS expressions
     ];
@@ -58,7 +55,8 @@ export function validateSearchQuery(query) {
         }
     }
 
-    // Check character whitelist (more restrictive check)
+    // Character allowlist - the primary defence. Anything outside this set,
+    // including all markup characters, is rejected.
     if (!ALLOWED_CHARS_PATTERN.test(query)) {
         return { valid: false, error: 'Query contains invalid characters' };
     }
@@ -66,50 +64,3 @@ export function validateSearchQuery(query) {
     return { valid: true, error: null };
 }
 
-/**
- * Sanitizes a query by removing or escaping potentially dangerous content
- * This is a defensive measure - validation should still be performed first
- * @param {string} query - The query to sanitize
- * @returns {string} Sanitized query
- */
-export function sanitizeQuery(query) {
-    if (!query || typeof query !== 'string') {
-        return '';
-    }
-
-    let sanitized = query;
-
-    // Remove script tags and their content
-    sanitized = sanitized.replace(/<script[^>]*>.*?<\/script>/gi, '');
-
-    // Remove other potentially dangerous HTML tags
-    sanitized = sanitized.replace(/<(iframe|embed|object|link|meta|style)[^>]*>/gi, '');
-
-    // Remove JavaScript protocol
-    sanitized = sanitized.replace(/javascript:/gi, '');
-
-    // Remove event handler patterns
-    sanitized = sanitized.replace(/on\w+\s*=/gi, '');
-
-    // Remove CSS expressions
-    sanitized = sanitized.replace(/expression\s*\(/gi, '');
-
-    // Remove CSS imports
-    sanitized = sanitized.replace(/@import/gi, '');
-
-    return sanitized.trim();
-}
-
-/**
- * Validates and sanitizes a search query in one step
- * @param {string} query - The query to validate and sanitize
- * @returns {{ valid: boolean, error: string|null, sanitized: string }} Result object
- */
-export function cleanQuery(query) {
-    const validation = validateSearchQuery(query);
-    if (!validation.valid) {
-        return { valid: false, error: validation.error, sanitized: '' };
-    }
-
-    return { valid: true, error: null, sanitized: sanitizeQuery(query) };
-}

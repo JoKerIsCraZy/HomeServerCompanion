@@ -7,6 +7,14 @@
 import eventBus from './EventBus.js';
 import { runMigrations } from './migrations.js';
 
+/**
+ * Keys that would let a caller reach Object.prototype through a dot-path.
+ * @param {string} key
+ * @returns {boolean}
+ */
+const isUnsafeKey = (key) =>
+    key === '__proto__' || key === 'constructor' || key === 'prototype';
+
 class AppState {
     constructor() {
         // Core state
@@ -96,11 +104,17 @@ class AppState {
      */
     set(path, value, persist = false) {
         const keys = path.split('.');
+
+        if (keys.some(isUnsafeKey)) {
+            console.error(`AppState.set: refusing unsafe path "${path}"`);
+            return;
+        }
+
         let target = this.state;
 
         // Navigate to parent
         for (let i = 0; i < keys.length - 1; i++) {
-            if (!(keys[i] in target)) {
+            if (!Object.prototype.hasOwnProperty.call(target, keys[i])) {
                 target[keys[i]] = {};
             }
             target = target[keys[i]];
@@ -130,11 +144,19 @@ class AppState {
      */
     merge(updates, persist = false) {
         for (const [key, value] of Object.entries(updates)) {
+            if (isUnsafeKey(key)) {
+                console.error(`AppState.merge: refusing unsafe key "${key}"`);
+                continue;
+            }
+
+            // Capture before assigning - otherwise subscribers always see the
+            // new value as oldValue and can never detect a real change.
+            const oldValue = this.state[key];
             this.state[key] = value;
             eventBus.emit('state:changed', {
                 path: key,
                 value,
-                oldValue: this.state[key]
+                oldValue
             });
         }
 
