@@ -706,6 +706,26 @@ async function testSeerrAuth() {
 
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const fullUrl = protocol + cleanUrl;
+
+    // The password and the Plex account token are reusable off this machine,
+    // so they are not put on the wire in the clear without the user knowingly
+    // accepting it. Loopback never reaches the network. Mirrors the guard in
+    // saveSeerrAuth() in js/options.js.
+    const isLoopback = /^(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost|\[::1\])(:\d+)?$/i.test(cleanUrl);
+    const isPlaintextTransport = protocol === 'http://' && !isLoopback;
+    if (isPlaintextTransport && (seerrAuthMethod === 'local' || seerrAuthMethod === 'plex')) {
+        const what = seerrAuthMethod === 'local' ? 'password' : 'Plex account token';
+        const ok = confirm(
+            `Your ${what} would be sent unencrypted over http:// to:\n\n${cleanUrl}\n\n` +
+            `Anyone on the same network can read it. Use https:// instead if your ` +
+            `server supports it.\n\nSend it anyway?`
+        );
+        if (!ok) {
+            statusEl.innerHTML = '<span style="color: #fc8181;">Cancelled — use https://</span>';
+            return;
+        }
+    }
+
     statusEl.innerHTML = '<span style="color: var(--accent-primary);">Testing...</span>';
 
     try {
@@ -1143,8 +1163,11 @@ async function completeSetup() {
             dataToSave['seerrAuthMethod'] = config.authMethod;
             
             if (config.authMethod === 'local') {
+                // Email only. The password signs in once and is not persisted;
+                // Seerr requests authenticate with the session cookie. Storing
+                // it would put a reusable secret into synced storage for
+                // nothing. Mirrors saveSeerrAuth() in js/options.js.
                 if (config.email) dataToSave['seerrEmail'] = config.email;
-                if (config.password) dataToSave['seerrPassword'] = config.password;
             } else if (config.authMethod === 'plex' && config.plexToken) {
                 dataToSave['seerrPlexToken'] = config.plexToken;
             }

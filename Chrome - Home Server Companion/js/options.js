@@ -8,6 +8,7 @@ const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautull
  * - Moves `overseerr*` keys to `seerr*` (copy, then drop legacy keys).
  * - Renames `overseerr` -> `seerr` in `serviceOrder`.
  * - Inserts `tracearr` into `serviceOrder` after `tautulli` if missing.
+ * - Drops the stored Seerr account password.
  */
 function runStorageMigrations(items) {
     let changed = false;
@@ -47,6 +48,15 @@ function runStorageMigrations(items) {
             }
             changed = true;
         }
+    }
+
+    // ---- v4.1: drop the stored Seerr account password ----
+    // Cleartext in chrome.storage.sync, replicated off-device, and never
+    // replayed — Seerr requests authenticate with the session cookie.
+    if ('seerrPassword' in items) {
+        delete items.seerrPassword;
+        removedKeys.push('seerrPassword');
+        changed = true;
     }
 
     return { changed, removedKeys };
@@ -1511,10 +1521,26 @@ async function startPlexOAuth() {
     }
 }
 
+/**
+ * Asks the user to confirm sending a reusable credential over plaintext HTTP.
+ * Anyone on the path — another device on the Wi-Fi, a rogue access point —
+ * can read it off the wire.
+ * @param {string} host - Host the credential would be sent to
+ * @param {string} what - Human-readable name of the credential
+ * @returns {boolean} True if the user accepted
+ */
+function confirmPlaintextCredentials(host, what) {
+    return confirm(
+        `Your ${what} would be sent unencrypted over http:// to:\n\n${host}\n\n` +
+        `Anyone on the same network can read it. Use https:// instead if your ` +
+        `server supports it.\n\nSend it anyway?`
+    );
+}
+
 // Save Seerr with multi-auth support
 async function saveSeerrAuth() {
     const authMethod = document.getElementById('seerrAuthMethod')?.value || 'apikey';
-    const protocol = document.getElementById('seerrProtocol')?.value || 'http://';
+    const protocol = document.getElementById('seerrProtocol')?.value || 'https://';
     const urlInput = document.getElementById('seerrUrl')?.value.trim() || '';
     const enabled = document.getElementById('seerrEnabled')?.checked ?? true;
 
@@ -1525,6 +1551,13 @@ async function saveSeerrAuth() {
 
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const fullUrl = protocol + cleanUrl;
+
+    // An account password and a Plex account token are the only credentials
+    // here that are reusable off this machine, so they are not sent over a
+    // plaintext channel without the user knowingly accepting it. Loopback is
+    // exempt — that traffic never reaches the network.
+    const isLoopback = /^(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost|\[::1\])(:\d+)?$/i.test(cleanUrl);
+    const isPlaintextTransport = protocol === 'http://' && !isLoopback;
 
     const data = {
         seerrEnabled: enabled,
@@ -1550,6 +1583,11 @@ async function saveSeerrAuth() {
             return;
         }
 
+        if (isPlaintextTransport && !confirmPlaintextCredentials(cleanUrl, 'password')) {
+            showStatus('Seerr', 'Cancelled — use https:// so your password is not sent in the clear.', 'error');
+            return;
+        }
+
         // Test local login
         showStatus('Seerr', 'Logging in...', 'success');
         try {
@@ -1565,9 +1603,11 @@ async function saveSeerrAuth() {
                 throw new Error(err.message || `Login failed: ${res.status}`);
             }
 
-            // Store credentials for re-login
+            // Only the email is kept. Authentication runs on the session
+            // cookie the call above set (`credentials: 'include'`); the
+            // password is never replayed, so persisting it would put a
+            // reusable, non-revocable secret into synced storage for nothing.
             data.seerrEmail = email;
-            data.seerrPassword = password;
 
         } catch (e) {
             showStatus('Seerr', `Login failed: ${e.message}`, 'error');
@@ -1579,6 +1619,11 @@ async function saveSeerrAuth() {
         const stored = await new Promise(r => chrome.storage.sync.get(['seerrPlexToken'], r));
         if (!stored.seerrPlexToken) {
             showStatus('Seerr', 'Please sign in with Plex first!', 'error');
+            return;
+        }
+
+        if (isPlaintextTransport && !confirmPlaintextCredentials(cleanUrl, 'Plex account token')) {
+            showStatus('Seerr', 'Cancelled — use https:// so your Plex token is not sent in the clear.', 'error');
             return;
         }
 
@@ -1679,12 +1724,10 @@ function loadSeerrAuth(items) {
     localPanel.style.display = method === 'local' ? 'block' : 'none';
     plexPanel.style.display = method === 'plex' ? 'block' : 'none';
 
-    // Load local auth fields
+    // Load local auth fields. The password is deliberately not restored — it
+    // is not stored, and the session cookie carries the authentication.
     if (items.seerrEmail) {
         document.getElementById('seerrEmail').value = items.seerrEmail;
-    }
-    if (items.seerrPassword) {
-        document.getElementById('seerrPassword').value = items.seerrPassword;
     }
 
     // Update Plex status

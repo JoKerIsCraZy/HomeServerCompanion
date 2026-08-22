@@ -1,9 +1,41 @@
 ﻿import * as Prowlarr from "../../services/prowlarr.js";
-import { showNotification } from "../utils.js";
+import { showNotification, openUrlSafely } from "../utils.js";
 
 // --- PROWLARR UI LOGIC ---
 
+/**
+ * App configs captured on init, so link handlers can vet indexer-supplied URLs
+ * against the user's own configured hosts. Callers that have the state at hand
+ * (the unified search) pass it explicitly instead.
+ */
+let appConfigs = {};
+
+/**
+ * Turns an element into a gated link: no `href`, so the destination cannot be
+ * reached without passing through `openUrlSafely()`. Indexer responses are
+ * third-party data, and an extension popup shows no status bar, so the user
+ * would otherwise have no way to see where a click leads.
+ * @param {HTMLElement} el - Element to wire up
+ * @param {string} link - Candidate URL from the indexer
+ * @param {object} configs - App configs used to derive trusted hosts
+ * @param {string} label - Origin label shown in the confirmation prompt
+ */
+function wireGatedLink(el, link, configs, label) {
+    let host = link;
+    try { host = new URL(link).hostname; } catch { /* keep raw string */ }
+    el.removeAttribute('href');
+    el.removeAttribute('target');
+    el.style.cursor = 'pointer';
+    el.title = `Open ${host}`;
+    el.addEventListener('click', (e) => {
+        e.preventDefault();
+        openUrlSafely(link, configs || {}, label);
+    });
+}
+
 export async function initProwlarr(url, apiKey, state) {
+
+    appConfigs = state?.configs || {};
 
 
     const indexersContainer = document.getElementById("prowlarr-indexers");
@@ -170,10 +202,9 @@ const renderIndexers = (indexers, statuses = []) => {
                 const urlObj = new URL(rawUrl);
                 domain = urlObj.hostname;
                 
-                // Set Link
-                nameEl.href = rawUrl;
+                // Set Link — gated: baseUrl comes from the indexer definition.
+                wireGatedLink(nameEl, rawUrl, appConfigs, 'Prowlarr indexer');
                 nameEl.title = `Go to ${domain}`;
-                nameEl.style.cursor = "pointer";
                 nameEl.onmouseover = () => { nameEl.style.textDecoration = "underline"; };
                 nameEl.onmouseout = () => { nameEl.style.textDecoration = "none"; };
             } else {
@@ -898,7 +929,7 @@ async function executeSearch(url, apiKey, saveCallback) {
     }
 }
 
-export function renderSearchResults(results, customContainer = null) {
+export function renderSearchResults(results, customContainer = null, configs = appConfigs) {
     const container = customContainer || document.getElementById("prowlarr-search-results");
     if (!container) return;
     
@@ -928,10 +959,10 @@ export function renderSearchResults(results, customContainer = null) {
             const link = res.infoUrl || res.guid;
             
             const a = document.createElement('a');
-            a.href = link;
-            a.target = '_blank';
             a.style.cssText = 'color: inherit; text-decoration: none; transition: color 0.2s;';
             a.textContent = res.title; // Safe: textContent escapes HTML
+            // infoUrl/guid come from the indexer — gate the navigation.
+            wireGatedLink(a, link, configs, 'Prowlarr result');
             
             a.onmouseover = () => a.style.color = "var(--accent-prowlarr)";
             a.onmouseout = () => a.style.color = "inherit";
@@ -1052,7 +1083,10 @@ export function renderSearchResults(results, customContainer = null) {
         }
         
         if (res.downloadUrl) {
-            dlBtn.href = res.downloadUrl;
+            // downloadUrl is indexer-supplied — gate it like the title link so
+            // the button cannot fetch from an attacker-chosen host silently.
+            wireGatedLink(dlBtn, res.downloadUrl, configs, 'Prowlarr download');
+            dlBtn.title = 'Download';
         } else {
             dlBtn.style.display = "none";
         }

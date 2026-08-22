@@ -810,7 +810,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (service === "seerr") {
         const hasApiKey = state.configs.seerrKey;
         const hasPlexAuth = state.configs.seerrAuthMethod === 'plex' && state.configs.seerrPlexToken;
-        const hasLocalAuth = state.configs.seerrAuthMethod === 'local' && state.configs.seerrEmail && state.configs.seerrPassword;
+        // Email alone marks local auth as configured — the password is not
+        // stored, the session cookie carries the authentication. Matches the
+        // same check in js/ui/dashboard.js.
+        const hasLocalAuth = state.configs.seerrAuthMethod === 'local' && state.configs.seerrEmail;
         if (!url || (!hasApiKey && !hasPlexAuth && !hasLocalAuth)) {
           showError(`Please configure Seerr in settings.`);
           return;

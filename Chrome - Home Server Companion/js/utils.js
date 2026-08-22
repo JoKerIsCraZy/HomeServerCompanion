@@ -5,15 +5,22 @@
 /**
  * Escapes HTML special characters to prevent XSS attacks.
  * Use this when inserting untrusted data into HTML context via innerHTML.
+ *
+ * Quotes are escaped too: callers interpolate into attribute values
+ * (`title="${escapeHtml(x)}"`), and the previous textContent round-trip left
+ * `"` and `'` intact, which let a value break out of its attribute.
+ *
  * @param {string} str - The string to escape
- * @returns {string} - The escaped string safe for HTML insertion
+ * @returns {string} - The escaped string safe for HTML text and attribute context
  */
 export function escapeHtml(str) {
     if (str === null || str === undefined) return '';
-    const text = String(str);
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**
@@ -45,19 +52,36 @@ export function validateUrl(urlString) {
  */
 export function isLocalHost(hostname) {
     if (!hostname) return false;
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true;
-    // RFC1918 private IPv4 ranges
-    if (/^10\./.test(hostname)) return true;
-    if (/^192\.168\./.test(hostname)) return true;
-    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)) return true;
-    // IPv4 link-local
-    if (/^169\.254\./.test(hostname)) return true;
-    // IPv6 unique-local / link-local
-    if (/^(fc|fd)[0-9a-f]{2}:/i.test(hostname)) return true;
-    if (/^fe80:/i.test(hostname)) return true;
-    // Common local TLDs used on home networks
-    if (/\.(local|home|lan|internal|intranet)$/i.test(hostname)) return true;
-    return false;
+    // URL.hostname wraps IPv6 literals in brackets — strip them before matching.
+    const host = String(hostname).toLowerCase().replace(/^\[/, '').replace(/\]$/, '');
+    if (host === 'localhost' || host === '::1') return true;
+
+    // Private IPv4 ranges. The host must be a well-formed IPv4 literal before
+    // any numeric range applies: matching `10.`/`192.168.` as a string prefix
+    // would classify registrable names like `192.168.evil.com` as private and
+    // open them without the confirmation prompt.
+    const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+    if (v4) {
+        const octets = v4.slice(1).map(Number);
+        if (octets.some(o => o > 255)) return false;
+        const [a, b] = octets;
+        if (a === 127) return true;                        // loopback
+        if (a === 10) return true;                         // RFC1918
+        if (a === 192 && b === 168) return true;           // RFC1918
+        if (a === 172 && b >= 16 && b <= 31) return true;  // RFC1918
+        if (a === 169 && b === 254) return true;           // link-local
+        return false;
+    }
+
+    // IPv6 unique-local / link-local — only for actual IPv6 literals.
+    if (host.includes(':')) {
+        return /^(fc|fd)[0-9a-f]{2}:/.test(host) || /^fe80:/.test(host);
+    }
+
+    // Home-network suffixes. None of these TLDs are publicly registrable, but
+    // the name is still held to a single label before the suffix so it cannot
+    // be a subdomain of something else.
+    return /^[a-z0-9-]+\.(local|home|lan|internal|intranet)$/.test(host);
 }
 
 /**

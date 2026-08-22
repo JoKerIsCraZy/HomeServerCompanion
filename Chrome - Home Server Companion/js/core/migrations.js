@@ -70,6 +70,17 @@ export function runMigrations(items) {
         }
     }
 
+    // ---- v4.1: drop the stored Seerr account password ----
+    // The password was persisted in cleartext to chrome.storage.sync, which
+    // replicates to the user's Google account and to every signed-in profile.
+    // It is never replayed — Seerr requests authenticate with the session
+    // cookie — so it is removed outright rather than migrated anywhere.
+    if ('seerrPassword' in items) {
+        delete items.seerrPassword;
+        removedKeys.push('seerrPassword');
+        changed = true;
+    }
+
     return { changed, removedKeys };
 }
 
