@@ -1,6 +1,9 @@
 import * as Sabnzbd from "../../services/sabnzbd.js";
 import { showNotification, showConfirmModal } from "../utils.js";
 
+/** How often the history list is refetched, in ms. The queue polls every 1s. */
+const HISTORY_POLL_MS = 5000;
+
 // Helper to update glider position
 function updateSabGlider(container, activeBtn, glider) {
     if (!activeBtn || !glider) return;
@@ -13,6 +16,94 @@ function updateSabGlider(container, activeBtn, glider) {
     
     glider.style.width = `${width}px`;
     glider.style.transform = `translateX(${left}px)`;
+}
+
+/**
+ * Formats a transfer rate given in KB/s, switching unit so the number stays
+ * short enough to read at display size.
+ * @param {number} kbPerSec
+ * @returns {string}
+ */
+function formatSabSpeed(kbPerSec) {
+    if (kbPerSec >= 1024) return `${(kbPerSec / 1024).toFixed(1)} MB/s`;
+    return `${Math.round(kbPerSec)} KB/s`;
+}
+
+/**
+ * Renders the SABnzbd header: the transfer rate is the primary figure, with
+ * time and volume as a supporting line. Idle and paused states replace the
+ * figure entirely rather than showing zeroes.
+ * @param {Object} queue - Raw queue object from the SABnzbd API
+ * @param {number} kbPerSec - Current speed in KB/s
+ */
+function renderSabHeader(queue, kbPerSec) {
+    const heroEl = document.getElementById("sab-hero");
+    const subEl = document.getElementById("sab-subline");
+    if (!heroEl || !subEl) return;
+
+    const slots = parseInt(queue.noofslots, 10) || 0;
+    const sizeLeft = (queue.sizeleft || "").trim();
+    const sizeTotal = (queue.size || "").trim();
+    const fileCount = slots > 1 ? ` · ${slots} files` : "";
+
+    heroEl.classList.remove("is-idle", "is-paused");
+
+    if (queue.paused) {
+        heroEl.classList.add("is-paused");
+        heroEl.textContent = "Paused";
+        const resumesIn = queue.pause_int && queue.pause_int !== "0"
+            ? `Resumes in ${queue.pause_int}`
+            : "Paused indefinitely";
+        subEl.textContent = slots > 0
+            ? `${resumesIn} · ${sizeLeft || "0 B"} remaining${fileCount}`
+            : resumesIn;
+        return;
+    }
+
+    if (kbPerSec > 0) {
+        heroEl.textContent = formatSabSpeed(kbPerSec);
+        const parts = [];
+        if (queue.timeleft && queue.timeleft !== "0:00:00") {
+            parts.push(`${queue.timeleft} left`);
+        }
+        if (sizeLeft && sizeTotal) {
+            parts.push(`${sizeLeft} of ${sizeTotal}`);
+        } else if (sizeLeft) {
+            parts.push(`${sizeLeft} remaining`);
+        }
+        if (slots > 1) parts.push(`${slots} files`);
+        subEl.textContent = parts.join(" · ") || "Downloading";
+        return;
+    }
+
+    heroEl.classList.add("is-idle");
+    heroEl.textContent = "Idle";
+    subEl.textContent = slots > 0
+        ? `${slots} queued · ${sizeLeft || sizeTotal || "0 B"} remaining`
+        : "Queue empty";
+}
+
+/**
+ * Builds the right-hand meta text for a queue row. The status word is only
+ * included when it says something the progress bar cannot - "Downloading" is
+ * already implied by a bar that is moving.
+ * @param {Object} item - Queue slot from the SABnzbd API
+ * @param {number} percent - Completion percentage
+ * @returns {string}
+ */
+function sabItemMeta(item, percent) {
+    const parts = [`${percent}%`];
+
+    const status = (item.status || "").trim();
+    if (status && status.toLowerCase() !== "downloading") {
+        parts.push(status);
+    }
+
+    if (item.timeleft && item.timeleft !== "0:00:00") {
+        parts.push(item.timeleft);
+    }
+
+    return parts.join(" · ");
 }
 
 // Render Queue Cards (Smart Update)
@@ -75,16 +166,11 @@ function renderSabnzbdQueue(queue, state, url, key) {
             titleEl.title = item.filename;
         }
 
-        // Status
-        div.querySelector('.sab-item-status').textContent = item.status;
-
         // Progress Fill
         div.querySelector('.sab-progress-fill').style.width = `${percent}%`;
 
-        // Details
-        const detailsSpans = div.querySelectorAll('.sab-item-details span');
-        if(detailsSpans[0]) detailsSpans[0].textContent = `${percent}%`;
-        if(detailsSpans[1]) detailsSpans[1].textContent = `${item.timeleft} left`;
+        // Meta (percentage, time, and any status other than plain downloading)
+        div.querySelector('.sab-item-meta').textContent = sabItemMeta(item, percent);
 
     } else {
         // CREATE New
@@ -103,42 +189,34 @@ function renderSabnzbdQueue(queue, state, url, key) {
         
         const statusDiv = document.createElement('div');
         statusDiv.style.cssText = 'display:flex; align-items:center; gap:8px;';
-        
-        const statusText = document.createElement('div');
-        statusText.className = 'sab-item-status';
-        statusText.textContent = item.status;
-        
+
+        const metaText = document.createElement('div');
+        metaText.className = 'sab-item-meta';
+        metaText.textContent = sabItemMeta(item, percent);
+
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
         delBtn.title = 'Remove from Queue';
         delBtn.style.cssText = 'background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:16px; visibility:hidden; padding:0; line-height:1; min-width: 14px;'; // Added min-width to ensure clickability
         delBtn.textContent = '\u00D7'; // Multiplication sign (x)
-        
-        statusDiv.appendChild(statusText);
+
+        statusDiv.appendChild(metaText);
         statusDiv.appendChild(delBtn);
         header.appendChild(titleDiv);
         header.appendChild(statusDiv);
-        
+
+        // Progress sits flush against the bottom edge of the row - the moving
+        // bar is the status indicator, so no separate status pill is needed.
         const track = document.createElement('div');
         track.className = 'sab-progress-track';
         const fill = document.createElement('div');
         fill.className = 'sab-progress-fill';
         fill.style.width = `${percent}%`;
         track.appendChild(fill);
-        
-        const details = document.createElement('div');
-        details.className = 'sab-item-details';
-        const pSpan = document.createElement('span');
-        pSpan.textContent = `${percent}%`;
-        const tSpan = document.createElement('span');
-        tSpan.textContent = `${item.timeleft} left`;
-        details.appendChild(pSpan);
-        details.appendChild(tSpan);
-        
+
         div.appendChild(header);
         div.appendChild(track);
-        div.appendChild(details);
-        
+
         // Hover effect to show delete button
         div.onmouseenter = () => { div.querySelector('.delete-btn').style.visibility = 'visible'; };
         div.onmouseleave = () => { div.querySelector('.delete-btn').style.visibility = 'hidden'; };
@@ -374,19 +452,23 @@ export async function initSabnzbd(url, key, state) {
     // Init Tabs
     initSabTabs();
 
+    // A single tick issues two serialised requests, so it can easily outlive its
+    // 1s slot. Without this guard, overlapping runs resolve out of order and an
+    // older response repaints the header with stale values - the status stops
+    // looking live even though polling is running.
+    let updateInFlight = false;
+    let lastHistoryData = null;
+    let lastHistoryFetch = 0;
+
     const update = async () => {
+        if (updateInFlight) return;
+        updateInFlight = true;
         try {
             const queue = await Sabnzbd.getSabnzbdQueue(url, key);
             if (!queue) return;
 
-            // Updated Stats for new Header
             const kb = parseFloat(queue.kbpersec) || 0;
-            const mb = (kb / 1024).toFixed(1);
-            const speedEl = document.getElementById("sab-speed");
-            if (speedEl) speedEl.textContent = `${mb} MB/s`;
-
-            const timeEl = document.getElementById("sab-timeleft");
-            if (timeEl) timeEl.textContent = queue.timeleft || "00:00:00";
+            renderSabHeader(queue, kb);
 
             // Update Speed Limit Dropdown
             // Sync Speed Limit Slider/Input
@@ -413,27 +495,6 @@ export async function initSabnzbd(url, key, state) {
                         speedSlider.value = val;
                         speedInput.value = val;
                     }
-                }
-            }
-
-            // Status Bubble Logic
-            const statusBubble = document.getElementById("sab-status-bubble");
-            if (statusBubble) {
-                statusBubble.className = "status-bubble"; // Reset
-                if (queue.paused) {
-                    statusBubble.classList.add("bubble-paused");
-                    // pause_int might be "0" or "0:14:59"
-                    if (queue.pause_int && queue.pause_int !== "0") {
-                        statusBubble.textContent = `Paused (${queue.pause_int})`;
-                    } else {
-                         statusBubble.textContent = "Paused";
-                    }
-                } else if (kb > 0) {
-                     statusBubble.classList.add("bubble-active");
-                     statusBubble.textContent = "Downloading";
-                } else {
-                     statusBubble.classList.add("bubble-idle");
-                     statusBubble.textContent = "Idle";
                 }
             }
 
@@ -484,10 +545,16 @@ export async function initSabnzbd(url, key, state) {
             updateSabnzbdBadge(url, key, queue);
 
             renderSabnzbdQueue(queue.slots || [], state, url, key);
-            
-            // Fetch History
-            const historyData = await Sabnzbd.getSabnzbdHistory(url, key);
-            renderSabnzbdHistory(historyData.slots || [], state, url, key);
+
+            // History changes rarely and doubles the request count on a 1s loop,
+            // which is what pushed a tick past its slot. Poll it every 5s and
+            // keep rendering the last response in between.
+            if (Date.now() - lastHistoryFetch >= HISTORY_POLL_MS) {
+                lastHistoryFetch = Date.now();
+                lastHistoryData = await Sabnzbd.getSabnzbdHistory(url, key);
+                renderSabnzbdHistory(lastHistoryData.slots || [], state, url, key);
+            }
+            const historyData = lastHistoryData;
 
             // --- Tab Badges ---
             const view = document.getElementById("sabnzbd-view");
@@ -515,7 +582,7 @@ export async function initSabnzbd(url, key, state) {
                 }
 
                 // History Badge
-                const histBtn = view.querySelector('.tab-btn[data-tab="history"]');
+                const histBtn = historyData ? view.querySelector('.tab-btn[data-tab="history"]') : null;
                 if (histBtn) {
                      let hBadge = histBtn.querySelector('.tab-badge');
                      if (!hBadge) {
@@ -537,7 +604,11 @@ export async function initSabnzbd(url, key, state) {
                 }
             }
 
-        } catch(e) { console.error(e); }
+        } catch(e) {
+            console.error(e);
+        } finally {
+            updateInFlight = false;
+        }
     };
 
     // --- Bind Logic Listeners (Run Once) ---
@@ -618,8 +689,9 @@ export async function initSabnzbd(url, key, state) {
     }
 
     update();
-    if(state.refreshInterval) clearInterval(state.refreshInterval);
-    state.refreshInterval = setInterval(update, 1000);
+    state.serviceIntervals = state.serviceIntervals || {};
+    if (state.serviceIntervals.sabnzbd) clearInterval(state.serviceIntervals.sabnzbd);
+    state.serviceIntervals.sabnzbd = setInterval(update, 1000);
 }
 
 // Background Badge Update

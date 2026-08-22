@@ -2,10 +2,13 @@ import {
   getSystemData,
   getCachedSystemData,
   controlContainer,
+  updateContainer,
+  updateAllContainers,
+  controlParityCheck,
   getVms,
   controlVm
 } from "../../services/unraid.js";
-import { showNotification, validateUrl, openUrlSafely } from "../utils.js";
+import { showNotification, showConfirmModal, validateUrl, openUrlSafely } from "../utils.js";
 
 /**
  * Initializes the Unraid service view.
@@ -98,8 +101,9 @@ export async function initUnraid(url, key, state) {
     }
 
     await update();
-    if (state.refreshInterval) clearInterval(state.refreshInterval);
-    state.refreshInterval = setInterval(update, 5000);
+    state.serviceIntervals = state.serviceIntervals || {};
+    if (state.serviceIntervals.unraid) clearInterval(state.serviceIntervals.unraid);
+    state.serviceIntervals.unraid = setInterval(update, 5000);
 }
 
 // Utils
@@ -360,6 +364,64 @@ function renderUnraidSystem(data, url, key, state) {
         const parityDetail = mkDiv('stat-sub', '');
         parityDetail.id = 'dash-parity-detail';
         parityCard.appendChild(parityDetail);
+
+        // Controls. Handlers are bound here because url/key are in scope; the
+        // refresh pass below only toggles labels and visibility.
+        const parityActions = mkDiv('parity-actions');
+
+        const mkParityBtn = (id, label) => {
+            const btn = document.createElement('button');
+            btn.id = id;
+            btn.className = 'parity-btn hidden';
+            btn.textContent = label;
+            parityActions.appendChild(btn);
+            return btn;
+        };
+
+        const actionBtn = mkParityBtn('parity-action-btn', 'Start');
+        const cancelBtn = mkParityBtn('parity-cancel-btn', 'Cancel');
+
+        const runParityAction = async (action, btn) => {
+            const previousLabel = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '…';
+            try {
+                await controlParityCheck(url, key, action);
+                showNotification(`Parity check ${action === 'cancel' ? 'cancelled' : action + 'ed'}`, 'success');
+            } catch (e) {
+                showNotification(`Parity ${action} failed: ${e.message}`, 'error');
+                btn.textContent = previousLabel;
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        actionBtn.onclick = async () => {
+            const action = actionBtn.dataset.action || 'start';
+            // Starting a check pins the disks for hours - always confirm it.
+            if (action === 'start') {
+                const ok = await showConfirmModal(
+                    'Start Parity Check',
+                    'This reads every disk in the array and can run for several hours. Start now?',
+                    'Start',
+                    '#2196f3'
+                );
+                if (!ok) return;
+            }
+            await runParityAction(action, actionBtn);
+        };
+
+        cancelBtn.onclick = async () => {
+            const ok = await showConfirmModal(
+                'Cancel Parity Check',
+                'Progress will be lost and the check starts from the beginning next time. Cancel it?',
+                'Cancel Check',
+                '#f44336'
+            );
+            if (ok) await runParityAction('cancel', cancelBtn);
+        };
+
+        parityCard.appendChild(parityActions);
         healthGrid.appendChild(parityCard);
 
         // SMART Status
@@ -610,14 +672,37 @@ function renderUnraidSystem(data, url, key, state) {
     const parityDetailEl = document.getElementById('dash-parity-detail');
     const parityCard = document.getElementById('dash-parity-card'); // Get card for border color
     
+    // Button state follows the parity status: one primary action plus Cancel,
+    // which only exists while a check is in flight.
+    const parityActionBtn = document.getElementById('parity-action-btn');
+    const parityCancelBtn = document.getElementById('parity-cancel-btn');
+    const setParityButtons = (action, label, showCancel) => {
+        if (parityActionBtn) {
+            parityActionBtn.dataset.action = action;
+            parityActionBtn.textContent = label;
+            parityActionBtn.classList.remove('hidden');
+        }
+        if (parityCancelBtn) {
+            parityCancelBtn.classList.toggle('hidden', !showCancel);
+        }
+    };
+
     if (parityStatusEl && data.array.parity) {
         const parity = data.array.parity;
-        if (parity.status === 'running' || parity.status === 'RUNNING') {
+        if (parity.status === 'paused') {
+            parityStatusEl.textContent = `Paused at ${Math.round(parity.percent || 0)}%`;
+            parityStatusEl.className = 'stat-value text-orange';
+            if (parityCard) parityCard.style.borderLeftColor = '#ff9800';
+            parityDetailEl.textContent = `Errors: ${parity.errors || 0}`;
+            setParityButtons('resume', 'Resume', true);
+        } else if (parity.status === 'running' || parity.status === 'RUNNING') {
             parityStatusEl.textContent = `Checking... ${Math.round(parity.percent || 0)}%`;
             parityStatusEl.className = 'stat-value text-blue';
             if(parityCard) parityCard.style.borderLeftColor = '#2196f3'; // Blue border
             parityDetailEl.textContent = `Errors: ${parity.errors || 0} | Speed: ${parity.speed || 'N/A'}`;
+            setParityButtons('pause', 'Pause', true);
         } else {
+            setParityButtons('start', 'Start', false);
             parityStatusEl.textContent = 'No check running';
             parityStatusEl.className = 'stat-value text-green';
             if(parityCard) parityCard.style.borderLeftColor = '#4caf50'; // Green border
@@ -671,208 +756,406 @@ function renderUnraidSystem(data, url, key, state) {
     renderUnraidDocker(data.dockers, url, key);
 }
 
+/**
+ * Severity for a filesystem, based on absolute free space first.
+ *
+ * Percentage alone is the wrong signal on Unraid: the array fills disks
+ * sequentially by design, so a healthy 18 TB disk sits at 95%+ for most of its
+ * life. Colouring that red trains the user to ignore the colour entirely.
+ * What actually matters is whether there is room left for the next write.
+ * @param {number} freeBytes
+ * @param {number} percent
+ * @returns {'ok'|'warn'|'crit'}
+ */
+function storageSeverity(freeBytes, percent) {
+    const GB = 1024 ** 3;
+    if (freeBytes < 25 * GB) return 'crit';
+    if (freeBytes < 150 * GB) return 'warn';
+    // A nearly-full device with lots of absolute room left is still worth a nudge.
+    if (percent >= 99) return 'warn';
+    return 'ok';
+}
+
+/**
+ * Temperature band. Returns an empty string below the warm threshold so a
+ * normal temperature stays visually silent instead of adding another colour.
+ * @param {number|string} temp
+ * @returns {string}
+ */
+function tempSeverity(temp) {
+    const t = parseFloat(temp);
+    if (isNaN(t)) return '';
+    if (t >= 50) return 'hot';
+    if (t >= 42) return 'warm';
+    return '';
+}
+
+/**
+ * Renders the Storage tab: an array summary, then one flat row per device,
+ * parity handled separately, then shares.
+ * @param {object} data - Normalized system data from getSystemData()
+ */
 function renderUnraidStorage(data) {
     const storageTab = document.getElementById("unraid-tab-storage");
-    if (!storageTab || storageTab.classList.contains('hidden')) return; 
+    if (!storageTab || storageTab.classList.contains('hidden')) return;
 
-    // Helper for clearing
-    const containerId = 'storage-list-container';
-    let container = document.getElementById(containerId);
-    
-    if(!container) {
-         storageTab.textContent = "";
-         const wrap = document.createElement('div');
-         wrap.className = "unraid-storage-wrapper";
-         wrap.id = containerId;
-         storageTab.appendChild(wrap);
-         container = wrap;
+    const parities = data.array.parities || [];
+    const disks = data.array.disks || [];
+    const caches = data.array.caches || [];
+    const boot = data.array.boot ? [data.array.boot] : [];
+    const shares = data.shares || [];
+
+    // Rebuild the skeleton only when the device set changes, so a 5s poll does
+    // not blow away scroll position or cause flicker.
+    const signature = [
+        parities.map(d => d.name).join(','),
+        disks.map(d => d.name).join(','),
+        caches.map(d => d.name).join(','),
+        boot.map(d => d.name).join(','),
+        shares.map(s => s.name).join(',')
+    ].join('|');
+
+    let wrap = document.getElementById('storage-list-container');
+    if (!wrap || wrap.dataset.signature !== signature) {
+        storageTab.replaceChildren();
+        wrap = document.createElement('div');
+        wrap.className = 'unraid-storage-wrapper';
+        wrap.id = 'storage-list-container';
+        wrap.dataset.signature = signature;
+        storageTab.appendChild(wrap);
+        buildStorageSkeleton(wrap, { parities, disks, caches, boot, shares });
     }
-    
-    // Sort groups
-    const diskGroups = [
-        { title: 'Array Devices', id: 'grp-array', type: 'array', disks: [...(data.array.parities || []), ...(data.array.disks || [])] },
-        { title: 'Pool Devices', id: 'grp-pool', type: 'pool', disks: data.array.caches },
-        { title: 'Boot Device', id: 'grp-boot', type: 'boot', disks: data.array.boot ? [data.array.boot] : [] }
-    ];
-    
-    diskGroups.forEach(group => {
-         if(!group.disks || group.disks.length === 0) {
-             const oldGrp = document.getElementById(`storage-${group.id}`);
-             if (oldGrp) oldGrp.style.display = 'none';
-             return;
-         }
-         
-         // 1. Check/Create Group Container
-         let groupContainer = document.getElementById(`storage-${group.id}`);
-         let grid;
-         
-         if (!groupContainer) {
-             groupContainer = document.createElement('div');
-             groupContainer.id = `storage-${group.id}`;
-             
-             // Group Header
-             const header = document.createElement('div');
-             header.className = 'storage-group-header';
-             const title = document.createElement('div');
-             title.className = 'storage-group-title';
-             title.textContent = group.title;
-             header.appendChild(title);
-             groupContainer.appendChild(header);
-             
-             // Grid
-             grid = document.createElement('div');
-             grid.className = 'unraid-storage-grid';
-             groupContainer.appendChild(grid);
-             
-             container.appendChild(groupContainer);
-         } else {
-             groupContainer.style.display = 'block';
-             grid = groupContainer.querySelector('.unraid-storage-grid');
-         }
 
-         // 2. Update/Create Disks
-         group.disks.forEach(disk => {
-             const diskId = `disk-${disk.name.replace(/[^a-zA-Z0-9]/g, '')}`; 
-             let card = document.getElementById(diskId);
-             
-             // Calculations
-             const used = disk.used || 0;
-             const total = disk.total || 0;
-             const free = disk.free !== undefined ? disk.free : (total - used);
-             const percent = total > 0 ? (used / total) * 100 : 0;
-             
-             // Status Logic
-             const isSpinning = disk.spinning; 
-             const temp = disk.temp; 
-             
-             // Color Logic
-             let barClass = '';
-             if (percent > 80) barClass = 'warn';
-             if (percent > 90) barClass = 'crit';
+    // ---- Array summary -------------------------------------------------
+    const total = data.array.total || 0;
+    const used = data.array.used || 0;
+    const free = data.array.free || Math.max(total - used, 0);
+    const percent = total > 0 ? (used / total) * 100 : 0;
 
-             // Temp Color logic
-             let tempClass = 'cool';
-             const tempNum = parseFloat(temp);
-             if (!isNaN(tempNum)) {
-                 if (tempNum >= 40) tempClass = 'warm';
-                 if (tempNum >= 50) tempClass = 'hot';
-             }
-             
-             // Icon Selection
-             let iconChar = '💾'; 
-             if (group.type === 'boot') iconChar = '🔌'; 
-             if (group.type === 'pool') iconChar = '⚡'; 
+    const freeEl = document.getElementById('storage-summary-free');
+    const subEl = document.getElementById('storage-summary-sub');
+    const fillEl = document.getElementById('storage-summary-fill');
+    if (freeEl && subEl && fillEl) {
+        freeEl.textContent = formatBytes(free, 1);
+        subEl.textContent = `free of ${formatBytes(total, 1)} · ${Math.round(percent)}% used`;
+        fillEl.style.width = `${Math.min(percent, 100)}%`;
+        fillEl.className = `storage-bar-fill sev-${storageSeverity(free, percent)}`;
+    }
 
-             if (!card) {
-                 card = document.createElement('div');
-                 card.className = 'storage-card';
-                 card.id = diskId;
-                 
-                 // Build card structure with DOM API
-                 const diskHeader = document.createElement('div');
-                 diskHeader.className = 'disk-header';
-                 
-                 const diskInfo = document.createElement('div');
-                 diskInfo.className = 'disk-info';
-                 
-                 const diskIcon = document.createElement('span');
-                 diskIcon.className = `disk-icon ${isSpinning ? 'spinning-icon' : 'sleeping-icon'}`;
-                 diskIcon.textContent = iconChar;
-                 
-                 const diskNameEl = document.createElement('span');
-                 diskNameEl.className = 'disk-name';
-                 diskNameEl.textContent = disk.name; // Safe: escapes HTML
-                 
-                 const diskTempEl = document.createElement('span');
-                 diskTempEl.className = `disk-temp ${tempClass}`;
-                 diskTempEl.style.display = 'none';
-                 diskTempEl.textContent = '0°C';
-                 
-                 diskInfo.appendChild(diskIcon);
-                 diskInfo.appendChild(diskNameEl);
-                 diskInfo.appendChild(diskTempEl);
-                 diskHeader.appendChild(diskInfo);
-                 
-                 const usageSection = document.createElement('div');
-                 usageSection.className = 'disk-usage-section';
-                 
-                 const pctEl = document.createElement('div');
-                 pctEl.className = 'disk-pct';
-                 pctEl.textContent = '0%';
-                 
-                 const barBg = document.createElement('div');
-                 barBg.className = 'disk-bar-bg';
-                 const barFill = document.createElement('div');
-                 barFill.className = 'disk-bar-fill';
-                 barFill.style.width = '0%';
-                 barBg.appendChild(barFill);
-                 
-                 const statsDiv = document.createElement('div');
-                 statsDiv.className = 'disk-stats';
-                 const usedSpan = document.createElement('span');
-                 usedSpan.className = 'disk-used';
-                 usedSpan.textContent = '0 B / 0 B';
-                 const freeSpan = document.createElement('span');
-                 freeSpan.className = 'disk-free';
-                 freeSpan.textContent = '0 B Free';
-                 statsDiv.appendChild(usedSpan);
-                 statsDiv.appendChild(freeSpan);
-                 
-                 usageSection.appendChild(pctEl);
-                 usageSection.appendChild(barBg);
-                 usageSection.appendChild(statsDiv);
-                 
-                 card.appendChild(diskHeader);
-                 card.appendChild(usageSection);
-                 
-                 grid.appendChild(card);
-             }
+    // ---- Devices -------------------------------------------------------
+    [...disks, ...caches, ...boot].forEach(updateStorageRow);
+    parities.forEach(updateParityRow);
+    shares.forEach(updateShareRow);
+}
 
-             // UPDATE EXISTING (Smart Update)
-             // Icon
-             const iconEl = card.querySelector('.disk-icon');
-             if (iconEl) {
-                 iconEl.className = `disk-icon ${isSpinning ? 'spinning-icon' : 'sleeping-icon'}`;
-                 iconEl.textContent = iconChar;
-             }
-             
-             // Temp update - forcing display if valid
-             const tempEl = card.querySelector('.disk-temp');
-             if (tempEl) {
-                 if (temp !== undefined && temp !== null && temp !== "") {
-                     tempEl.textContent = `${temp}°C`;
-                     tempEl.className = `disk-temp ${tempClass}`;
-                     tempEl.style.display = 'inline-block';
-                 } else {
-                     tempEl.style.display = 'none';
-                 }
-             }
-             
-             // Pct
-             const pctEl = card.querySelector('.disk-pct');
-             if (pctEl) pctEl.textContent = `${Math.round(percent)}%`;
-             
-             // Bar
-             const barEl = card.querySelector('.disk-bar-fill');
-             if (barEl) {
-                 barEl.className = `disk-bar-fill ${barClass}`;
-                 barEl.style.width = `${percent}%`;
-             }
-             
-             // Stats
-             const usedEl = card.querySelector('.disk-used');
-             if (usedEl) usedEl.textContent = `${formatBytes(used)} / ${formatBytes(total)}`;
-             
-             const freeEl = card.querySelector('.disk-free');
-             if (freeEl) freeEl.textContent = `${formatBytes(free)} Free`;
-         });
-    });
+/**
+ * Slug for a row id. Device and share names come from the server.
+ * @param {string} prefix
+ * @param {string} name
+ * @returns {string}
+ */
+const storageRowId = (prefix, name) =>
+    `${prefix}-${String(name).replace(/[^a-zA-Z0-9]/g, '')}`;
+
+/**
+ * Creates one device/share row. Values are filled in by the update pass.
+ * @param {string} id
+ * @param {string} name
+ * @param {boolean} withBar
+ * @returns {HTMLElement}
+ */
+function buildStorageRow(id, name, withBar = true) {
+    const row = document.createElement('div');
+    row.className = 'storage-row';
+    row.id = id;
+
+    const head = document.createElement('div');
+    head.className = 'storage-row-head';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'storage-row-name';
+    nameEl.textContent = name;
+    nameEl.title = name;
+
+    const metaEl = document.createElement('span');
+    metaEl.className = 'storage-row-meta';
+
+    head.appendChild(nameEl);
+    head.appendChild(metaEl);
+    row.appendChild(head);
+
+    if (withBar) {
+        const track = document.createElement('div');
+        track.className = 'storage-bar-track';
+        const fill = document.createElement('div');
+        fill.className = 'storage-bar-fill';
+        track.appendChild(fill);
+        row.appendChild(track);
+    }
+
+    return row;
+}
+
+/**
+ * Builds the static structure once per device-set change.
+ * @param {HTMLElement} wrap
+ * @param {{parities:Array,disks:Array,caches:Array,boot:Array,shares:Array}} groups
+ */
+function buildStorageSkeleton(wrap, groups) {
+    // Summary
+    const summary = document.createElement('div');
+    summary.className = 'storage-summary';
+
+    const free = document.createElement('div');
+    free.className = 'storage-summary-free';
+    free.id = 'storage-summary-free';
+    free.textContent = '--';
+
+    const sub = document.createElement('div');
+    sub.className = 'storage-summary-sub';
+    sub.id = 'storage-summary-sub';
+
+    const track = document.createElement('div');
+    track.className = 'storage-bar-track storage-summary-track';
+    const fill = document.createElement('div');
+    fill.className = 'storage-bar-fill';
+    fill.id = 'storage-summary-fill';
+    track.appendChild(fill);
+
+    summary.appendChild(free);
+    summary.appendChild(sub);
+    summary.appendChild(track);
+    wrap.appendChild(summary);
+
+    const section = (title) => {
+        const h = document.createElement('div');
+        h.className = 'storage-section-title';
+        h.textContent = title;
+        wrap.appendChild(h);
+    };
+
+    if (groups.disks.length) {
+        section('Array');
+        groups.disks.forEach(d => wrap.appendChild(buildStorageRow(storageRowId('sdisk', d.name), d.name)));
+    }
+
+    // Parity has no filesystem - a capacity bar for it would always read 0%.
+    if (groups.parities.length) {
+        section('Parity');
+        groups.parities.forEach(d => wrap.appendChild(buildStorageRow(storageRowId('sparity', d.name), d.name, false)));
+    }
+
+    if (groups.caches.length) {
+        section('Pools');
+        groups.caches.forEach(d => wrap.appendChild(buildStorageRow(storageRowId('scache', d.name), d.name)));
+    }
+
+    if (groups.boot.length) {
+        section('Boot');
+        groups.boot.forEach(d => wrap.appendChild(buildStorageRow(storageRowId('sboot', d.name), d.name)));
+    }
+
+    if (groups.shares.length) {
+        section('Shares');
+        groups.shares.forEach(s => wrap.appendChild(buildStorageRow(storageRowId('sshare', s.name), s.name)));
+    }
+}
+
+/**
+ * Updates a device row. Free space is the primary figure - it is what you need
+ * before starting a download; "used" requires mental subtraction.
+ * @param {object} disk
+ */
+function updateStorageRow(disk) {
+    const prefix = disk.type === 'cache' ? 'scache' : (disk.type === 'boot' ? 'sboot' : 'sdisk');
+    let row = document.getElementById(storageRowId(prefix, disk.name));
+    // Pool and boot devices reuse the same mapper, so fall back across prefixes.
+    if (!row) {
+        row = document.getElementById(storageRowId('sdisk', disk.name))
+            || document.getElementById(storageRowId('scache', disk.name))
+            || document.getElementById(storageRowId('sboot', disk.name));
+    }
+    if (!row) return;
+
+    const total = disk.total || 0;
+    const used = disk.used || 0;
+    const free = disk.free !== undefined ? disk.free : Math.max(total - used, 0);
+    const percent = total > 0 ? (used / total) * 100 : 0;
+    const severity = storageSeverity(free, percent);
+
+    const parts = [];
+    const tempBand = tempSeverity(disk.temp);
+    if (disk.temp !== undefined && disk.temp !== null && disk.temp !== '') {
+        parts.push(`${disk.temp}°C`);
+    }
+    parts.push(`${formatBytes(free, 1)} free`);
+
+    const meta = row.querySelector('.storage-row-meta');
+    meta.textContent = parts.join(' · ');
+    meta.className = `storage-row-meta${tempBand ? ' temp-' + tempBand : ''}`;
+    row.title = `${formatBytes(used, 1)} used of ${formatBytes(total, 1)} (${Math.round(percent)}%)`;
+
+    const fill = row.querySelector('.storage-bar-fill');
+    if (fill) {
+        fill.style.width = `${Math.min(percent, 100)}%`;
+        fill.className = `storage-bar-fill sev-${severity}`;
+    }
+
+    row.classList.toggle('is-idle', disk.spinning === false);
+}
+
+/**
+ * Updates a parity row. Parity carries no filesystem, so this reports health
+ * and temperature rather than capacity.
+ * @param {object} disk
+ */
+function updateParityRow(disk) {
+    const row = document.getElementById(storageRowId('sparity', disk.name));
+    if (!row) return;
+
+    const parts = [];
+    if (disk.temp !== undefined && disk.temp !== null && disk.temp !== '') {
+        parts.push(`${disk.temp}°C`);
+    }
+    parts.push(disk.status ? String(disk.status).replace(/_/g, ' ') : 'Unknown');
+    if (disk.spinning === false) parts.push('standby');
+
+    const meta = row.querySelector('.storage-row-meta');
+    const tempBand = tempSeverity(disk.temp);
+    meta.textContent = parts.join(' · ');
+    meta.className = `storage-row-meta${tempBand ? ' temp-' + tempBand : ''}`;
+}
+
+/**
+ * Updates a share row.
+ * @param {object} share
+ */
+function updateShareRow(share) {
+    const row = document.getElementById(storageRowId('sshare', share.name));
+    if (!row) return;
+
+    const total = share.sizeBytes || 0;
+    const used = share.usedBytes || 0;
+    const free = share.freeBytes !== undefined ? share.freeBytes : Math.max(total - used, 0);
+    const percent = total > 0 ? (used / total) * 100 : 0;
+
+    const meta = row.querySelector('.storage-row-meta');
+    meta.textContent = `${formatBytes(used, 1)} used`;
+    meta.className = 'storage-row-meta';
+    row.title = share.comment
+        ? `${share.comment} — ${formatBytes(free, 1)} free`
+        : `${formatBytes(free, 1)} free`;
+
+    const fill = row.querySelector('.storage-bar-fill');
+    if (fill) {
+        fill.style.width = `${Math.min(percent, 100)}%`;
+        fill.className = `storage-bar-fill sev-${storageSeverity(free, percent)}`;
+    }
+}
+
+/**
+ * Renders the "Update All" bar above the container list. It only exists while
+ * something is actually updatable, so the Docker tab stays clean otherwise.
+ * @param {number} count - Number of containers with a pending update
+ * @param {string} url
+ * @param {string} key
+ */
+function renderUpdateAllBar(count, url, key) {
+    const list = document.getElementById("unraid-docker-list");
+    if (!list || !list.parentNode) return;
+
+    let bar = document.getElementById('unraid-update-all-bar');
+
+    if (count === 0) {
+        if (bar) bar.remove();
+        return;
+    }
+
+    if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'unraid-update-all-bar';
+        bar.className = 'unraid-update-all-bar';
+
+        const label = document.createElement('span');
+        label.className = 'update-all-label';
+        bar.appendChild(label);
+
+        const btn = document.createElement('button');
+        btn.id = 'unraid-update-all-btn';
+        btn.className = 'update-all-btn';
+        btn.textContent = 'Update All';
+        bar.appendChild(btn);
+
+        list.parentNode.insertBefore(bar, list);
+    }
+
+    bar.querySelector('.update-all-label').textContent =
+        `${count} update${count === 1 ? '' : 's'} available`;
+
+    const btn = bar.querySelector('.update-all-btn');
+    // Rebind every pass: url/key and the count are captured in the closure.
+    btn.onclick = async () => {
+        if (btn.dataset.busy) return;
+        const ok = await showConfirmModal(
+            'Update All Containers',
+            `Pull the latest image for ${count} container${count === 1 ? '' : 's'} and recreate them? Each one restarts.`,
+            'Update All',
+            '#2196f3'
+        );
+        if (!ok) return;
+
+        btn.dataset.busy = '1';
+        btn.disabled = true;
+        btn.textContent = 'Updating…';
+        try {
+            await updateAllContainers(url, key);
+            showNotification('All containers updated', 'success');
+        } catch (e) {
+            showNotification(`Update all failed: ${e.message}`, 'error');
+        } finally {
+            btn.textContent = 'Update All';
+            btn.disabled = false;
+            delete btn.dataset.busy;
+        }
+    };
+}
+
+/**
+ * Shows how many containers have a pending image update on the Docker sub-tab,
+ * so it is visible without opening the tab and scrolling the list.
+ * @param {Array} containers
+ */
+function updateDockerTabBadge(containers, url, key) {
+    const count = (containers || []).filter(c => c.updateAvailable).length;
+    renderUpdateAllBar(count, url, key);
+
+    const tabBtn = document.querySelector('#unraid-view .sub-tab-btn[data-target="unraid-tab-docker"]');
+    if (!tabBtn) return;
+
+    let badge = tabBtn.querySelector('.tab-badge');
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'tab-badge hidden';
+        badge.style.background = 'var(--accent-unraid)';
+        badge.style.color = '#fff';
+        tabBtn.appendChild(badge);
+    }
+
+    if (count > 0) {
+        badge.textContent = count;
+        badge.title = `${count} container update${count === 1 ? '' : 's'} available`;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
 }
 
 function renderUnraidDocker(containers, url, key) {
     const list = document.getElementById("unraid-docker-list");
     if (!list) return;
-    
+
+    updateDockerTabBadge(containers, url, key);
+
     // Changed to vertical list as requested
     if (list.className !== 'unraid-vertical-list') {
         list.className = 'unraid-vertical-list';
@@ -1029,10 +1312,52 @@ function updateDockerCard(card, container, url, key) {
 
     // Badge
     const badge = card.querySelector('.update-badge');
+    // Marks the whole row, so a pending update is visible while scanning the
+    // list rather than only when the small badge is read.
+    card.classList.toggle('has-update', !!container.updateAvailable);
     if (container.updateAvailable) {
          if(badge.classList.contains('hidden')) badge.classList.remove('hidden');
+
     } else {
          if(!badge.classList.contains('hidden')) badge.classList.add('hidden');
+    }
+
+    // Update action. The badge stays a pure status label - the trigger is a real
+    // button in the action row, next to start/stop/restart, so it is findable.
+    const updateBtn = card.querySelector('.update-btn');
+    if (updateBtn) {
+        updateBtn.classList.toggle('hidden', !container.updateAvailable);
+
+        // updateDockerCard() runs on every poll, so bind only once per card.
+        if (container.updateAvailable && !updateBtn.dataset.bound) {
+            updateBtn.dataset.bound = '1';
+            updateBtn.onclick = async () => {
+                if (updateBtn.dataset.busy) return;
+                const name = container.name || 'this container';
+                const ok = await showConfirmModal(
+                    'Update Container',
+                    `Pull the latest image for "${name}" and recreate it? The container restarts.`,
+                    'Update',
+                    '#2196f3'
+                );
+                if (!ok) return;
+
+                updateBtn.dataset.busy = '1';
+                updateBtn.disabled = true;
+                const previousLabel = updateBtn.textContent;
+                updateBtn.textContent = '…';
+                try {
+                    await updateContainer(url, key, container.id);
+                    showNotification(`${name} updated`, 'success');
+                } catch (e) {
+                    showNotification(`Update failed: ${e.message}`, 'error');
+                } finally {
+                    updateBtn.textContent = previousLabel;
+                    updateBtn.disabled = false;
+                    delete updateBtn.dataset.busy;
+                }
+            };
+        }
     }
 
     // Actions

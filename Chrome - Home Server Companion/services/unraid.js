@@ -198,7 +198,37 @@ export const getSystemData = async (url, apiKey, options = {}) => {
                 projectUrl
                 supportUrl
                 autoStart
+                isUpdateAvailable
+                isRebuildReady
             }
+        }
+    }
+    `;
+
+    // Parity check status and per-share usage. Kept in its own optional query
+    // rather than folded into the extended one: a single unsupported field
+    // fails the whole document, and losing shares should not also cost us the
+    // temperature sensors.
+    const extrasQuery = `
+    {
+        array {
+            parityCheckStatus {
+                progress
+                speed
+                duration
+                errors
+                correcting
+                running
+                paused
+            }
+        }
+        shares {
+            name
+            free
+            used
+            size
+            cache
+            comment
         }
     }
     `;
@@ -214,7 +244,13 @@ export const getSystemData = async (url, apiKey, options = {}) => {
                 console.debug("Unraid extended query unavailable (pre-4.30 API?):", e.message);
                 return null;
             });
-        const [res, extRes] = await Promise.all([mainPromise, extPromise]);
+        const extrasPromise = skipExtended
+            ? Promise.resolve(null)
+            : graphQL(url, apiKey, extrasQuery).catch((e) => {
+                console.debug("Unraid extras query unavailable (parity/shares):", e.message);
+                return null;
+            });
+        const [res, extRes, extrasRes] = await Promise.all([mainPromise, extPromise, extrasPromise]);
 
         const serverHostname = new URL(url).hostname;
         const serverProtocol = new URL(url).protocol; // http: or https:
@@ -314,10 +350,53 @@ export const getSystemData = async (url, apiKey, options = {}) => {
                     supportUrl: extra?.supportUrl || null,
                     autoStart: extra?.autoStart ?? null,
                     isOrphaned: extra?.isOrphaned ?? false,
-                    updateAvailable: c.isUpdateAvailable
+                    // isUpdateAvailable is only requested in the extended query,
+                    // so read it from there - the main query never returns it.
+                    updateAvailable: extra?.isUpdateAvailable ?? false,
+                    rebuildReady: extra?.isRebuildReady ?? false
                 };
-            })
+            }),
+
+            // Parity check (null when the field is unavailable or never run)
+            parity: extrasRes?.array?.parityCheckStatus
+                ? {
+                    progress: parseFloat(extrasRes.array.parityCheckStatus.progress) || 0,
+                    speed: extrasRes.array.parityCheckStatus.speed ?? null,
+                    duration: parse(extrasRes.array.parityCheckStatus.duration),
+                    errors: parse(extrasRes.array.parityCheckStatus.errors),
+                    correcting: !!extrasRes.array.parityCheckStatus.correcting,
+                    running: !!extrasRes.array.parityCheckStatus.running,
+                    paused: !!extrasRes.array.parityCheckStatus.paused
+                }
+                : null,
+
+            // Per-share usage. Sizes come back in KB as BigInt strings.
+            shares: (extrasRes?.shares || []).map(s => ({
+                name: s.name,
+                comment: s.comment || '',
+                cache: !!s.cache,
+                sizeBytes: parse(s.size) * 1024,
+                usedBytes: parse(s.used) * 1024,
+                freeBytes: parse(s.free) * 1024
+            }))
         };
+
+        // renderUnraidSystem() already ships a parity card that reads
+        // data.array.parity as { status, percent, errors, speed }. That field was
+        // never populated because no query requested it, so the card was stuck on
+        // "No check running". Expose the normalized status in the shape the
+        // existing consumer expects.
+        if (result.array && result.parity) {
+            result.array.parity = {
+                status: result.parity.running
+                    ? 'running'
+                    : (result.parity.paused ? 'paused' : 'idle'),
+                percent: result.parity.progress,
+                errors: result.parity.errors,
+                speed: result.parity.speed,
+                correcting: result.parity.correcting
+            };
+        }
 
         // Cache successful snapshot for instant-render on next popup open
         saveSystemCache(url, result);
@@ -368,6 +447,71 @@ export const controlContainer = async (url, apiKey, id, action) => {
             ${action}(id: "${sanitizedId}") {
                 id
             }
+        }
+    }
+    `;
+    return await graphQL(url, apiKey, mutation);
+};
+
+/**
+ * Pulls a newer image for a container and recreates it.
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {string} id - Container ID
+ * @returns {Promise<Object>}
+ */
+export const updateContainer = async (url, apiKey, id) => {
+    const sanitizedId = String(id).replace(/[\\"']/g, '');
+    const mutation = `
+    mutation {
+        docker {
+            updateContainer(id: "${sanitizedId}") {
+                id
+            }
+        }
+    }
+    `;
+    return await graphQL(url, apiKey, mutation);
+};
+
+/**
+ * Pulls newer images for every container that has one and recreates them.
+ * @param {string} url
+ * @param {string} apiKey
+ * @returns {Promise<Object>}
+ */
+export const updateAllContainers = async (url, apiKey) => {
+    const mutation = `
+    mutation {
+        docker {
+            updateAllContainers {
+                id
+            }
+        }
+    }
+    `;
+    return await graphQL(url, apiKey, mutation);
+};
+
+/**
+ * Starts, pauses, resumes or cancels a parity check.
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {'start'|'pause'|'resume'|'cancel'} action
+ * @param {boolean} [correcting] - Only used by 'start': write corrections to parity
+ * @returns {Promise<Object>}
+ */
+export const controlParityCheck = async (url, apiKey, action, correcting = false) => {
+    const allowedActions = ['start', 'pause', 'resume', 'cancel'];
+    if (!allowedActions.includes(action)) {
+        throw new Error(`Invalid parity action: ${action}`);
+    }
+
+    const args = action === 'start' ? `(correct: ${correcting ? 'true' : 'false'})` : '';
+    const mutation = `
+    mutation {
+        parityCheck {
+            ${action}${args}
         }
     }
     `;

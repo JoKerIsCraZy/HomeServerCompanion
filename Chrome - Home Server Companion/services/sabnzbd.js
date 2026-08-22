@@ -1,6 +1,16 @@
 import { formatSize, formatTime } from './utils.js';
 import { validateSearchQuery } from './inputValidation.js';
 
+/**
+ * Every SABnzbd endpoint is a GET with the parameters in the query string, so
+ * the polled URLs are byte-identical on every tick and the browser is free to
+ * serve them from its HTTP cache - which freezes the queue view while the poll
+ * loop keeps running. The action endpoints are state-changing GETs, where a
+ * cache hit would skip the request entirely. Neither may ever be cached.
+ * @constant {RequestInit}
+ */
+const NO_CACHE = { cache: 'no-store' };
+
 // Queue
 /**
  * Fetches the current download queue.
@@ -10,7 +20,7 @@ import { validateSearchQuery } from './inputValidation.js';
  */
 export const getSabnzbdQueue = async (url, apiKey) => {
     try {
-        const response = await fetch(`${url}/api?mode=queue&apikey=${apiKey}&output=json`);
+        const response = await fetch(`${url}/api?mode=queue&apikey=${apiKey}&output=json`, NO_CACHE);
         if (!response.ok) throw new Error(`Error: ${response.status}`);
         const data = await response.json();
         return data.queue;
@@ -30,7 +40,7 @@ export const getSabnzbdQueue = async (url, apiKey) => {
  */
 export const getSabnzbdHistory = async (url, apiKey, limit = 10) => {
     try {
-        const response = await fetch(`${url}/api?mode=history&output=json&apikey=${apiKey}&limit=${limit}`);
+        const response = await fetch(`${url}/api?mode=history&output=json&apikey=${apiKey}&limit=${limit}`, NO_CACHE);
         if (!response.ok) throw new Error(`Error: ${response.status}`);
         const data = await response.json();
         return data.history;
@@ -55,7 +65,7 @@ export const pauseQueue = async (url, apiKey, time = null) => {
             // Using `mode=config&name=set_pause&value=${time}`
             apiUrl = `${url}/api?mode=config&name=set_pause&value=${time}&apikey=${apiKey}&output=json`;
         }
-        const response = await fetch(apiUrl);
+        const response = await fetch(apiUrl, NO_CACHE);
         return await response.json();
     } catch (error) {
         console.error("SABnzbd Pause Error:", error);
@@ -64,7 +74,7 @@ export const pauseQueue = async (url, apiKey, time = null) => {
 
 export const resumeQueue = async (url, apiKey) => {
     try {
-        const response = await fetch(`${url}/api?mode=resume&apikey=${apiKey}&output=json`);
+        const response = await fetch(`${url}/api?mode=resume&apikey=${apiKey}&output=json`, NO_CACHE);
         return await response.json();
     } catch (error) {
         console.error("SABnzbd Resume Error:", error);
@@ -73,7 +83,7 @@ export const resumeQueue = async (url, apiKey) => {
 
 export const deleteQueueItem = async (url, apiKey, nzo_id) => {
     try {
-        const response = await fetch(`${url}/api?mode=queue&name=delete&value=${nzo_id}&apikey=${apiKey}&output=json`);
+        const response = await fetch(`${url}/api?mode=queue&name=delete&value=${nzo_id}&apikey=${apiKey}&output=json`, NO_CACHE);
         return await response.json();
     } catch (error) {
         console.error("SABnzbd Delete Error:", error);
@@ -82,7 +92,7 @@ export const deleteQueueItem = async (url, apiKey, nzo_id) => {
 
 export const deleteHistoryItem = async (url, apiKey, nzo_id) => {
     try {
-        const response = await fetch(`${url}/api?mode=history&name=delete&value=${nzo_id}&apikey=${apiKey}&output=json`);
+        const response = await fetch(`${url}/api?mode=history&name=delete&value=${nzo_id}&apikey=${apiKey}&output=json`, NO_CACHE);
         return await response.json();
     } catch (error) {
         console.error("SABnzbd History Delete Error:", error);
@@ -92,7 +102,7 @@ export const deleteHistoryItem = async (url, apiKey, nzo_id) => {
 
 export const setSpeedLimit = async (url, apiKey, limit) => {
     try {
-        const response = await fetch(`${url}/api?mode=config&name=speedlimit&value=${limit}&apikey=${apiKey}&output=json`);
+        const response = await fetch(`${url}/api?mode=config&name=speedlimit&value=${limit}&apikey=${apiKey}&output=json`, NO_CACHE);
         return await response.json();
     } catch (error) {
         console.error("SABnzbd Speed Limit Error:", error);

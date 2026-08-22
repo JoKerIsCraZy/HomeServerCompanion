@@ -1,3 +1,11 @@
+/**
+ * Timer handles owned by this module. They are deliberately kept out of the
+ * shared `state.refreshInterval` slot, which every service module also writes
+ * to - sharing one slot means whoever starts last silently cancels the others.
+ */
+let dashboardTimer = null;
+let dashboardClockTimer = null;
+
 export async function initDashboard(state) {
     const container = document.getElementById('dashboard-view');
     // Clear existing content (or reuse if we implement diffing later)
@@ -59,15 +67,21 @@ export async function initDashboard(state) {
     // 4. Auto Refresh Loop
     const intervalTime = parseInt(state.configs.refreshInterval) || 5000;
     
-    // Clear any existing interval to be safe (though popup.js usually handles view transitions)
-    if (state.refreshInterval) clearInterval(state.refreshInterval);
+    // The dashboard owns its own timer handle. It must NOT use the shared
+    // state.refreshInterval slot: every service writes to that one, so clearing
+    // it here would kill whichever service is currently polling, and reading it
+    // back inside the callback would cancel a timer belonging to someone else.
+    if (dashboardTimer) clearInterval(dashboardTimer);
 
-    state.refreshInterval = setInterval(() => {
-        // Only refresh if Dashboard is actually active/visible in DOM
-        if (document.getElementById('dashboard-view')) {
+    dashboardTimer = setInterval(() => {
+        // The view element is never removed from the DOM - switching services
+        // only toggles .hidden - so presence is not a liveness test.
+        const view = document.getElementById('dashboard-view');
+        if (view && !view.classList.contains('hidden')) {
             renderServiceGrid(grid, state, true); // Pass 'true' for update mode
         } else {
-            clearInterval(state.refreshInterval);
+            clearInterval(dashboardTimer);
+            dashboardTimer = null;
         }
     }, intervalTime);
 }
@@ -484,5 +498,8 @@ function startClock(state) {
     };
 
     update(); // Initial call
-    state.refreshInterval = setInterval(update, 1000);
+    // Own handle, not the shared slot - this clock ticks every second and would
+    // otherwise overwrite (and thereby orphan) the active service's poll timer.
+    if (dashboardClockTimer) clearInterval(dashboardClockTimer);
+    dashboardClockTimer = setInterval(update, 1000);
 }

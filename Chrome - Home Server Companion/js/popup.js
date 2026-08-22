@@ -105,10 +105,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     configs: {},
     activeService: "sabnzbd",
     expandedSessions: new Set(), // Track expanded Tautulli sessions
-    refreshInterval: null,
+    // Poll timers, keyed by service id. A single shared handle cannot work:
+    // the badge pre-load runs several init*() functions at once, and whoever
+    // ran last would cancel every other service's timer.
+    serviceIntervals: {},
     storageCardState: {}, // Add this for Unraid storage persistence
     badgeIntervals: {}, // Track background badge update intervals
   };
+
+  /**
+   * Stops every registered service poll timer. Used when the visible view
+   * changes, so background services stop hitting their APIs.
+   */
+  function stopAllServiceIntervals() {
+    Object.keys(state.serviceIntervals).forEach((name) => {
+      clearInterval(state.serviceIntervals[name]);
+      delete state.serviceIntervals[name];
+    });
+  }
 
   const EXCLUDED_FROM_PERSISTENCE = ["tautulli"];
 
@@ -340,10 +354,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Shared navigation handler
     const handleNavigation = (item) => {
         // Clear any auto-refresh intervals
-        if (state.refreshInterval) {
-          clearInterval(state.refreshInterval);
-          state.refreshInterval = null;
-        }
+        stopAllServiceIntervals();
         const target = item.dataset.target;
         
         // Special handling for Portainer instances - set the selected instance
@@ -873,10 +884,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     localStorage.setItem('lastActiveService', 'portainer');
 
     // Clear any auto-refresh intervals
-    if (state.refreshInterval) {
-      clearInterval(state.refreshInterval);
-      state.refreshInterval = null;
-    }
+    stopAllServiceIntervals();
 
     // Load portainer with the selected instance
     hideError();

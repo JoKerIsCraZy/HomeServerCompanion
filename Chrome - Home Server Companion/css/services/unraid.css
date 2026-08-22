@@ -878,3 +878,169 @@ body.dark-mode .unraid-card {
 
 
 
+
+/* Parity check controls */
+.parity-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+.parity-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.parity-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+}
+.parity-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.parity-btn.hidden {
+    display: none;
+}
+
+/* Container with a pending image update */
+.update-badge {
+    display: inline-block;
+    margin-top: 4px;
+}
+.has-update {
+    border-left: 3px solid var(--accent-unraid) !important;
+}
+.update-badge {
+    background: var(--accent-unraid);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+.update-badge[role="button"]:hover {
+    filter: brightness(1.15);
+}
+.update-badge.hidden {
+    display: none;
+}
+
+/* Update-All bar above the container list */
+.unraid-update-all-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background: rgba(33, 150, 243, 0.10);
+    border: 1px solid rgba(33, 150, 243, 0.25);
+}
+.update-all-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.update-all-btn {
+    background: var(--accent-unraid);
+    border: none;
+    color: #fff;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.update-all-btn:hover:not(:disabled) { filter: brightness(1.15); }
+.update-all-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* Per-container update action */
+.action-btn.update-btn { color: var(--accent-unraid); }
+.action-btn.update-btn.hidden { display: none; }
+
+/* ============ Storage tab ============ */
+.storage-summary {
+    padding: 4px 2px 14px;
+}
+.storage-summary-free {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+.storage-summary-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 10px;
+}
+.storage-summary-track { height: 4px; }
+
+.storage-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 16px 0 6px;
+}
+
+.storage-row {
+    padding: 8px 2px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.storage-row:last-child { border-bottom: none; }
+.storage-row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.storage-row-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.storage-row-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+/* A normal temperature stays silent; only warm/hot get a colour. */
+.storage-row-meta.temp-warm { color: #ff9800; }
+.storage-row-meta.temp-hot  { color: #f44336; }
+/* Spun-down disks recede rather than disappear. */
+.storage-row.is-idle .storage-row-name { opacity: 0.6; }
+
+.storage-bar-track {
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+.storage-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s;
+    background: var(--accent-unraid);
+}
+.storage-bar-fill.sev-ok   { background: var(--accent-unraid); }
+.storage-bar-fill.sev-warn { background: #ff9800; }
+.storage-bar-fill.sev-crit { background: #f44336; }

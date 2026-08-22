@@ -26,7 +26,9 @@ export async function initProwlarr(url, apiKey, state) {
     // Initial Load
     await loadProwlarrData(url, apiKey);
 
-    state.refreshInterval = setInterval(() => {
+    state.serviceIntervals = state.serviceIntervals || {};
+    if (state.serviceIntervals.prowlarr) clearInterval(state.serviceIntervals.prowlarr);
+    state.serviceIntervals.prowlarr = setInterval(() => {
         loadProwlarrData(url, apiKey);
     }, 60000);
 }

@@ -27,10 +27,11 @@ export async function initTautulli(url, key, state) {
     await update();
 
     // Clear existing interval if any
-    if (state.refreshInterval) clearInterval(state.refreshInterval);
+    state.serviceIntervals = state.serviceIntervals || {};
+    if (state.serviceIntervals.tautulli) clearInterval(state.serviceIntervals.tautulli);
 
     // Set new interval (2 seconds)
-    state.refreshInterval = setInterval(update, 2000);
+    state.serviceIntervals.tautulli = setInterval(update, 2000);
 }
 
 function renderTautulliActivity(sessions, url, key, state) {

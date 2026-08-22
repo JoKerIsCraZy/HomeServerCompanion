@@ -385,7 +385,12 @@
           <div class="unraid-list-header">
             <div class="unraid-list-header-stack">
               <div class="unraid-list-title-row">
-                <div class="unraid-list-title">SABnzbd</div>
+                <div class="sab-hero-stack">
+                  <div id="sab-hero" class="sab-hero is-idle" aria-live="polite">
+                    Idle
+                  </div>
+                  <div id="sab-subline" class="sab-subline">Queue empty</div>
+                </div>
                 <div
                   class="sab-controls"
                   style="
@@ -474,7 +479,6 @@
                       SET
                     </button>
                   </div>
-                  <div id="sab-status-bubble" class="status-bubble">Idle</div>
                   <div class="split-btn-group">
                     <button id="sab-pause-arrow" class="split-btn-arrow">
                       ▼
@@ -507,26 +511,6 @@
                       Pause indefinitely
                     </div>
                   </div>
-                </div>
-              </div>
-              <div
-                class="sab-status-row"
-                style="
-                  display: flex;
-                  gap: 15px;
-                  margin-top: 5px;
-                  font-size: 13px;
-                  color: var(--text-secondary);
-                "
-              >
-                <div class="status-pill status-running">
-                  <span id="sab-speed" style="font-weight: 700">0 KB/s</span>
-                </div>
-                <div
-                  class="status-pill"
-                  style="background: rgba(255, 255, 255, 0.05)"
-                >
-                  <span id="sab-timeleft">00:00:00</span>
                 </div>
               </div>
             </div>
@@ -1754,20 +1738,14 @@
         </div>
         <div class="card-body">
           <div class="card-meta">Image Name</div>
-          <div
-            class="update-badge hidden"
-            title="Update Available"
-            style="
-              color: #2196f3;
-              font-size: 11px;
-              margin-top: 2px;
-              font-weight: bold;
-            "
-          >
+          <div class="update-badge hidden" title="Update Available">
             ↑ Update Available
           </div>
         </div>
         <div class="card-actions">
+          <button class="action-btn update-btn hidden" title="Update Container">
+            ⬆
+          </button>
           <button class="action-btn start-btn" title="Start">▶</button>
           <button class="action-btn restart-btn" title="Restart">↻</button>
           <button class="action-btn stop-btn" title="Stop">⏹</button>

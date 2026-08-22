@@ -51,10 +51,11 @@ export async function initTracearr(url, key, state) {
     }
 
     // Clear existing interval if any
-    if (state.refreshInterval) clearInterval(state.refreshInterval);
+    state.serviceIntervals = state.serviceIntervals || {};
+    if (state.serviceIntervals.tracearr) clearInterval(state.serviceIntervals.tracearr);
 
     // Set new interval (5 seconds for streams)
-    state.refreshInterval = setInterval(update, 5000);
+    state.serviceIntervals.tracearr = setInterval(update, 5000);
 }
 
 /**
