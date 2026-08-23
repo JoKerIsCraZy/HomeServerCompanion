@@ -13,6 +13,7 @@ import { checkAndShowChangelog, validateUrl } from "./utils.js";
 // V4.0 Core Modules
 import appState from './core/AppState.js';
 import badgeManager from './core/BadgeManager.js';
+import poller from './core/Poller.js';
 
 /**
  * Creates multiple sidebar entries for each Portainer instance.
@@ -118,10 +119,13 @@ document.addEventListener("DOMContentLoaded", async () => {
    * changes, so background services stop hitting their APIs.
    */
   function stopAllServiceIntervals() {
+    // Legacy timers, for any view not yet moved to the scheduler.
     Object.keys(state.serviceIntervals).forEach((name) => {
       clearInterval(state.serviceIntervals[name]);
       delete state.serviceIntervals[name];
     });
+    // Only the view group: badge polling has to survive a view switch.
+    poller.stopGroup('view');
   }
 
   const EXCLUDED_FROM_PERSISTENCE = ["tautulli"];
@@ -629,6 +633,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
           }
         }
+
+        // A new sub-tab starts at the top. The scroll offset belongs to the
+        // tab you left, so carrying it over drops you into the middle of a
+        // list you have not seen the start of. Which element actually scrolls
+        // differs between the popup and the fullscreen window, so reset every
+        // scrollable ancestor on the way up rather than guessing.
+        for (let el = targetView; el && el !== document.body; el = el.parentElement) {
+            if (el.scrollTop) el.scrollTop = 0;
+        }
+        if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
 
         // PERSISTENCE: Sub-tabs
         if (!EXCLUDED_FROM_PERSISTENCE.includes(state.activeService)) {

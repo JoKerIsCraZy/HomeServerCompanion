@@ -6,6 +6,7 @@
 
 import eventBus from './EventBus.js';
 import appState from './AppState.js';
+import poller from './Poller.js';
 
 class BadgeManager {
     constructor() {
@@ -78,23 +79,25 @@ class BadgeManager {
                 // Add error indicator after repeated failures
                 const navItem = document.querySelector(`.nav-item[data-target="${service.id}"]`);
                 if (navItem) navItem.classList.add('badge-error');
+                // Rethrow: the scheduler needs to see the failure to back off.
+                throw error;
             }
         };
 
-        // Initial call
-        updateFn();
-
-        // Start interval
-        const intervalId = setInterval(updateFn, interval);
-        this.intervals.set(service.id, intervalId);
+        // Registered with the shared scheduler rather than a bare interval, so
+        // badge polling stops with everything else when the page is hidden and
+        // backs off when a service is unreachable. Without that, a fullscreen
+        // tab left open kept six services under constant load.
+        poller.register(`badge:${service.id}`, updateFn, { interval, group: 'badge' });
+        this.intervals.set(service.id, `badge:${service.id}`);
     }
 
     /**
      * Stop all badge updates
      */
     stopAll() {
-        for (const intervalId of this.intervals.values()) {
-            clearInterval(intervalId);
+        for (const taskName of this.intervals.values()) {
+            poller.unregister(taskName);
         }
         this.intervals.clear();
     }
