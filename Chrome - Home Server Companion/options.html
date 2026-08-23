@@ -171,6 +171,13 @@
         transform: translateY(-2px);
       }
 
+      /* The changelog trigger is a button element, so it needs the font and
+         cursor the anchors get for free. */
+      button.header-link {
+        font-family: inherit;
+        cursor: pointer;
+      }
+
       /* ===== Sections ===== */
       .section {
         display: none;
@@ -273,7 +280,10 @@
       input[type="number"]:hover,
       select:hover {
         border-color: var(--glass-border-hover);
-        background: rgba(255, 255, 255, 0.05);
+        /* background-color, not the `background` shorthand: the shorthand
+           resets background-image and background-position, which would wipe
+           the custom dropdown arrow set on `select` below. */
+        background-color: rgba(255, 255, 255, 0.05);
       }
 
       input[type="text"]:focus,
@@ -282,7 +292,8 @@
       input[type="number"]:focus,
       select:focus {
         border-color: var(--accent-primary);
-        background: rgba(102, 126, 234, 0.05);
+        /* background-color, not the shorthand — see select:hover above. */
+        background-color: rgba(102, 126, 234, 0.05);
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
       }
 
@@ -841,6 +852,29 @@
               </svg>
               Issues
             </a>
+            <button
+              id="showChangelogBtn"
+              type="button"
+              class="header-link"
+              title="See what's new in this release"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="18"
+                width="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polygon
+                  points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
+                ></polygon>
+              </svg>
+              What's new
+            </button>
           </div>
         </div>
         <!-- General Section -->
@@ -876,9 +910,7 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="badgeCheckInterval"
-              >Background Badge Check Interval</label
-            >
+            <label for="badgeCheckInterval">Badge refresh interval</label>
             <select id="badgeCheckInterval" style="width: 100%">
               <option value="3000">3 seconds</option>
               <option value="5000" selected>5 seconds (Default)</option>
@@ -888,8 +920,11 @@
               <option value="60000">60 seconds</option>
             </select>
             <div class="help-text">
-              How often the extension checks for badge updates (active
-              downloads, warnings, etc.)
+              How often the sidebar counters refresh for services you are not
+              currently looking at — SABnzbd, Sonarr, Radarr, Tautulli,
+              Tracearr and Portainer. Only while an extension window is open;
+              nothing polls once it is closed. A change takes effect the next
+              time the popup opens.
             </div>
           </div>
           <div class="actions">
@@ -898,17 +933,6 @@
             </button>
           </div>
           <div id="statusGeneral" class="status"></div>
-
-          <div class="form-group" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
-            <label>About</label>
-            <div class="help-text" style="margin-bottom: 8px;">
-              See what's new in this release. The changelog is normally shown
-              automatically once after every update.
-            </div>
-            <button id="showChangelogBtn" class="btn-secondary" type="button">
-              Show What's New
-            </button>
-          </div>
         </div>
 
         <!-- Dashboard Section -->

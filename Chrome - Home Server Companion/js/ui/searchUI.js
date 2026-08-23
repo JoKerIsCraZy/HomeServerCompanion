@@ -714,7 +714,8 @@ function renderResults(results, container, state) {
                      plexBtn.className = 'plex-play-btn';
                      plexBtn.title = 'Open in Plex';
                      const plexImg = document.createElement('img');
-                     plexImg.src = 'https://favicone.com/plex.tv?s=32';
+                     // Local asset: favicone.com serves no icon for plex.tv.
+                     plexImg.src = 'icons/Plex_icon.png';
                      plexImg.alt = 'Plex';
                      plexImg.style.cssText = 'width: 18px; height: 18px; border-radius: 2px;';
                      plexBtn.appendChild(plexImg);

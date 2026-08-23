@@ -2,20 +2,27 @@
 // This wizard only runs on first install OR when manually triggered.
 // Existing users with configured services will NOT see this automatically.
 
-// Security: Escape HTML to prevent XSS
+// Security: Escape HTML to prevent XSS.
+// Duplicated from js/utils.js because setup.js is loaded as a classic script
+// and cannot import ES modules — keep both copies identical.
+// Quotes are escaped too: every caller here interpolates into an attribute
+// value (`value="${escapeHtml(x)}"`), where an unescaped `"` breaks out.
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
-    const text = String(str);
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 const SERVICES = [
     { 
         id: 'dashboard', 
         name: 'Dashboard', 
-        icon: '📊', 
+        icon: '📊',
+        iconFile: 'icon48.png', 
         description: 'Overview of all services',
         hasConfig: false,
         defaultEnabled: true
@@ -23,7 +30,8 @@ const SERVICES = [
     { 
         id: 'unraid', 
         name: 'Unraid', 
-        icon: '🖥️', 
+        icon: '🖥️',
+        iconFile: 'unraid.png', 
         description: 'Unraid Server Monitoring',
         hasConfig: true,
         urlPlaceholder: 'tower.local',
@@ -33,7 +41,8 @@ const SERVICES = [
     { 
         id: 'sabnzbd', 
         name: 'SABnzbd', 
-        icon: '📥', 
+        icon: '📥',
+        iconFile: 'sabnzbd.png', 
         description: 'Usenet Download Client',
         hasConfig: true,
         urlPlaceholder: 'localhost:8080',
@@ -43,7 +52,8 @@ const SERVICES = [
     { 
         id: 'sonarr', 
         name: 'Sonarr', 
-        icon: '📺', 
+        icon: '📺',
+        iconFile: 'sonarr.png', 
         description: 'TV Series Management',
         hasConfig: true,
         urlPlaceholder: 'localhost:8989',
@@ -53,7 +63,8 @@ const SERVICES = [
     { 
         id: 'radarr', 
         name: 'Radarr', 
-        icon: '🎬', 
+        icon: '🎬',
+        iconFile: 'radarr.png', 
         description: 'Movie Management',
         hasConfig: true,
         urlPlaceholder: 'localhost:7878',
@@ -63,7 +74,8 @@ const SERVICES = [
     { 
         id: 'tautulli', 
         name: 'Tautulli', 
-        icon: '📈', 
+        icon: '📈',
+        iconFile: 'tautulli.png', 
         description: 'Plex Statistics & Monitoring',
         hasConfig: true,
         urlPlaceholder: 'localhost:8181',
@@ -73,7 +85,8 @@ const SERVICES = [
     { 
         id: 'plex', 
         name: 'Plex', 
-        icon: '▶️', 
+        icon: '▶️',
+        iconFile: 'Plex_icon.png', 
         description: 'Open media directly in Plex app (Windows)',
         hasConfig: true,
         urlPlaceholder: 'localhost:32400',
@@ -83,7 +96,8 @@ const SERVICES = [
     { 
         id: 'seerr', 
         name: 'Seerr', 
-        icon: '🎯', 
+        icon: '🎯',
+        iconFile: 'seerr.png', 
         description: 'Media Request Management',
         hasConfig: true,
         hasMultiAuth: true, // Special auth handling
@@ -94,7 +108,8 @@ const SERVICES = [
     { 
         id: 'prowlarr', 
         name: 'Prowlarr', 
-        icon: '🔍', 
+        icon: '🔍',
+        iconFile: 'prowlarr.png', 
         description: 'Indexer Manager',
         hasConfig: true,
         urlPlaceholder: 'localhost:9696',
@@ -105,6 +120,7 @@ const SERVICES = [
         id: 'wizarr',
         name: 'Wizarr',
         icon: '🧙',
+        iconFile: 'wizarr.png',
         description: 'User Invitations',
         hasConfig: true,
         urlPlaceholder: 'localhost:5690',
@@ -115,6 +131,7 @@ const SERVICES = [
         id: 'tracearr',
         name: 'Tracearr',
         icon: '📊',
+        iconFile: 'tracearr.png',
         description: 'Content Tracking & Analytics',
         hasConfig: true,
         urlPlaceholder: 'localhost:3085',
@@ -125,6 +142,7 @@ const SERVICES = [
         id: 'portainer',
         name: 'Portainer',
         icon: '🐳',
+        iconFile: 'portainer.png',
         description: 'Docker Container Management',
         hasConfig: true,
         urlPlaceholder: 'localhost:9000',
@@ -132,6 +150,17 @@ const SERVICES = [
         keyHelp: 'Access Token at: My Account → Access Tokens. Multiple instances can be added later in Settings.'
     }
 ];
+
+/**
+ * Markup for a service's icon: the shipped image when the entry names one,
+ * otherwise the emoji fallback.
+ * @param {object} service - Entry from SERVICES
+ * @returns {string} HTML for the icon
+ */
+function serviceIconMarkup(service) {
+    if (!service.iconFile) return service.icon;
+    return `<img src="icons/${escapeHtml(service.iconFile)}" alt="">`;
+}
 
 // State
 let currentStep = 1;
@@ -261,7 +290,7 @@ function renderServicesGrid() {
              data-service="${service.id}">
             <div class="service-toggle"></div>
             <div class="service-card-header">
-                <div class="service-icon">${service.icon}</div>
+                <div class="service-icon">${serviceIconMarkup(service)}</div>
                 <h3>${service.name}</h3>
             </div>
             <p class="service-description">${service.description}</p>
@@ -320,7 +349,7 @@ function renderConfigStep() {
     
     form.innerHTML = `
         <div class="config-header">
-            <div class="config-service-icon">${service.icon}</div>
+            <div class="config-service-icon">${serviceIconMarkup(service)}</div>
             <div class="config-service-info">
                 <h1 style="font-size: 22px; margin-bottom: 4px;">${service.name}</h1>
                 <span class="config-progress">Service ${currentConfigIndex + 1} of ${configQueue.length}</span>
@@ -374,7 +403,7 @@ function renderPortainerConfigStep() {
     
     form.innerHTML = `
         <div class="config-header">
-            <div class="config-service-icon">${service.icon}</div>
+            <div class="config-service-icon">${serviceIconMarkup(service)}</div>
             <div class="config-service-info">
                 <h1 style="font-size: 22px; margin-bottom: 4px;">Portainer</h1>
                 <span class="config-progress">Instance ${currentPortainerInstanceIndex + 1} of ${totalInstances}</span>
@@ -497,7 +526,7 @@ function renderSeerrConfigStep() {
 
     form.innerHTML = `
         <div class="config-header">
-            <div class="config-service-icon">${service.icon}</div>
+            <div class="config-service-icon">${serviceIconMarkup(service)}</div>
             <div class="config-service-info">
                 <h1 style="font-size: 22px; margin-bottom: 4px;">${service.name}</h1>
                 <span class="config-progress">Service ${currentConfigIndex + 1} of ${configQueue.length}</span>
@@ -1021,7 +1050,7 @@ function renderSummary() {
         return `
             <div class="summary-item">
                 <div class="summary-item-left">
-                    <div class="summary-item-icon">${service.icon}</div>
+                    <div class="summary-item-icon">${serviceIconMarkup(service)}</div>
                     <span class="summary-item-name">${service.name}</span>
                 </div>
                 <span class="summary-status ${isConfigured || !service.hasConfig ? 'configured' : 'skipped'}">

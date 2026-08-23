@@ -145,7 +145,7 @@ export function collectTrustedBaseUrls(configs = {}) {
  * @param {object} configs - App configs (used to derive trusted hosts)
  * @param {string} [source] - Optional origin label shown in the prompt
  */
-export function openUrlSafely(candidateUrl, configs = {}, source = '') {
+export async function openUrlSafely(candidateUrl, configs = {}, source = '') {
     if (!validateUrl(candidateUrl)) return false;
     const trusted = collectTrustedBaseUrls(configs);
     if (isTrustedNavigationUrl(candidateUrl, trusted)) {
@@ -155,8 +155,14 @@ export function openUrlSafely(candidateUrl, configs = {}, source = '') {
     let host = '';
     try { host = new URL(candidateUrl).hostname; } catch { /* ignore */ }
     const origin = source ? ` (from ${source})` : '';
-    const ok = confirm(
-        `This link${origin} points to an external site:\n\n${host}\n\nOpen it anyway?`
+    // In-page modal rather than window.confirm(): a native dialog makes the
+    // extension popup lose focus and close, so the prompt is never seen and
+    // the click looks like it did nothing.
+    const ok = await showConfirmModal(
+        'Open external link?',
+        `This link${origin} points to ${host}, which is not one of your configured servers. Open it anyway?`,
+        'Open',
+        '#2196f3'
     );
     if (ok) chrome.tabs.create({ url: candidateUrl });
     return ok;
@@ -386,6 +392,81 @@ export function showPromptModal(title, message, defaultValue = '', confirmColor 
  * Shows IP geolocation info in a modal
  * @param {string} ip - IP address to lookup
  */
+const MAP_TILE_SIZE = 256;
+
+/**
+ * Projects a coordinate into global pixel space at a zoom level (Web Mercator),
+ * the space OpenStreetMap's raster tiles are cut from.
+ * @param {number} lat
+ * @param {number} lon
+ * @param {number} zoom
+ * @returns {{x: number, y: number}} Pixel position on the whole-world canvas
+ */
+function latLonToWorldPixel(lat, lon, zoom) {
+    const scale = MAP_TILE_SIZE * Math.pow(2, zoom);
+    const sinLat = Math.sin(lat * Math.PI / 180);
+    return {
+        x: (lon + 180) / 360 * scale,
+        y: (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * scale
+    };
+}
+
+/**
+ * Builds a static map as a grid of OpenStreetMap raster tiles.
+ *
+ * An <iframe> embed cannot be used: the extension CSP sets `frame-src 'none'`,
+ * so Chrome replaces it with a "content blocked" placeholder. Images are not
+ * restricted, so the tiles are fetched and positioned by hand instead, which
+ * keeps the CSP untouched.
+ *
+ * The layer is a fixed 3x3 grid anchored with `left/top: 50%` and shifted by
+ * the point's offset inside it, so the coordinate lands dead centre without
+ * the container's width ever being measured.
+ *
+ * @param {number} lat
+ * @param {number} lon
+ * @param {number} [zoom=12]
+ * @returns {HTMLElement} The tile layer
+ */
+function buildStaticMap(lat, lon, zoom = 12) {
+    const layer = document.createElement('div');
+    layer.className = 'ip-map-tiles';
+
+    const world = latLonToWorldPixel(lat, lon, zoom);
+    const tileCount = Math.pow(2, zoom);
+    const centreTileX = Math.floor(world.x / MAP_TILE_SIZE);
+    const centreTileY = Math.floor(world.y / MAP_TILE_SIZE);
+    const firstTileX = centreTileX - 1;
+    const firstTileY = centreTileY - 1;
+
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+            const tileX = firstTileX + col;
+            const tileY = firstTileY + row;
+            // Rows outside the projection have no tile; columns wrap the globe.
+            if (tileY < 0 || tileY >= tileCount) continue;
+            const wrappedX = ((tileX % tileCount) + tileCount) % tileCount;
+
+            const tile = document.createElement('img');
+            tile.className = 'ip-map-tile';
+            tile.alt = '';
+            tile.setAttribute('aria-hidden', 'true');
+            tile.loading = 'lazy';
+            tile.style.left = `${col * MAP_TILE_SIZE}px`;
+            tile.style.top = `${row * MAP_TILE_SIZE}px`;
+            tile.src = `https://tile.openstreetmap.org/${zoom}/${wrappedX}/${tileY}.png`;
+            layer.appendChild(tile);
+        }
+    }
+
+    // Where the coordinate sits inside the 3x3 layer.
+    const offsetX = world.x - firstTileX * MAP_TILE_SIZE;
+    const offsetY = world.y - firstTileY * MAP_TILE_SIZE;
+    layer.style.transform = `translate(${-offsetX}px, ${-offsetY}px)`;
+
+    return layer;
+}
+
 export async function showIpInfoModal(ip) {
     // Create modal immediately with loading state
     const modal = document.createElement('div');
@@ -508,24 +589,30 @@ export async function showIpInfoModal(ip) {
             bodyEl.appendChild(grid);
             
             // Map
-            const mapContainer = document.createElement('div');
-            mapContainer.className = 'ip-map-container';
-            const iframe = document.createElement('iframe');
-            iframe.className = 'ip-map-frame';
-            // OpenStreetMap using new lat/long fields (latitude/longitude)
-            const lat = data.latitude;
-            const lon = data.longitude;
-            iframe.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.05},${lat - 0.03},${lon + 0.05},${lat + 0.03}&layer=mapnik&marker=${lat},${lon}`;
-            iframe.frameBorder = "0";
-            iframe.loading = "lazy";
-            
-            const coords = document.createElement('div');
-            coords.className = 'ip-map-coords';
-            coords.textContent = `${lat}, ${lon}`;
-            
-            mapContainer.appendChild(iframe);
-            mapContainer.appendChild(coords);
-            bodyEl.appendChild(mapContainer);
+            const lat = Number(data.latitude);
+            const lon = Number(data.longitude);
+            if (Number.isFinite(lat) && Number.isFinite(lon)) {
+                const mapContainer = document.createElement('div');
+                mapContainer.className = 'ip-map-container';
+
+                mapContainer.appendChild(buildStaticMap(lat, lon));
+
+                const marker = document.createElement('div');
+                marker.className = 'ip-map-marker';
+                mapContainer.appendChild(marker);
+
+                const credit = document.createElement('div');
+                credit.className = 'ip-map-attribution';
+                credit.textContent = '© OpenStreetMap contributors';
+                mapContainer.appendChild(credit);
+
+                const coords = document.createElement('div');
+                coords.className = 'ip-map-coords';
+                coords.textContent = `${lat}, ${lon}`;
+                mapContainer.appendChild(coords);
+
+                bodyEl.appendChild(mapContainer);
+            }
 
         } else {
             const errDiv = document.createElement('div');

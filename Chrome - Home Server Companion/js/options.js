@@ -137,6 +137,12 @@ function showChangelogPopup() {
     modal.appendChild(content);
 
     document.body.appendChild(modal);
+
+    // Lock the page behind the modal. The changelog body keeps its own
+    // overflow-y:auto, so a long list still scrolls inside the dialog.
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     requestAnimationFrame(() => {
         modal.style.opacity = '1';
         content.style.transform = 'scale(1)';
@@ -147,6 +153,7 @@ function showChangelogPopup() {
         content.style.transform = 'scale(0.95)';
         setTimeout(() => modal.remove(), 200);
         document.removeEventListener('keydown', keyHandler);
+        document.body.style.overflow = previousBodyOverflow;
     };
 
     const keyHandler = (e) => {
@@ -1552,6 +1559,30 @@ async function saveSeerrAuth() {
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const fullUrl = protocol + cleanUrl;
 
+    // The host permission has to be granted BEFORE the first request to this
+    // origin. Without it Chrome treats the fetch as an ordinary cross-origin
+    // web request and CORS blocks it, so the auth call below would fail and
+    // return early — leaving the permission permanently unrequested.
+    // It also has to happen while the click's user gesture is still live, so
+    // nothing may be awaited before this point.
+    let seerrOrigin;
+    try {
+        seerrOrigin = `${new URL(fullUrl).origin}/*`;
+    } catch (e) {
+        showStatus('Seerr', `Invalid URL: ${e.message}`, 'error');
+        return;
+    }
+    const hasHostAccess = await new Promise((resolve) => {
+        chrome.permissions.contains({ origins: [seerrOrigin] }, (result) => {
+            if (result) { resolve(true); return; }
+            chrome.permissions.request({ origins: [seerrOrigin] }, (granted) => resolve(!!granted));
+        });
+    });
+    if (!hasHostAccess) {
+        showStatus('Seerr', 'Permission denied — the extension cannot reach this server.', 'error');
+        return;
+    }
+
     // An account password and a Plex account token are the only credentials
     // here that are reusable off this machine, so they are not sent over a
     // plaintext channel without the user knowingly accepting it. Loopback is
@@ -1648,13 +1679,8 @@ async function saveSeerrAuth() {
         }
     }
 
-    // Request permissions
-    try {
-        const urlObj = new URL(fullUrl);
-        await new Promise((resolve) => {
-            chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, resolve);
-        });
-    } catch {}
+    // Host permission was already granted at the top of this function, before
+    // the auth call that needs it.
 
     // Save to storage
     chrome.storage.sync.set(data, () => {
@@ -1675,6 +1701,26 @@ async function testSeerrConnection() {
 
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const fullUrl = protocol + cleanUrl;
+
+    // Same as saveSeerrAuth(): the host permission must exist before the first
+    // request, and must be asked for while the click's gesture is still live.
+    let testOrigin;
+    try {
+        testOrigin = `${new URL(fullUrl).origin}/*`;
+    } catch (e) {
+        showStatus('Seerr', `Invalid URL: ${e.message}`, 'error');
+        return;
+    }
+    const canReach = await new Promise((resolve) => {
+        chrome.permissions.contains({ origins: [testOrigin] }, (result) => {
+            if (result) { resolve(true); return; }
+            chrome.permissions.request({ origins: [testOrigin] }, (granted) => resolve(!!granted));
+        });
+    });
+    if (!canReach) {
+        showStatus('Seerr', 'Permission denied — the extension cannot reach this server.', 'error');
+        return;
+    }
 
     showStatus('Seerr', 'Testing...', 'success');
 
