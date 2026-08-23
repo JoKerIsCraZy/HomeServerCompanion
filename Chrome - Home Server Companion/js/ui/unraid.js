@@ -179,19 +179,6 @@ export async function initUnraid(url, key, state) {
     // One dismissal handler for every container menu. Registered on the body
     // rather than per row, because rows come and go on every poll and a
     // listener each would leak one per container per five seconds.
-    if (!document.body.dataset.unraidMenuHook) {
-        document.addEventListener('click', (e) => {
-            // A click that landed inside a row is that row's own business —
-            // it either toggled the menu or ran an entry, both of which
-            // already leave the menu in the right state.
-            if (!e.target?.closest?.('.unraid-row')) closeAllDockerMenus();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeAllDockerMenus();
-        });
-        document.body.dataset.unraidMenuHook = 'true';
-    }
-
     // Sort & Search Listeners
     const triggerUpdate = () => {
         if (unraidData && unraidData.dockers) {
@@ -1740,19 +1727,11 @@ function renderUnraidDocker(containers, url, key) {
  */
 function buildDockerRow(container, url, key) {
     const row = document.createElement('div');
-    // is-expandable, because .unraid-row is also the VM row, which is a plain
-    // single line. The grid layout the panel animates in belongs to Docker
-    // rows alone — applying it to a row whose children are not wrapped in a
-    // head drops each child into its own grid track.
-    row.className = 'unraid-row is-expandable';
+    // A plain card, like the VM list. This used to be an accordion whose panel
+    // expanded underneath the header line, which is what a dense one-line row
+    // needed in order to offer four controls. The card has room for them.
+    row.className = 'unraid-row';
     row.dataset.id = container.id;
-    // The whole row opens the menu, so it has to behave like a control:
-    // reachable by tab, operable by Enter and Space, and announced as a menu
-    // trigger rather than as a piece of text.
-    row.setAttribute('role', 'button');
-    row.setAttribute('tabindex', '0');
-    row.setAttribute('aria-haspopup', 'menu');
-    row.setAttribute('aria-expanded', 'false');
 
     const icon = document.createElement('span');
     icon.className = 'unraid-row-icon';
@@ -1785,53 +1764,45 @@ function buildDockerRow(container, url, key) {
     stateText.className = 'unraid-row-state-text';
     state.append(dot, stateText);
 
-    const caret = document.createElement('span');
-    caret.className = 'unraid-row-caret';
-    caret.setAttribute('aria-hidden', 'true');
-    caret.textContent = '\u203a';
-
-    const menu = document.createElement('div');
-    menu.className = 'unraid-menu';
-    menu.setAttribute('role', 'menu');
-    menu.setAttribute('aria-label', `${container.name} actions`);
-
-    // No Logs entry: the GraphQL API has no container logs. There is no
-    // `logs` field on DockerContainer, no `containerLogs` on Docker, and the
-    // only subscription is dockerContainerStats; `logFile(path:)` exists but
-    // is sandboxed to /var/log and reduces any other path to its basename.
-    const webItem = makeMenuItem('Web UI');
-    const restartItem = makeMenuItem('Restart');
-    const startItem = makeMenuItem('Start');
-    const stopItem = makeMenuItem('Stop', 'danger');
-    startItem.classList.add('hidden');
-    menu.append(webItem, restartItem, startItem, stopItem);
+    // Named, because the glyphs alone announce as things like "black
+    // right-pointing triangle". No Logs button: the GraphQL API has no
+    // container logs — no `logs` field on DockerContainer, no `containerLogs`
+    // on Docker, and `logFile(path:)` is sandboxed to /var/log.
+    const actions = document.createElement('div');
+    actions.className = 'unraid-row-actions';
+    const webBtn = makeUnraidAction('\u2197', `Open the ${container.name} web UI`);
+    const restartBtn = makeUnraidAction('\u27f3', `Restart ${container.name}`);
+    const startBtn = makeUnraidAction('\u25b6', `Start ${container.name}`);
+    const stopBtn = makeUnraidAction('\u25a0', `Stop ${container.name}`);
+    startBtn.classList.add('hidden');
+    actions.append(webBtn, restartBtn, startBtn, stopBtn);
 
     /**
-     * Runs one menu action: closes the menu, disables the item while the call
-     * is in flight, and reports either way.
+     * Runs one action with the button disabled for the duration, so a second
+     * click cannot queue a contradictory one.
      */
-    const act = async (item, fn, okMessage) => {
-        closeDockerMenu(row);
-        item.disabled = true;
+    const act = async (btn, e, fn, okMessage) => {
+        blurIfPointer(e, btn);
+        btn.disabled = true;
         try {
             await fn();
             showNotification(okMessage, 'success');
-        } catch (e) {
-            showNotification(`${container.name}: ${e.message}`, 'error');
+        } catch (err) {
+            showNotification(`${container.name}: ${err.message}`, 'error');
         } finally {
-            item.disabled = false;
+            btn.disabled = false;
         }
     };
 
-    startItem.addEventListener('click', () => act(startItem,
+    startBtn.addEventListener('click', (e) => act(startBtn, e,
         () => controlContainer(url, key, container.id, 'start'), `${container.name} started`));
-    stopItem.addEventListener('click', () => act(stopItem,
+    stopBtn.addEventListener('click', (e) => act(stopBtn, e,
         () => controlContainer(url, key, container.id, 'stop'), `${container.name} stopped`));
-    restartItem.addEventListener('click', () => act(restartItem,
+    restartBtn.addEventListener('click', (e) => act(restartBtn, e,
         () => controlContainer(url, key, container.id, 'restart'), `${container.name} restarted`));
 
-    webItem.addEventListener('click', () => {
-        closeDockerMenu(row);
+    webBtn.addEventListener('click', (e) => {
+        blurIfPointer(e, webBtn);
         // The WebUI URL comes from a container label, so a hostile template can
         // point it anywhere. openUrlSafely prompts for non-local hosts.
         if (container.webui) {
@@ -1842,8 +1813,6 @@ function buildDockerRow(container, url, key) {
     });
 
     flag.addEventListener('click', async (e) => {
-        // Without this the click would also reach the row and open the menu.
-        e.stopPropagation();
         blurIfPointer(e, flag);
         const ok = await showConfirmModal(
             'Update container',
@@ -1866,130 +1835,10 @@ function buildDockerRow(container, url, key) {
         }
     });
 
-    row.addEventListener('click', (e) => {
-        // Clicks that started inside the menu are the menu's business.
-        if (e.target !== row && menu.children.length && menuContains(menu, e.target)) return;
-        toggleDockerMenu(row);
-    });
-    row.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-            e.preventDefault();
-            toggleDockerMenu(row);
-        } else if (e.key === 'Escape') {
-            closeDockerMenu(row);
-        }
-    });
-
-    // The row is a header line plus a panel that expands underneath it, not a
-    // line with a floating menu over it: an overlay covers the rows below and
-    // has to be dismissed before you can read them again.
-    const head = document.createElement('div');
-    head.className = 'unraid-row-head';
-    // State stays the last thing you read; the caret is the affordance that
-    // says the row opens.
-    head.append(icon, main, flag, state, caret);
-
-    row.append(head, menu);
+    // State last: it is always present, so it anchors the right edge instead
+    // of shifting when the actions fade in beside it.
+    row.append(icon, main, flag, actions, state);
     return row;
-}
-
-/**
- * One entry in a container's menu.
- * @param {string} label
- * @param {string} [tone] - 'danger' for the destructive entry
- * @returns {HTMLElement}
- */
-function makeMenuItem(label, tone = '') {
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = `unraid-menu-item${tone ? ` is-${tone}` : ''}`;
-    item.setAttribute('role', 'menuitem');
-    item.textContent = label;
-    return item;
-}
-
-/**
- * True when `node` is the menu or sits inside it.
- * @param {HTMLElement} menu
- * @param {HTMLElement} node
- * @returns {boolean}
- */
-function menuContains(menu, node) {
-    let el = node;
-    while (el) {
-        if (el === menu) return true;
-        el = el.parentElement || el.parent || null;
-    }
-    return false;
-}
-
-/**
- * Closes every open container panel. Used by the click-outside and Escape
- * handlers; opening one card does not call this.
- * @param {HTMLElement} [except] - Row to leave alone
- */
-function closeAllDockerMenus(except) {
-    for (const row of document.querySelectorAll('.unraid-row[aria-expanded="true"]')) {
-        if (row === except) continue;
-        row.setAttribute('aria-expanded', 'false');
-        row.classList.remove('is-open');
-    }
-}
-
-/**
- * Opens or closes one row's menu.
- * @param {HTMLElement} row
- */
-function toggleDockerMenu(row) {
-    if (!row.querySelector('.unraid-menu')) return;
-    const open = !row.classList.contains('is-open');
-
-    if (open) closeOthersWithoutMoving(row);
-
-    row.classList.toggle('is-open', open);
-    row.setAttribute('aria-expanded', String(open));
-}
-
-/**
- * Closes every other open card, without animating them shut.
- *
- * Only one card is open at a time, and the panels sit in the flow, so opening
- * one while another closes moves everything between them. Two ways of hiding
- * that were tried and both were worse than the movement:
- *
- * Letting the other card animate shut runs a 200ms collapse against a 200ms
- * expansion, and the card under the pointer glides upward while it grows —
- * the wobble that started all this.
- *
- * Correcting the scroll offset so the clicked card stays put looks calm for
- * that one card and moves the entire list instead. Nobody asked the page to
- * scroll.
- *
- * So the others close in a single reflow, before the new panel starts opening.
- * Rows above shift once, sharply, and nothing competes with the animation.
- * Cards below the one being opened do not move at all.
- *
- * @param {HTMLElement} row - The card being opened
- */
-function closeOthersWithoutMoving(row) {
-    for (const other of document.querySelectorAll('.unraid-row[aria-expanded="true"]')) {
-        if (other === row) continue;
-        other.style.transition = 'none';
-        other.classList.remove('is-open');
-        other.setAttribute('aria-expanded', 'false');
-        // Commit the collapse before handing the transition back, or the two
-        // style changes coalesce and the card animates shut after all.
-        void other.getBoundingClientRect?.().height;
-        other.style.transition = '';
-    }
-}
-
-/**
- * @param {HTMLElement} row
- */
-function closeDockerMenu(row) {
-    row.classList.remove('is-open');
-    row.setAttribute('aria-expanded', 'false');
 }
 
 /**
@@ -2022,13 +1871,13 @@ function updateDockerRow(row, container) {
     row.querySelector('.unraid-update-flag')
         .classList.toggle('hidden', !container.updateAvailable);
 
-    // The menu is built once and its entries are shown or hidden, rather than
-    // rebuilt: rebuilding under an open menu would drop the user's focus.
-    const [, restartItem, startItem, stopItem] =
-        row.querySelectorAll('.unraid-menu-item');
-    startItem.classList.toggle('hidden', running);
-    stopItem.classList.toggle('hidden', !running);
-    restartItem.classList.toggle('hidden', !running);
+    // Built once and shown or hidden rather than rebuilt: replacing a button
+    // under the pointer would drop focus and cancel the hover that revealed it.
+    // Index 0 is the web UI button, which is always available.
+    const [, restartBtn, startBtn, stopBtn] = row.querySelectorAll('.unraid-action');
+    startBtn.classList.toggle('hidden', running);
+    stopBtn.classList.toggle('hidden', !running);
+    restartBtn.classList.toggle('hidden', !running);
 
     // Icon: compared against the raw API value, not img.src, because the getter
     // returns a resolved URL and would never match. A failed URL is remembered

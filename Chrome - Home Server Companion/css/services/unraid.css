@@ -424,39 +424,10 @@
     border-radius: var(--border-radius);
 }
 
-/* The expandable row: a grid, so the panel can be animated open.
-   grid-template-rows: auto 0fr -> auto 1fr transitions to the panel's own
-   height without anyone having to know what that height is; max-height would
-   mean guessing a number, and display cannot be transitioned at all.
-   Only Docker rows carry this — their contents are wrapped in a head, which
-   is what keeps them on one line inside the first track. */
-.unraid-row.is-expandable {
-    display: grid;
-    grid-template-rows: auto 0fr;
-    align-items: stretch;
-    gap: 0;
-    min-height: 0;
-    /* 200ms: long enough to read as a movement on a panel this small, short
-       enough not to be in the way when you are opening several in a row. */
-    transition: grid-template-rows 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.unraid-row.is-expandable.is-open { grid-template-rows: auto 1fr; }
-.unraid-row-head {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    min-height: 44px;
-}
-/* Only the Docker rows open a menu; VM rows keep their inline buttons. */
-.unraid-row[role="button"] { cursor: pointer; }
-.unraid-row[role="button"]:hover { border-color: rgba(255, 255, 255, 0.18); }
-.unraid-row[role="button"]:hover .unraid-row-head { opacity: 0.85; }
-/* An open card lifts rather than darkens: against a card fill, a darker patch
-   reads as disabled. */
-.unraid-row.is-open {
-    border-color: rgba(255, 255, 255, 0.22);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-}
+/* Docker and VM cards behave identically now: the actions sit on the card and
+   fade in under the pointer. The expandable grid, the head wrapper and the
+   open state that used to belong to Docker alone went with the menu. */
+.unraid-row:hover { border-color: rgba(255, 255, 255, 0.14); }
 .unraid-row-icon {
     width: 24px;
     height: 24px;
@@ -521,6 +492,11 @@
 .unraid-row:focus-within .unraid-row-actions {
     opacity: 1;
 }
+/* A pointer that cannot hover would never reveal them, and on Docker these are
+   now the only way to start, stop or restart anything. */
+@media (hover: none) {
+    .unraid-row-actions { opacity: 1; }
+}
 /* Targets stay at least 28px even while transparent — an invisible control is
    still a focusable one. */
 .unraid-action {
@@ -563,73 +539,6 @@
     border-color: var(--accent-unraid);
 }
 .unraid-update-flag:disabled { opacity: 0.5; cursor: default; }
-
-/* ===== Container menu =====
-   The row is the trigger. Five hover-revealed icon buttons crowded the right
-   edge of a row that is only 44px tall, and in the three-column fullscreen
-   grid they left almost no room for the name. A menu costs one click and
-   gives every action a word instead of a glyph. */
-.unraid-row-caret {
-    flex-shrink: 0;
-    width: 12px;
-    text-align: center;
-    color: var(--color-text-muted);
-    font-size: var(--font-size-lg);
-    line-height: 1;
-    transition: transform var(--transition-fast);
-}
-.unraid-row.is-open .unraid-row-caret {
-    transform: rotate(90deg);
-    color: var(--accent-unraid);
-}
-
-/* In flow, not floating: the card grows and the rows below move down, so
-   nothing is hidden behind an overlay that has to be dismissed first. */
-.unraid-menu {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    /* min-height:0 is what makes the 0fr track actually collapse — a grid item
-       defaults to min-height:auto and would refuse to shrink below its
-       content. overflow:hidden clips the panel while the track closes. */
-    min-height: 0;
-    overflow: hidden;
-    /* Hidden rather than merely zero-height: a clipped button is still a
-       focusable one, and tabbing into an invisible menu is a trap. */
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 120ms linear, visibility 0s linear 200ms;
-}
-.unraid-row.is-open .unraid-menu {
-    visibility: visible;
-    opacity: 1;
-    /* Fades in slightly behind the opening track, so the buttons appear in a
-       space that already exists instead of being squashed into it. */
-    transition: opacity 160ms linear 60ms, visibility 0s linear;
-}
-/* The panel's own spacing lives on an inner box: padding on the animated
-   element itself is clipped mid-transition and makes the movement stutter. */
-.unraid-menu > * { margin-top: var(--space-2); }
-.unraid-menu > *:first-child { margin-left: 36px; }
-.unraid-menu-item {
-    padding: var(--space-2) var(--space-3);
-    border: var(--border-width) solid var(--border-color);
-    border-radius: var(--border-radius-sm, 4px);
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-primary);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    text-align: left;
-    cursor: pointer;
-    transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-.unraid-menu-item:hover {
-    background: var(--color-bg-elevated);
-    border-color: rgba(255, 255, 255, 0.25);
-}
-.unraid-menu-item.is-danger { color: var(--status-error); }
-.unraid-menu-item.is-danger:hover { border-color: rgba(239, 68, 68, 0.5); }
-.unraid-menu-item:disabled { opacity: 0.4; cursor: default; }
 
 .unraid-empty {
     padding: var(--space-4) 0;
@@ -694,7 +603,6 @@ body.fullscreen-mode .unraid-row-list {
 }
 /* Tiles, not banded rows: a bottom border under every cell of a grid reads as
    an underline rather than a separator. */
-body.fullscreen-mode .unraid-row-head { min-height: 52px; }
 body.fullscreen-mode .unraid-row {
     /* Same reason as the columns: a grid item defaults to min-width: auto. */
     min-width: 0;
@@ -705,7 +613,7 @@ body.fullscreen-mode .unraid-row {
 }
 /* Only the plain rows need a floor; an expandable one takes its height from
    its head, and a floor on the row itself would fight the closing animation. */
-body.fullscreen-mode .unraid-row:not(.is-expandable) { min-height: 52px; }
+body.fullscreen-mode .unraid-row { min-height: 52px; }
 /* The empty-state message is a list child, so it would otherwise sit in one
    third of a column. */
 body.fullscreen-mode .unraid-row-list .unraid-empty { grid-column: 1 / -1; }
