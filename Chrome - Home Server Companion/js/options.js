@@ -764,6 +764,14 @@ const saveService = (service) => {
 
                 data[urlId] = fullUrl;
                 originsToRequest.push(`${urlObj.origin}/*`);
+                // And the same host on the other scheme. A reverse proxy that
+                // answers http with a 301 to https is the norm, and following
+                // that redirect crosses into an origin the extension was never
+                // granted — which does not fail as "permission denied" but as
+                // an opaque CORS error about a missing Access-Control-Allow-
+                // Origin header, with nothing pointing at the cause.
+                const otherScheme = urlObj.protocol === 'http:' ? 'https:' : 'http:';
+                originsToRequest.push(`${otherScheme}//${urlObj.host}/*`);
             } catch (e) {
                 showStatus(service, 'Invalid URL format!', 'error');
                 console.warn("Invalid URL:", fullUrl, e);

@@ -33,7 +33,7 @@ import {
     getDockhandStacks
 } from "../../services/dockhand.js";
 import { formatSize } from "../../services/utils.js";
-import { showNotification, showConfirmModal, escapeHtml } from "../utils.js";
+import { showNotification, showConfirmModal } from "../utils.js";
 import poller from "../core/Poller.js";
 
 /** Refresh cadence for the container list, matching the other Docker views. */
@@ -46,9 +46,6 @@ const ENV_STORAGE_KEY = 'dockhand_selected_env';
 let currentEnvId = null;
 /** Environments this server manages, from the last successful fetch. */
 let environments = [];
-/** Last container payload, so a sub-tab switch can repaint without a fetch. */
-let lastContainers = [];
-
 /**
  * Initializes the Dockhand view.
  * @param {string} url - Dockhand URL
@@ -112,7 +109,6 @@ async function refresh(url, key) {
     // failure should empty the list. Stats and updates decorate it and are
     // already soft-failing in the service layer.
     const containers = await getDockhandContainers(url, key, currentEnvId);
-    lastContainers = containers;
 
     const [stats, updates] = await Promise.all([
         getDockhandStats(url, key, currentEnvId),
@@ -138,10 +134,10 @@ function activeTab() {
 function setupSubTabs(url, key) {
     document.querySelectorAll('#dockhand-view .sub-tab-btn').forEach(btn => {
         btn.onclick = () => {
-            document.querySelectorAll('#dockhand-view .sub-tab-btn')
-                .forEach(b => b.classList.toggle('active', b === btn));
-            document.querySelectorAll('#dockhand-view .sub-view')
-                .forEach(v => v.classList.toggle('hidden', v.id !== btn.dataset.target));
+            // popup.js also has a global .sub-tab-btn handler that does the
+            // showing and hiding; this only has to load what the new tab
+            // needs. Assigned rather than added, because initDockhand runs on
+            // every visit to the view.
             refresh(url, key).catch(e => showError(e.message));
         };
     });
@@ -204,7 +200,6 @@ function renderEnvironmentPicker(url, key) {
         currentEnvId = select.value;
         localStorage.setItem(ENV_STORAGE_KEY, String(currentEnvId));
         // The previous host's containers must not linger under the new name.
-        lastContainers = [];
         document.getElementById('dockhand-list')?.replaceChildren();
         try {
             await refresh(url, key);
@@ -593,6 +588,10 @@ function showLogs(name, text) {
     };
     const close = document.createElement('button');
     close.className = 'modal-btn confirm';
+    // .modal-btn.confirm sets `color: white` and leaves the background to the
+    // caller — "set inline by JS based on service", says the stylesheet. Not
+    // setting one left white text on the modal's own dark surface.
+    close.style.backgroundColor = 'var(--accent-dockhand)';
     close.textContent = 'Close';
     footer.append(copy, close);
 
@@ -659,18 +658,29 @@ function makeAction(glyph, label) {
     return btn;
 }
 
-/** @param {string} message */
+/**
+ * Reports a failure into the panel that is actually on screen.
+ *
+ * This used to write into #dockhand-list unconditionally. That list lives in
+ * the Containers panel, so a failure while the Stacks tab was open put the
+ * message somewhere hidden and left Stacks blank — which reads as the tab
+ * switcher being broken rather than as a request that failed.
+ * @param {string} message
+ */
 function showError(message) {
     setText('dockhand-hero', 'Unavailable');
     setText('dockhand-subline', message);
-    const list = document.getElementById('dockhand-list');
-    if (list) {
-        list.replaceChildren();
-        const banner = document.createElement('div');
-        banner.className = 'error-banner';
-        banner.textContent = message;
-        list.appendChild(banner);
-    }
+
+    const target = activeTab() === 'dockhand-tab-stacks'
+        ? document.getElementById('dockhand-stack-list')
+        : document.getElementById('dockhand-list');
+    if (!target) return;
+
+    target.replaceChildren();
+    const banner = document.createElement('div');
+    banner.className = 'error-banner';
+    banner.textContent = message;
+    target.appendChild(banner);
 }
 
 /** @param {string} message */

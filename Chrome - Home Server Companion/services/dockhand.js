@@ -51,16 +51,33 @@ const request = async (url, apiKey, path, { method = 'GET', query, body } = {}) 
     }
     const qs = search.toString();
 
-    const response = await fetch(`${base}${path}${qs ? `?${qs}` : ''}`, {
-        method,
-        headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Accept': 'application/json',
-            ...(body ? { 'Content-Type': 'application/json' } : {})
-        },
-        ...(body ? { body: JSON.stringify(body) } : {}),
-        cache: 'no-store'
-    });
+    let response;
+    try {
+        response = await fetch(`${base}${path}${qs ? `?${qs}` : ''}`, {
+            method,
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Accept': 'application/json',
+                ...(body ? { 'Content-Type': 'application/json' } : {})
+            },
+            ...(body ? { body: JSON.stringify(body) } : {}),
+            cache: 'no-store'
+        });
+    } catch (e) {
+        // fetch only rejects below the HTTP layer, and in an extension that
+        // almost always means the host permission does not cover this origin.
+        // The commonest way to get there is a base URL on http against a
+        // server that 301s to https: the redirect lands on an origin nobody
+        // granted, and Chrome reports it as a CORS failure rather than as a
+        // permission problem.
+        if (base.startsWith('http://')) {
+            throw new Error(
+                'Could not reach Dockhand over http. If the server redirects to '
+                + 'https, set the protocol to https:// in Settings.'
+            );
+        }
+        throw new Error(`Could not reach Dockhand at ${base} — check the URL and that access to this host is allowed.`);
+    }
 
     if (!response.ok) {
         // 429 is the token rate limiter, and saying so stops the user
@@ -99,7 +116,19 @@ const requireEnv = (envId) => {
  */
 export const pingDockhand = async (url) => {
     try {
-        const response = await fetch(`${normalizeUrl(url)}/api/health`, { cache: 'no-store' });
+        const base = normalizeUrl(url);
+        let response;
+        try {
+            response = await fetch(`${base}/api/health`, { cache: 'no-store' });
+        } catch {
+            if (base.startsWith('http://')) {
+                throw new Error(
+                    'Could not reach Dockhand over http. If the server redirects to '
+                    + 'https, set the protocol to https:// in Settings.'
+                );
+            }
+            throw new Error(`Could not reach Dockhand at ${base}.`);
+        }
         if (!response.ok) throw new Error(`Health check failed: ${response.status}`);
         return await response.json();
     } catch (error) {

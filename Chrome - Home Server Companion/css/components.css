@@ -1091,6 +1091,41 @@ body.dark-mode .ip-map-tiles {
   font-weight: 500;
 }
 
+/* Icon-only buttons.
+   .refresh-btn and .icon-btn have been applied in five views and defined in
+   none of them: every existing user sets style.cssText on the element right
+   after adding the class, so the class carried no weight and the omission
+   never showed. Markup that uses the class and nothing else — the Dockhand
+   toolbar — rendered as a bare unstyled button. Inline styles still win, so
+   the views that set their own are unaffected. */
+.icon-btn,
+.refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.icon-btn:hover:not(:disabled),
+.refresh-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.icon-btn:disabled,
+.refresh-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
 /* Refresh buttons.
    `@keyframes spin` lived only in setup.css, which popup.html does not load,
    so this animation resolved to nothing in the popup. Sonarr and Radarr each
