@@ -760,10 +760,16 @@ function renderHydratedRequests(requests, url, key, authMethod = 'apikey') {
             if (approveBtn) {
                approveBtn.onclick = async () => {
                   approveBtn.disabled = true;
-                  const success = await Seerr.approveRequest(url, key, req.id, authMethod);
-                  if (success) {
+                  try {
+                      await Seerr.approveRequest(url, key, req.id, authMethod);
                       loadRequests(url, key, document.getElementById('seerr-filter')?.value || 'pending', authMethod);
                       showNotification(`Request "${title}" approved`, 'success');
+                  } catch (e) {
+                      // The button used to stay disabled with nothing said:
+                      // the user clicked Approve, it greyed out, and that was
+                      // the end of it until they left the view and came back.
+                      approveBtn.disabled = false;
+                      showNotification(`Could not approve "${title}": ${e.message}`, 'error');
                   }
                };
             }
@@ -780,10 +786,13 @@ function renderHydratedRequests(requests, url, key, authMethod = 'apikey') {
                     );
 
                     if (confirmed) {
-                        const success = await Seerr.declineRequest(url, key, req.id, authMethod);
-                        if (success) {
-                             loadRequests(url, key, document.getElementById('seerr-filter')?.value || 'pending', authMethod);
-                             showNotification(`Request "${title}" declined`, '#f44336'); // Red for declined
+                        try {
+                            await Seerr.declineRequest(url, key, req.id, authMethod);
+                            loadRequests(url, key, document.getElementById('seerr-filter')?.value || 'pending', authMethod);
+                            showNotification(`Request "${title}" declined`, '#f44336'); // Red for declined
+                        } catch (e) {
+                            declineBtn.disabled = false;
+                            showNotification(`Could not decline "${title}": ${e.message}`, 'error');
                         }
                     } else {
                         declineBtn.disabled = false;

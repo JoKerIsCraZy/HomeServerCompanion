@@ -57,6 +57,23 @@ class AppState {
     async init() {
         return new Promise((resolve) => {
             chrome.storage.sync.get(null, (items) => {
+                // Nothing checked lastError here. On a storage failure Chrome
+                // still invokes the callback, but with items undefined - and
+                // runMigrations(undefined) throws inside a callback, so the
+                // promise never settled. popup.js awaits this as its first
+                // step, which meant the whole popup stayed blank with no
+                // error anywhere the user could see.
+                if (chrome.runtime.lastError || !items) {
+                    console.error('Could not read settings:',
+                        chrome.runtime.lastError?.message || 'no data returned');
+                    this.state.configs = {};
+                    this.state.activeProfile = 'default';
+                    this.initialized = true;
+                    eventBus.emit('state:initialized', this.state);
+                    resolve(this.state);
+                    return;
+                }
+
                 const { changed, removedKeys } = runMigrations(items);
 
                 this.state.configs = items;

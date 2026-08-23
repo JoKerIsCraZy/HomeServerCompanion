@@ -185,11 +185,14 @@ export async function approveRequest(url, apiKey, requestId, authMethod = 'apike
             method: 'POST',
             ...fetchOptions
         });
-        if (!response.ok) throw new Error('Failed to approve');
+        if (!response.ok) throw new Error(`Failed to approve: ${response.status}`);
         return true;
     } catch (e) {
+        // Rethrow, like every other call in this file. Returning false left
+        // the caller with no reason to show and, worse, an easy failure to
+        // ignore - which is exactly what happened.
         console.error(e);
-        return false;
+        throw e;
     }
 }
 
@@ -210,11 +213,11 @@ export async function declineRequest(url, apiKey, requestId, authMethod = 'apike
             method: 'POST',
             ...fetchOptions
         });
-        if (!response.ok) throw new Error('Failed to decline');
+        if (!response.ok) throw new Error(`Failed to decline: ${response.status}`);
         return true;
     } catch (e) {
         console.error(e);
-        return false;
+        throw e;
     }
 }
 

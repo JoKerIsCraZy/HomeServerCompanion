@@ -19,6 +19,7 @@ export async function initWizarr(url, key) {
         showError("Please configure Wizarr in settings.");
         return;
     }
+    clearError();
     
     // Setup event listeners (only once)
     setupEventListeners();
@@ -32,15 +33,35 @@ export async function initWizarr(url, key) {
     ]);
 }
 
+/**
+ * Shows a banner above the view without destroying it.
+ *
+ * This used to call replaceChildren() on #wizarr-content, and that element is
+ * not a shell - it holds the entire static Wizarr markup from popup.html: the
+ * server selector, the New Invite button, the invitations list. Wiping it
+ * left nothing for a later successful load to render into, so once the
+ * "configure Wizarr" message had appeared the tab stayed broken. In the popup
+ * that lasted until it was closed; in the fullscreen window, which stays open
+ * for days, it was permanent.
+ * @param {string} message
+ */
 function showError(message) {
     const container = document.getElementById('wizarr-content');
-    if (container) {
-        container.replaceChildren();
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-banner';
-        errorDiv.textContent = message;
-        container.appendChild(errorDiv);
+    if (!container) return;
+
+    let banner = container.querySelector('.wizarr-error-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.className = 'error-banner wizarr-error-banner';
+        container.prepend(banner);
     }
+    banner.textContent = message;
+}
+
+/** Removes the banner showError put up, if any. */
+function clearError() {
+    const banner = document.querySelector('#wizarr-content .wizarr-error-banner');
+    if (banner) banner.remove();
 }
 
 function setupEventListeners() {

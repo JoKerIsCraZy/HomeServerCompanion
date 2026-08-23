@@ -16,9 +16,14 @@ export async function initRadarr(url, key, state) {
         if (radarrView) {
             const missingBtn = radarrView.querySelector('.tab-btn[data-tab="missing"]');
             if (missingBtn) {
-                missingBtn.addEventListener('click', () => {
+                // Assigned, not added. initRadarr runs on every visit to the
+                // view, so addEventListener stacked another handler each time
+                // and the fifth visit fired five concurrent loads off one
+                // click - five renders into the same container, and five
+                // requests whenever the cache was cold.
+                missingBtn.onclick = () => {
                    loadRadarrMissing(url, key, state);
-                });
+                };
                 
                 // If tab is already active (restored state), load immediately
                 if (missingBtn.classList.contains('active')) {
@@ -569,8 +574,13 @@ function renderRadarrQueue(records, state) {
                 btnCancel.onclick = (ev) => {
                     ev.stopPropagation();
                     optionsDiv.remove();
+                    // Put the x back. It is hidden below while the options are
+                    // open, and cancelling used to remove only the options -
+                    // so the button never returned and that row could not be
+                    // removed again until the whole queue re-rendered.
+                    delBtn.style.display = '';
                 };
-                
+
                 delBtn.style.display = 'none';
                 delBtn.parentNode.appendChild(optionsDiv);
             };
