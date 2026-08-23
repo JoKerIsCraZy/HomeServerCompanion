@@ -68,6 +68,22 @@ globalThis.hscRunStorageMigrations = function runStorageMigrations(items) {
             }
             changed = true;
         }
+
+        // ---- v4.2: insert `dockhand` before `portainer` if missing ----
+        // Same reasoning as tracearr above: an existing serviceOrder has no
+        // entry for a service that did not exist when it was written, and the
+        // sidebar renders from that array — so without this the new view stays
+        // invisible until the user reorders the list by hand. Next to
+        // Portainer, because they are the two Docker managers.
+        if (!items.serviceOrder.includes('dockhand')) {
+            const portainerIdx = items.serviceOrder.indexOf('portainer');
+            if (portainerIdx !== -1) {
+                items.serviceOrder.splice(portainerIdx, 0, 'dockhand');
+            } else {
+                items.serviceOrder.push('dockhand');
+            }
+            changed = true;
+        }
     }
 
     // ---- v4.1: drop the stored Seerr account password ----

@@ -246,6 +246,7 @@
       .tab-btn[data-target="seerr"]     { --nav-accent: var(--accent-seerr); }
       .tab-btn[data-target="prowlarr"]  { --nav-accent: var(--accent-prowlarr); }
       .tab-btn[data-target="wizarr"]    { --nav-accent: var(--accent-wizarr); }
+      .tab-btn[data-target="dockhand"]  { --nav-accent: var(--accent-dockhand); }
       .tab-btn[data-target="portainer"] { --nav-accent: var(--accent-portainer); }
       .tab-btn[data-target="tracearr"]  { --nav-accent: var(--accent-tracearr); }
 
@@ -1056,6 +1057,11 @@
               <span class="nav-label">Wizarr</span>
               <span class="nav-status" data-service="wizarr" aria-hidden="true"></span>
             </button>
+            <button class="tab-btn" data-target="dockhand">
+              <img class="nav-icon" src="icons/dockhand.png" alt="" />
+              <span class="nav-label">Dockhand</span>
+              <span class="nav-status" data-service="dockhand" aria-hidden="true"></span>
+            </button>
             <button class="tab-btn" data-target="portainer">
               <img class="nav-icon" src="icons/portainer.png" alt="" />
               <span class="nav-label">Portainer</span>
@@ -1672,6 +1678,60 @@
         </div>
 
         <!-- Portainer Section -->
+        <div id="dockhand" class="section">
+          <h2>Dockhand Settings</h2>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; cursor: pointer">
+              <input
+                type="checkbox"
+                id="dockhandEnabled"
+                style="width: auto; margin-right: 10px"
+              />
+              Enable Dockhand
+            </label>
+            <div class="help-text">
+              Disabling the service will remove it from the sidebar and
+              navigation.
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dockhandUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="dockhandProtocol" aria-label="Dockhand protocol" style="width: auto">
+                <option value="http://">http://</option>
+                <option value="https://">https://</option>
+              </select>
+              <input
+                type="text"
+                id="dockhandUrl"
+                placeholder="localhost:port"
+                style="flex: 1"
+              />
+            </div>
+            <div class="help-text">
+              Enter host and port, e.g., 192.168.1.10:3000
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dockhandKey">API Token</label>
+            <input type="password" id="dockhandKey" />
+            <div class="help-text">
+              Dockhand → Settings → API Tokens. The token starts with
+              <code>dh_</code> and needs at least the <code>view</code>
+              permission, plus <code>start</code> and <code>stop</code> for the
+              container buttons. Ten failed attempts lock the token out for
+              five minutes.
+            </div>
+          </div>
+          <div class="actions">
+            <button id="saveDockhand" class="btn-primary">Save Dockhand</button>
+            <button id="testDockhand" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusDockhand" class="status"></div>
+        </div>
+
         <div id="portainer" class="section">
           <h2>Portainer Settings</h2>
           <div class="form-group">

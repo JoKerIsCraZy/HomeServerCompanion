@@ -97,6 +97,7 @@ import * as Prowlarr from "../../services/prowlarr.js";
 import * as Wizarr from "../../services/wizarr.js";
 import * as Portainer from "../../services/portainer.js";
 import * as Tracearr from "../../services/tracearr.js";
+import * as Dockhand from "../../services/dockhand.js";
 
 async function renderServiceGrid(container, state, isUpdate = false) {
     // Only clear if NOT updating
@@ -187,6 +188,23 @@ async function renderServiceGrid(container, state, isUpdate = false) {
                // Wizarr doesn't always have simple stats, just check connection
                await Wizarr.getInvitations(url, key);
                return { status: 'online', metric: 'OK', label: 'Status' };
+            }
+        },
+        {
+            id: 'dockhand',
+            name: 'Dockhand',
+            icon: 'dockhand.png',
+            check: async (url, key) => {
+                // One request covers every environment this server fronts,
+                // rather than walking each one's container list.
+                const envs = await Dockhand.getDockhandDashboard(url, key);
+                const running = envs.reduce((n, e) => n + e.running, 0);
+                const total = envs.reduce((n, e) => n + e.total, 0);
+                return {
+                    status: 'online',
+                    metric: `${running}/${total}`,
+                    label: 'Running'
+                };
             }
         },
         {

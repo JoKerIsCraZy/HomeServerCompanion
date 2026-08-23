@@ -158,6 +158,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "prowlarr",
     "wizarr",
     "tracearr",
+    "dockhand",
     "portainer",
   ];
   if (state.configs.serviceOrder && Array.isArray(state.configs.serviceOrder)) {
@@ -885,6 +886,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           break;
         case "portainer":
           await initPortainer(url, key, state);
+          break;
+        case "dockhand":
+          await import('./ui/dockhand.js').then(m => m.initDockhand(url, key, state));
           break;
         case "tracearr":
           await import('./ui/tracearr.js').then(m => m.initTracearr(url, key, state));

@@ -1,4 +1,4 @@
-const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'seerr', 'prowlarr', 'wizarr', 'portainer', 'tracearr'];
+const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'seerr', 'prowlarr', 'wizarr', 'dockhand', 'portainer', 'tracearr'];
 
 // ==================== CHANGELOG POPUP ====================
 /**

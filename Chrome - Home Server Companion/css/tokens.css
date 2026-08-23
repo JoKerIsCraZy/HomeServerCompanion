@@ -44,6 +44,8 @@
     --accent-wizarr-dark: #aa2030;
     --accent-portainer: #13ae4e;
     --accent-tracearr: #00bcd4;
+    /* Dockhand's own blue, taken from its icon. */
+    --accent-dockhand: #2f80ed;
 
     /* === Colors - Status === */
     --status-success: #22c55e;

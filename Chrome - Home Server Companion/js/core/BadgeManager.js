@@ -36,6 +36,7 @@ class BadgeManager {
             { id: 'radarr', module: '../ui/radarr.js', fn: 'updateRadarrBadge' },
             { id: 'tautulli', module: '../ui/tautulli.js', fn: 'updateTautulliBadge' },
             { id: 'tracearr', module: '../ui/tracearr.js', fn: 'updateTracearrBadge' },
+            { id: 'dockhand', module: '../ui/dockhand.js', fn: 'updateDockhandBadge' },
             { id: 'portainer', module: '../ui/portainer.js', fn: 'updatePortainerBadge_Dashboard' }
         ];
 

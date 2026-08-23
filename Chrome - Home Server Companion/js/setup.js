@@ -128,6 +128,17 @@ const SERVICES = [
         keyHelp: 'API Key from Wizarr Settings'
     },
     {
+        id: 'dockhand',
+        name: 'Dockhand',
+        icon: '🐳',
+        iconFile: 'dockhand.png',
+        description: 'Docker Management',
+        hasConfig: true,
+        urlPlaceholder: 'localhost:3000',
+        keyRequired: true,
+        keyHelp: 'API token from Dockhand → Settings → API Tokens (starts with dh_)'
+    },
+    {
         id: 'tracearr',
         name: 'Tracearr',
         icon: '📊',

@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="css/services/wizarr.css" />
     <link rel="stylesheet" href="css/services/portainer.css" />
     <link rel="stylesheet" href="css/services/tracearr.css" />
+    <link rel="stylesheet" href="css/services/dockhand.css" />
     <link rel="stylesheet" href="css/fullscreen.css" />
     <link rel="stylesheet" href="css/responsive.css" />
     <link rel="stylesheet" href="css/fullscreen-v4.css" />
@@ -177,6 +178,21 @@
         >
           <img
             src="icons/tracearr.png"
+            class="nav-icon"
+            alt=""
+            aria-hidden="true"
+          />
+        </div>
+        <div
+          class="nav-item"
+          data-target="dockhand"
+          title="Dockhand"
+          role="button"
+          tabindex="0"
+          aria-label="Dockhand"
+        >
+          <img
+            src="icons/dockhand.png"
             class="nav-icon"
             alt=""
             aria-hidden="true"
@@ -1335,6 +1351,91 @@
         </div>
 
         <!-- Tracearr View -->
+        <!-- Dockhand View -->
+        <!-- Every slot exists in static markup with a placeholder, so the
+             first paint already has its final geometry and nothing jumps when
+             the data lands. The row markup itself is built in JS and reuses
+             the Unraid row classes: the two Docker lists should not look like
+             two different products. -->
+        <div id="dockhand-view" class="view hidden">
+          <div class="unraid-header">
+            <div class="unraid-hero-stack">
+              <div id="dockhand-hero" class="unraid-hero is-pending" aria-live="polite">
+                Checking…
+              </div>
+              <div id="dockhand-subline" class="unraid-subline">&nbsp;</div>
+            </div>
+
+            <!-- One Dockhand server can front several Docker hosts. Hidden
+                 when there is only one, because a picker with one option is
+                 furniture. -->
+            <div id="dockhand-env-wrap" class="dockhand-env-wrap hidden">
+              <label class="visually-hidden" for="dockhand-env">
+                Docker environment
+              </label>
+              <select id="dockhand-env" class="sort-select"></select>
+            </div>
+          </div>
+
+          <div class="sub-tabs">
+            <div class="tab-glider"></div>
+            <button class="sub-tab-btn active" data-target="dockhand-tab-containers">
+              Containers
+            </button>
+            <button class="sub-tab-btn" data-target="dockhand-tab-stacks">
+              Stacks
+            </button>
+          </div>
+
+          <div id="dockhand-tab-containers" class="sub-view">
+            <div class="unraid-list-controls">
+              <label class="visually-hidden" for="dockhand-search">
+                Search containers
+              </label>
+              <input
+                type="search"
+                id="dockhand-search"
+                placeholder="Search containers…"
+                class="search-input-full"
+              />
+              <label class="visually-hidden" for="dockhand-sort">
+                Sort containers
+              </label>
+              <select id="dockhand-sort" class="sort-select">
+                <option value="status-asc">Running first</option>
+                <option value="status-desc">Stopped first</option>
+                <option value="name-asc">Name A–Z</option>
+              </select>
+              <button
+                type="button"
+                id="dockhand-check-updates"
+                class="refresh-btn icon-btn"
+                title="Check every container for a newer image"
+                aria-label="Check for image updates"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3" />
+                </svg>
+              </button>
+            </div>
+            <div id="dockhand-list" class="unraid-row-list"></div>
+          </div>
+
+          <div id="dockhand-tab-stacks" class="sub-view hidden">
+            <div id="dockhand-stack-list" class="unraid-row-list"></div>
+          </div>
+        </div>
+
         <div id="tracearr-view" class="view hidden">
           <div class="tabs">
             <div class="tab-glider"></div>
