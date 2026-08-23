@@ -121,3 +121,10 @@ body.dark-mode .fancy-header {
   color: #ffc107;
   border-color: #ffc107;
 }
+
+/* Applied to the media title in the activity cards, which opens the item in
+   Tautulli. The class was being added with no rule behind it; the underline
+   came from a pair of mouseenter/mouseleave listeners on every card. */
+.hover-underline:hover {
+    text-decoration: underline;
+}

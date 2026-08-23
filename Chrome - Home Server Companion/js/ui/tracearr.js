@@ -562,9 +562,17 @@ function renderTracearrStreams(streams, url, key, state) {
                     );
 
                     if (reason !== null) {
-                        await Tracearr.terminateTracearrStream(url, key, stream.id, reason);
-                        showNotification('Stream terminated', 'success');
-                        setTimeout(() => initTracearr(url, key, state), 1000);
+                        try {
+                            await Tracearr.terminateTracearrStream(url, key, stream.id, reason);
+                            showNotification('Stream terminated', 'success');
+                            setTimeout(() => initTracearr(url, key, state), 1000);
+                        } catch (err) {
+                            // The service rethrows, and this listener had no
+                            // catch: the rejection went unhandled, no
+                            // notification appeared either way, and the stream
+                            // just carried on playing.
+                            showNotification(`Could not kill stream: ${err.message}`, 'error');
+                        }
                     }
                 });
             }

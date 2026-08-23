@@ -93,7 +93,10 @@ export const getLibraries = async (url, apiKey) => {
  * @returns {Promise<Array>}
  */
 export const getInvitations = async (url, apiKey) => {
-    if (!url || !apiKey) return [];
+    // A missing URL or key is a configuration fault, not an empty list. The
+    // dashboard does not pre-check Wizarr's credentials, so returning [] here
+    // showed an unconfigured Wizarr as online.
+    if (!url || !apiKey) throw new Error('Wizarr is not configured');
     url = normalizeUrl(url);
 
     try {
@@ -109,10 +112,18 @@ export const getInvitations = async (url, apiKey) => {
         }
 
         const data = await response.json();
-        return Array.isArray(data) ? data : [];
-    } catch (error) {
-        console.error('Failed to fetch Wizarr invitations:', error);
+        // Wizarr answers with { invitations: [...] }. Only the bare-array
+        // form was handled, so this returned [] against a healthy server -
+        // the view does its own fetch and reads data.invitations, which is
+        // how the discrepancy stayed hidden.
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.invitations)) return data.invitations;
         return [];
+    } catch (error) {
+        // Rethrow: the dashboard reads a rejection as "offline", and this
+        // swallow made every Wizarr card green regardless of the server.
+        console.error('Failed to fetch Wizarr invitations:', error);
+        throw error;
     }
 };
 

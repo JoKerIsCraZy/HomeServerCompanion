@@ -127,8 +127,11 @@ export async function getTrending(url, apiKey, page = 1, authMethod = 'apikey') 
         const data = await response.json();
         return data.results || [];
     } catch (error) {
+        // Rethrow. Returning [] here rendered an empty Discover grid that was
+        // indistinguishable from "nothing is trending", and the caller
+        // already has a catch that shows a proper error banner.
         console.error('Failed to fetch Seerr trending:', error);
-        return [];
+        throw error;
     }
 }
 
@@ -155,8 +158,13 @@ export async function getRequests(url, apiKey, status = 'pending', authMethod = 
 
         return await response.json();
     } catch (error) {
+        // Rethrow. The dashboard decides a service is online by whether this
+        // rejects, so swallowing the error reported Seerr as online with 0
+        // pending requests whether the server was unreachable, the API key
+        // rejected, or there really were none. The Requests view has its own
+        // catch, which now finally gets to run.
         console.error('Failed to fetch Seerr requests:', error);
-        return { results: [] };
+        throw error;
     }
 }
 

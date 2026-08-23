@@ -38,6 +38,10 @@ export const terminateSession = async (url, apiKey, sessionId, message = 'Termin
         if (!response.ok) throw new Error(`Error: ${response.status}`);
         return await response.json();
     } catch (error) {
+        // Rethrow. Without it this resolved to undefined on every failure and
+        // the caller announced "Stream terminated" for a stream that was
+        // still playing.
         console.error("Tautulli Terminate Error:", error);
+        throw error;
     }
 };
