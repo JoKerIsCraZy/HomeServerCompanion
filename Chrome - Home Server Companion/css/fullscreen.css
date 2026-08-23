@@ -454,181 +454,12 @@ body.fullscreen-mode #tracearr-activity .card {
   margin-bottom: 0;
 }
 
-/* Statistics Tab - Compact ONLY */
-body.fullscreen-mode #tracearr-stats-content > div {
-  margin-bottom: 12px;
-}
-
-body.fullscreen-mode #tracearr-stats-content .stats-grid {
-  gap: 8px;
-}
-
-/* Stats Grid (Total Sessions, Total Users etc.) - Kleine Boxen, lesbare Texte */
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) {
-  gap: 10px !important;
-  margin-bottom: 14px !important;
-  padding: 0 !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card {
-  padding: 12px !important;
-  gap: 12px !important;
-  border-radius: 10px !important;
-  min-height: auto !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card > div:first-child {
-  width: 42px !important;
-  height: 42px !important;
-  font-size: 20px !important;
-  border-radius: 10px !important;
-  flex-shrink: 0 !important;
-  padding: 0 !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card > div:last-child {
-  gap: 3px !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card > div:last-child > div:first-child {
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  line-height: 1.2 !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card > div:last-child > div:nth-child(2) {
-  font-size: 14px !important;
-  line-height: 1.2 !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(2) .card > div:last-child > div:nth-child(3) {
-  font-size: 11px !important;
-  line-height: 1.2 !important;
-}
-
-/* Hero Section - Extra compact */
-body.fullscreen-mode #tracearr-stats-content > div:first-child {
-  padding: 12px;
-  margin-bottom: 8px;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:first-child > div:first-child {
-  font-size: 8px;
-  margin-bottom: 6px;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:first-child > div:last-child {
-  gap: 8px;
-}
-
-/* Hero stat cards - Extra small */
-body.fullscreen-mode #tracearr-stats-content > div:first-child .statCard > div:first-child,
-body.fullscreen-mode #tracearr-stats-content > div:first-child .statCard > div:last-child > div:first-child {
-  font-size: 14px;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:first-child .statCard > div:last-child > div:last-child {
-  font-size: 8px;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:first-child .statCard > div:first-child {
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
-}
-
-/* Stats Cards - Extra compact */
-body.fullscreen-mode #tracearr-stats-content .card {
-  padding: 8px;
-}
-
-body.fullscreen-mode #tracearr-stats-content .card > div:last-child > div:first-child {
-  font-size: 14px;
-}
-
-body.fullscreen-mode #tracearr-stats-content .card > div:last-child > div:last-child {
-  font-size: 9px;
-}
-
-body.fullscreen-mode #tracearr-stats-content .card > div:last-child > div:last-child {
-  font-size: 7px;
-}
-
-body.fullscreen-mode #tracearr-stats-content .card > div:first-child {
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
-}
-
-/* Users Header - Smaller */
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(3) {
-  margin-bottom: 10px !important;
-  padding: 0 !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(3) h2 {
-  font-size: 14px !important;
-  margin: 0 !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(3) p {
-  font-size: 11px !important;
-  margin: 0 !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(3) > div:last-child {
-  font-size: 20px !important;
-}
-
-/* Users Grid - Kleine Boxen, lesbare Texte */
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) {
-  gap: 10px !important;
-  grid-template-columns: repeat(4, 1fr) !important;
-  padding: 0 !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card {
-  padding: 10px !important;
-  gap: 10px !important;
-  border-radius: 10px !important;
-  min-height: auto !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card > div:first-child {
-  font-size: 18px !important;
-  min-width: 24px !important;
-  padding: 0 !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card img {
-  width: 32px !important;
-  height: 32px !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card > div:last-child {
-  gap: 3px !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card > div:last-child > div:first-child {
-  font-size: 13px !important;
-  line-height: 1.2 !important;
-}
-
-body.fullscreen-mode #tracearr-stats-content > div:nth-child(4) .card > div:last-child > div:last-child > span {
-  font-size: 11px !important;
-}
-
-/* All headers - Smaller */
-body.fullscreen-mode #tracearr-stats-content > div > div:first-child,
-body.fullscreen-mode #tracearr-stats-content h2,
-body.fullscreen-mode #tracearr-stats-content > div > div > div:first-child {
-  font-size: 10px !important;
-}
-
-/* Decorative icons - Smaller */
-body.fullscreen-mode #tracearr-stats-content > div:last-child > div:last-child {
-  font-size: 16px;
-}
+/* Statistics tab: no fullscreen overrides here.
+   This used to hold ~35 positional ID rules ("> div:nth-child(2) > div:last-child")
+   with !important, tuned to shrink the old eight-tile layout. They matched by
+   position, so after the tab was rebuilt they landed on the wrong elements and
+   forced the new header down to 10px. Sizing now lives with the component, in
+   css/services/tracearr.css under `body.fullscreen-mode .trr-*`. */
 
 /* ============================================
    UNRAID
@@ -659,14 +490,6 @@ body.fullscreen-mode .unraid-list-title {
 
 body.fullscreen-mode .unraid-list-header-stack {
   margin-bottom: 15px;
-}
-
-/* Unraid grid layout for VMs and Containers */
-body.fullscreen-mode #unraid-vms-list,
-body.fullscreen-mode #unraid-docker-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
 }
 
 /* System Dashboard Cards - Larger */
@@ -707,12 +530,6 @@ body.fullscreen-mode .ram-bar-container {
 
 body.fullscreen-mode .ram-bar-fill {
   height: 10px !important;
-}
-
-/* Section Headers */
-body.fullscreen-mode .unraid-section-wrapper h3 {
-  font-size: 14px !important;
-  margin-bottom: 15px !important;
 }
 
 /* Full Width Cards */
@@ -1200,8 +1017,6 @@ body.fullscreen-mode ::-webkit-scrollbar-thumb {
   body.fullscreen-mode #sab-history,
   body.fullscreen-mode .date-group > div[style*="grid"],
   body.fullscreen-mode #tautulli-activity,
-  body.fullscreen-mode #unraid-vms-list,
-  body.fullscreen-mode #unraid-docker-list,
   body.fullscreen-mode #prowlarr-indexers,
   body.fullscreen-mode #prowlarr-search-results,
   body.fullscreen-mode #seerr-requests,
@@ -1220,8 +1035,6 @@ body.fullscreen-mode ::-webkit-scrollbar-thumb {
   body.fullscreen-mode #sab-history,
   body.fullscreen-mode .date-group > div[style*="grid"],
   body.fullscreen-mode #tautulli-activity,
-  body.fullscreen-mode #unraid-vms-list,
-  body.fullscreen-mode #unraid-docker-list,
   body.fullscreen-mode #prowlarr-indexers,
   body.fullscreen-mode #prowlarr-search-results,
   body.fullscreen-mode #seerr-requests,

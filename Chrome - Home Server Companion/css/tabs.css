@@ -40,7 +40,7 @@
     position: relative;
     z-index: 1;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .tabs .tab-btn:hover {
@@ -133,7 +133,7 @@
     position: relative;
     z-index: 1;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .sub-tabs .sub-tab-btn:hover {
