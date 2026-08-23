@@ -1,5 +1,6 @@
 ﻿import * as Prowlarr from "../../services/prowlarr.js";
 import { showNotification, openUrlSafely } from "../utils.js";
+import poller from "../core/Poller.js";
 
 // --- PROWLARR UI LOGIC ---
 
@@ -58,11 +59,8 @@ export async function initProwlarr(url, apiKey, state) {
     // Initial Load
     await loadProwlarrData(url, apiKey);
 
-    state.serviceIntervals = state.serviceIntervals || {};
-    if (state.serviceIntervals.prowlarr) clearInterval(state.serviceIntervals.prowlarr);
-    state.serviceIntervals.prowlarr = setInterval(() => {
-        loadProwlarrData(url, apiKey);
-    }, 60000);
+    poller.register('prowlarr', () => loadProwlarrData(url, apiKey),
+        { interval: 60000, immediate: false });
 }
 
 const loadProwlarrData = async (url, apiKey) => {

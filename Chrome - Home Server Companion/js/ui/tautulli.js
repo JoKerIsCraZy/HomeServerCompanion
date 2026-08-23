@@ -1,5 +1,6 @@
 import * as Tautulli from "../../services/tautulli.js";
 import { showNotification, showPromptModal, showIpInfoModal, validateUrl } from "../utils.js";
+import poller from "../core/Poller.js";
 
 /**
  * Initializes the Tautulli service view.
@@ -26,12 +27,8 @@ export async function initTautulli(url, key, state) {
     // Initial Run
     await update();
 
-    // Clear existing interval if any
-    state.serviceIntervals = state.serviceIntervals || {};
-    if (state.serviceIntervals.tautulli) clearInterval(state.serviceIntervals.tautulli);
-
-    // Set new interval (2 seconds)
-    state.serviceIntervals.tautulli = setInterval(update, 2000);
+    // Unchanged 2s cadence while visible.
+    poller.register('tautulli', update, { interval: 2000, immediate: false });
 }
 
 function renderTautulliActivity(sessions, url, key, state) {
