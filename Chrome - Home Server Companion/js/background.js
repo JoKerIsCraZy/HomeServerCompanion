@@ -52,59 +52,96 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 // --- Portainer Header Spoofing (Fix for 403 Forbidden) ---
-const PORTAINER_RULE_ID = 1;
+//
+// Portainer rejects API calls whose Origin does not match the server, and an
+// extension sends `chrome-extension://...`. These rules rewrite Origin and
+// Referer to the instance's own origin for requests aimed at it.
+//
+// The rules used to be keyed on `portainerUrl`. Nothing writes that key —
+// options.js reads it once to migrate a pre-4.0 profile into
+// `portainerInstances` and it is never written back — so the lookup always
+// came up empty, the function removed its rule and returned, and the feature
+// had been inert for every user since the multi-instance rewrite.
+//
+// One rule per configured instance now, because Portainer is the one service
+// that can be configured more than once.
+const PORTAINER_RULE_ID_BASE = 1;
+const PORTAINER_MAX_RULES = 20;
 
-async function updatePortainerRules() {
-    // Check both sync and local storage
-    const syncItems = await chrome.storage.sync.get(['portainerUrl']);
-    const localItems = await chrome.storage.local.get(['portainerUrl']);
-    const url = syncItems.portainerUrl || localItems.portainerUrl;
+/**
+ * Collects the configured Portainer origins, newest storage layout first.
+ * @param {Object} items - A `chrome.storage.sync` snapshot.
+ * @returns {string[]} Unique origins, at most PORTAINER_MAX_RULES of them.
+ */
+function collectPortainerOrigins(items) {
+    const raw = [];
 
-    if (!url) {
-        // Remove rule if no URL
-        chrome.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: [PORTAINER_RULE_ID]
-        });
-        return;
+    if (Array.isArray(items.portainerInstances)) {
+        for (const instance of items.portainerInstances) {
+            if (instance && instance.url) raw.push(instance.url);
+        }
+    }
+    // Pre-4.0 single-instance layout, for a profile that has not opened
+    // Options since the upgrade and so has not been migrated yet.
+    if (raw.length === 0 && items.portainerUrl) {
+        raw.push(items.portainerUrl);
     }
 
+    const origins = [];
+    for (const candidate of raw) {
+        let origin;
+        try {
+            origin = new URL(candidate).origin;
+        } catch {
+            console.warn("Skipping unparseable Portainer URL:", candidate);
+            continue;
+        }
+        if (!origins.includes(origin)) origins.push(origin);
+        if (origins.length >= PORTAINER_MAX_RULES) break;
+    }
+    return origins;
+}
+
+async function updatePortainerRules() {
+    const items = await chrome.storage.sync.get(['portainerInstances', 'portainerUrl']);
+    const origins = collectPortainerOrigins(items);
+
+    // Always clear the whole block. Removing only the ids we are about to add
+    // would leave the rules of a deleted instance in place.
+    const removeRuleIds = Array.from(
+        { length: PORTAINER_MAX_RULES },
+        (_, i) => PORTAINER_RULE_ID_BASE + i
+    );
+
+    const addRules = origins.map((origin, i) => ({
+        id: PORTAINER_RULE_ID_BASE + i,
+        priority: 1,
+        action: {
+            type: "modifyHeaders",
+            requestHeaders: [
+                { header: "Origin", operation: "set", value: origin },
+                { header: "Referer", operation: "set", value: origin + "/" }
+            ]
+        },
+        condition: {
+            // `|` anchors to the start of the URL, so this matches the
+            // instance's own origin and nothing else. The previous
+            // `*://host/*` form relied on a substring match that a URL
+            // carrying the host elsewhere — in a query string, say — could
+            // also satisfy.
+            urlFilter: `|${origin}/`,
+            resourceTypes: ["xmlhttprequest"]
+        }
+    }));
+
     try {
-        const urlObj = new URL(url);
-        const origin = urlObj.origin;
-
-        // Extract host and port for urlFilter
-        // Format: ||host:port/* matches all paths on this host
-        const hostWithPort = urlObj.host; // includes port if specified
-        const urlFilter = `*://${hostWithPort}/*`;
-
-        console.debug("Setting Portainer Rule for:", urlFilter, "with Origin:", origin);
-
-        chrome.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: [PORTAINER_RULE_ID],
-            addRules: [{
-                id: PORTAINER_RULE_ID,
-                priority: 1,
-                action: {
-                    type: "modifyHeaders",
-                    requestHeaders: [
-                        { header: "Origin", operation: "set", value: origin },
-                        { header: "Referer", operation: "set", value: origin + "/" }
-                    ]
-                },
-                condition: {
-                    urlFilter: urlFilter,
-                    resourceTypes: ["xmlhttprequest"]
-                }
-            }]
-        }, () => {
-            if (chrome.runtime.lastError) {
-                console.error("Rule update failed:", chrome.runtime.lastError);
-            } else {
-                console.debug("Portainer rules updated successfully for:", origin);
-            }
-        });
+        await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules });
     } catch (e) {
-        console.error("Invalid Portainer URL for rules:", e);
+        // Reached when host permissions for the instance have not been
+        // granted yet. Portainer will answer 403 until they are; the rules
+        // are rebuilt on the next storage change, which is what granting
+        // them produces.
+        console.error("Portainer rule update failed:", e.message);
     }
 }
 
@@ -114,7 +151,8 @@ chrome.runtime.onInstalled.addListener(updatePortainerRules);
 
 // Listen for settings changes
 chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'sync' && changes.portainerUrl) {
+    if (namespace !== 'sync') return;
+    if (changes.portainerInstances || changes.portainerUrl) {
         updatePortainerRules();
     }
 });
