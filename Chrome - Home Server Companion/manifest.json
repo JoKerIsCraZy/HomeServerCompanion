@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Home Server Companion",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Unified dashboard for your home server services with Dark Pro UI",
   "permissions": ["storage", "contextMenus", "declarativeNetRequest"],
   "optional_host_permissions": [

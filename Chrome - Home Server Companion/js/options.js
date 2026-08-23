@@ -5,20 +5,12 @@ const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautull
  * Changelog entries shown in the "Show What's New" modal and in the
  * auto-popup on first launch after an update.
  *
- * Kept in sync with `checkAndShowChangelog()` in `js/utils.js` — same list,
- * just also reachable from the options page which runs as a classic script.
+ * The list lives in js/core/changelogEntries.js, which options.html loads with
+ * a script tag before this file. It used to be copied here by hand and kept in
+ * step by a comment saying so - which is exactly how both copies survived a
+ * version bump unchanged.
  */
-const CHANGELOG_ITEMS = [
-    { title: 'Tracearr:', desc: 'New service for monitoring Plex streams with live progress bars, stream details, and a statistics dashboard.' },
-    { title: 'Seerr (formerly Overseerr):', desc: 'Rebranded with Multi-Auth support (API Key, Local Account, Plex Sign-In). Your existing settings migrate automatically on first launch.' },
-    { title: 'Unraid Temperatures:', desc: 'Live CPU, Motherboard, and Hottest Disk temperature cards on the Unraid dashboard (requires Unraid OS 7.3+ / API v4.30).' },
-    { title: 'Docker Template Icons:', desc: 'Unraid containers now show their template icons directly in the list — no more two-letter placeholders.' },
-    { title: 'Instant Load:', desc: 'Unraid tab renders from the last snapshot immediately while fetching fresh data in the background. No more blank screens.' },
-    { title: 'Responsive Design:', desc: 'Mobile and tablet optimized interface with touch-friendly navigation and a reusable component library.' },
-    { title: 'Security Hardening:', desc: 'Tighter Content Security Policy, DOM injection protection, and confirmation prompts before opening external links from Docker labels.' },
-    { title: 'Performance:', desc: 'Up to 3× faster dashboard refresh — smarter polling, staggered badge updates, and fewer API roundtrips.' },
-    { title: 'Bug Fixes:', desc: 'Fullscreen button now opens correctly, Seerr request statuses display accurately, Tracearr empty state clears when streams start.' }
-];
+const CHANGELOG_ITEMS = globalThis.hscChangelogEntries;
 
 /**
  * Shows the changelog popup without touching the `last_run_version` flag,

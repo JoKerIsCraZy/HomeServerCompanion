@@ -5,7 +5,7 @@
 
 **Your Home Server, One Click Away**
 
-[![Version](https://img.shields.io/badge/version-4.0.0-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
+[![Version](https://img.shields.io/badge/version-4.1.0-blue.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion/blob/master/LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance%20Status-Actively%20Developed-brightgreen?style=for-the-badge)](https://github.com/JoKerIsCraZy/HomeServerCompanion)
 
@@ -75,9 +75,10 @@ n:ubuntu server        -> Find Linux ISOs across your indexers
 
 ### 🐳 Docker Container Search (`d:`)
 
-Search **all your Docker containers** across Unraid and all Portainer instances!
+Search **all your Docker containers** across Unraid, Portainer and Dockhand!
 
-- **Multi-Server Search** - Search Unraid + all Portainer instances at once
+- **Multi-Server Search** - Unraid, every Portainer instance and every Dockhand environment at once
+- **Choose Your Sources** - Pick which of the three take part, in Settings. More than one can front the same host, and then a container comes back once per source
 - **Source Labels** - See which server each container is from
 - **Quick Actions** - Start, Stop, Restart containers directly
 - **WebUI Links** - One-click access to container web interfaces
@@ -141,6 +142,20 @@ Beautiful high-contrast dark UI:
 </td>
 </tr>
 </table>
+
+---
+
+## 🆕 What's New in 4.1.0
+
+- **Dockhand** joins as a new service - Docker management across every host one Dockhand server fronts, with container control, live logs, image updates and compose stacks
+- **Docker search** now covers Dockhand too, and you choose which of Unraid, Portainer and Dockhand take part
+- **Settings** rebuilt around a vertical service list with icons and a per-service status dot
+- **Unraid** rebuilt - status and uptime in the header, Docker and VMs as cards, actions on the card
+- **SABnzbd** queue view rebuilt
+- **Dashboard** shows four cards per row instead of two
+- **One polling scheduler** for every view - it pauses when hidden, backs off after failures, and staggers requests
+- **Security** - the stored Seerr account password is deleted on upgrade; it was kept in cleartext and never replayed
+- **Over twenty fixes**, from refresh spinners that never spun to Portainer header rules reaching other services on the same domain
 
 ---
 
@@ -244,6 +259,17 @@ Beautiful high-contrast dark UI:
 - **Create Invites** - Server, libraries, expiration
 - **Quick Copy** - One-click invite link copy
 - **Management** - Delete unused invitations
+
+</details>
+
+<details>
+<summary><b>🚢 Dockhand</b> - Docker Across Every Host</summary>
+
+- **One Server, Many Hosts** - An environment picker inside the view, rather than one configured instance per host
+- **Container Control** - Start, Stop, Restart, and live logs
+- **Image Updates** - See which containers have a newer image, and pull it
+- **Compose Stacks** - Start, Stop and Restart whole stacks
+- **Unified Search** - Reachable through the `d:` prefix
 
 </details>
 
@@ -375,6 +401,7 @@ Beautiful high-contrast dark UI:
 | **Seerr**     | Settings -> General        |
 | **Prowlarr**  | Settings -> General        |
 | **Wizarr**    | Settings -> API            |
+| **Dockhand**  | Settings -> API Tokens     |
 | **Portainer** | Settings -> Access Tokens  |
 
 > 💡 **Tip**: Include `http://` or `https://` and port if needed (e.g., `http://192.168.1.10:8080`)

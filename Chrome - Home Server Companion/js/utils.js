@@ -2,6 +2,10 @@
  * Utility functions for Home Server Companion
  */
 
+// Populates globalThis.hscChangelogEntries. Imported for the side effect so
+// that the options page, which is a classic script, can share the one list.
+import './core/changelogEntries.js';
+
 /**
  * Escapes HTML special characters to prevent XSS attacks.
  * Use this when inserting untrusted data into HTML context via innerHTML.
@@ -653,18 +657,7 @@ export async function checkAndShowChangelog() {
         }
     }
 
-    // Create changelog content safely using DOM API
-    const changelogItems = [
-        { title: 'Tracearr:', desc: 'New service for monitoring Plex streams with live progress bars, stream details, and a statistics dashboard.' },
-        { title: 'Seerr (formerly Overseerr):', desc: 'Rebranded with Multi-Auth support (API Key, Local Account, Plex Sign-In). Your existing settings migrate automatically on first launch.' },
-        { title: 'Unraid Temperatures:', desc: 'Live CPU, Motherboard, and Hottest Disk temperature cards on the Unraid dashboard (requires Unraid OS 7.3+ / API v4.30).' },
-        { title: 'Docker Template Icons:', desc: 'Unraid containers now show their template icons directly in the list — no more two-letter placeholders.' },
-        { title: 'Instant Load:', desc: 'Unraid tab renders from the last snapshot immediately while fetching fresh data in the background. No more blank screens.' },
-        { title: 'Responsive Design:', desc: 'Mobile and tablet optimized interface with touch-friendly navigation and a reusable component library.' },
-        { title: 'Security Hardening:', desc: 'Tighter Content Security Policy, DOM injection protection, and confirmation prompts before opening external links from Docker labels.' },
-        { title: 'Performance:', desc: 'Up to 3× faster dashboard refresh — smarter polling, staggered badge updates, and fewer API roundtrips.' },
-        { title: 'Bug Fixes:', desc: 'Fullscreen button now opens correctly, Seerr request statuses display accurately, Tracearr empty state clears when streams start.' }
-    ];
+    const changelogItems = globalThis.hscChangelogEntries;
     
     // Create modal with DOM
     const modal = document.createElement('div');
