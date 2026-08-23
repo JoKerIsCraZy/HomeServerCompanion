@@ -1,3 +1,8 @@
+import poller from "../core/Poller.js";
+
+/** How often the grid re-checks every configured service. */
+const DASHBOARD_REFRESH_MS = 5000;
+
 export async function initDashboard(state) {
     const container = document.getElementById('dashboard-view');
     // Clear existing content (or reuse if we implement diffing later)
@@ -54,22 +59,31 @@ export async function initDashboard(state) {
     container.appendChild(grid);
 
     // 3. Trigger Parallel Status Checks
-    renderServiceGrid(grid, state);
+    renderServiceGrid(grid, state).catch(() => { /* surfaced on the cards */ });
 
-    // 4. Auto Refresh Loop
-    const intervalTime = parseInt(state.configs.refreshInterval) || 5000;
-    
-    // Clear any existing interval to be safe (though popup.js usually handles view transitions)
-    if (state.refreshInterval) clearInterval(state.refreshInterval);
-
-    state.refreshInterval = setInterval(() => {
-        // Only refresh if Dashboard is actually active/visible in DOM
-        if (document.getElementById('dashboard-view')) {
-            renderServiceGrid(grid, state, true); // Pass 'true' for update mode
-        } else {
-            clearInterval(state.refreshInterval);
-        }
-    }, intervalTime);
+    // 4. Auto refresh, on the shared scheduler.
+    //
+    // This is the heaviest task in the extension: one tick fans out to every
+    // configured service. As a bare setInterval it had none of the four things
+    // that matters for - it kept running while the window was hidden, it
+    // retried an unreachable server at full speed forever, a slow round could
+    // be overtaken by the next one, and it had to police its own lifetime by
+    // watching for the .hidden class and clearing itself.
+    //
+    // The scheduler handles all four. Leaving the view tears the task down
+    // with the rest of the 'view' group, so the self-clearing check is gone.
+    // Five seconds, matching the service views. There is no setting behind
+    // this: `configs.refreshInterval` was read here for a key nothing ever
+    // wrote and no options field ever offered, so the fallback was the only
+    // value it could ever have.
+    const intervalTime = DASHBOARD_REFRESH_MS;
+    poller.register('dashboard', async () => {
+        // Defensive: should some path ever register this without a matching
+        // teardown, do no work rather than fetch into a hidden view.
+        const view = document.getElementById('dashboard-view');
+        if (!view || view.classList.contains('hidden')) return;
+        await renderServiceGrid(grid, state, true);
+    }, { interval: intervalTime, immediate: false });
 }
 
 // Imports from Service APIs
@@ -83,6 +97,7 @@ import * as Prowlarr from "../../services/prowlarr.js";
 import * as Wizarr from "../../services/wizarr.js";
 import * as Portainer from "../../services/portainer.js";
 import * as Tracearr from "../../services/tracearr.js";
+import * as Dockhand from "../../services/dockhand.js";
 
 async function renderServiceGrid(container, state, isUpdate = false) {
     // Only clear if NOT updating
@@ -173,6 +188,23 @@ async function renderServiceGrid(container, state, isUpdate = false) {
                // Wizarr doesn't always have simple stats, just check connection
                await Wizarr.getInvitations(url, key);
                return { status: 'online', metric: 'OK', label: 'Status' };
+            }
+        },
+        {
+            id: 'dockhand',
+            name: 'Dockhand',
+            icon: 'dockhand.png',
+            check: async (url, key) => {
+                // One request covers every environment this server fronts,
+                // rather than walking each one's container list.
+                const envs = await Dockhand.getDockhandDashboard(url, key);
+                const running = envs.reduce((n, e) => n + e.running, 0);
+                const total = envs.reduce((n, e) => n + e.total, 0);
+                return {
+                    status: 'online',
+                    metric: `${running}/${total}`,
+                    label: 'Running'
+                };
             }
         },
         {
@@ -318,7 +350,10 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             cardHeader.appendChild(iconImg);
 
             const statusDot = document.createElement('div');
-            statusDot.className = 'status-dot casting-shadow';
+            // No .casting-shadow: nothing defines it, and updateCard() below
+            // reassigns className outright on the first status result, so it
+            // was gone within a frame of being set.
+            statusDot.className = 'status-dot';
             statusDot.id = 'status-' + svc.id;
             cardHeader.appendChild(statusDot);
 
@@ -344,7 +379,12 @@ async function renderServiceGrid(container, state, isUpdate = false) {
         });
     }
 
-    // Run checks in parallel
+    // Run checks in parallel. The counters below track only calls that were
+    // actually made: a service with no URL or key never reaches the network,
+    // and its card says "Missing Config" rather than "Offline".
+    let attempted = 0;
+    let failed = 0;
+
     const checks = enabledServices.map(async (svc) => {
         const url = state.configs[`${svc.id}Url`];
         const key = state.configs[`${svc.id}Key`];
@@ -369,6 +409,7 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             }
         }
 
+        attempted++;
         try {
             // For Seerr, pass authMethod to the check function
             let result;
@@ -403,11 +444,22 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             }
             
         } catch (e) {
+            failed++;
             updateCard(svc.id, 'offline', 'ERR', 'Offline');
         }
     });
-    
+
     await Promise.allSettled(checks);
+
+    // Each check catches its own error so one dead service cannot take the
+    // whole grid down with it - which also meant this function never rejected,
+    // and the scheduler never had a reason to slow down. A laptop carried out
+    // of the house went on firing a full fan-out every five seconds, all of it
+    // failing. Nothing answering at all is a different case from one service
+    // being down, and it is worth reporting upward.
+    if (attempted > 0 && failed === attempted) {
+        throw new Error(`No service answered (${failed} of ${attempted})`);
+    }
 }
 
 function updateCard(id, status, metric, label) {
@@ -463,11 +515,11 @@ function startClock(state) {
         if (timeEl && dateEl) {
             // Time: HH:MM
             const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
-            timeEl.textContent = timeStr;
+            if (timeEl.textContent !== timeStr) timeEl.textContent = timeStr;
             
             // Date: Weekday, DD. Month YYYY
             const dateStr = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            dateEl.textContent = dateStr;
+            if (dateEl.textContent !== dateStr) dateEl.textContent = dateStr;
         }
 
         if (greetingEl) {
@@ -484,5 +536,11 @@ function startClock(state) {
     };
 
     update(); // Initial call
-    state.refreshInterval = setInterval(update, 1000);
+
+    // A second is finer than this clock needs - it shows hours and minutes -
+    // but a tick is one Date and two string comparisons, and the writes are
+    // guarded, so nothing reaches the DOM in the 59 seconds between changes.
+    // What actually mattered is that a bare interval kept ticking in a hidden
+    // window; on the scheduler it stops with everything else.
+    poller.register('dashboard-clock', update, { interval: 1000, immediate: false });
 }

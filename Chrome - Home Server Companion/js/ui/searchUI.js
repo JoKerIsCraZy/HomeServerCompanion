@@ -465,7 +465,7 @@ async function performSearch(query, state) {
                 categories,
                 indexerIds
             );
-            renderProwlarrResults(results, container);
+            renderProwlarrResults(results, container, state?.configs || {});
             saveSearchState(query);
             return;
         }
@@ -494,7 +494,10 @@ async function performSearch(query, state) {
     } catch (e) {
         container.textContent = '';
         const errDiv = document.createElement('div');
-        errDiv.className = 'error-msg';
+        // .error-msg is defined in no stylesheet, so a failed search
+        // rendered as an unremarkable line of body text. .error-banner is
+        // the real one, used by every other view.
+        errDiv.className = 'error-banner';
         errDiv.textContent = 'Search failed: ' + e.message;
         container.appendChild(errDiv);
     }
@@ -536,7 +539,7 @@ function renderResults(results, container, state) {
         div.className = `search-result-item ${item.status.toLowerCase().replace(' ', '-')}`;
         
         // 1. Poster
-        if (item.poster && item.poster !== 'icons/placeholder.png') {
+        if (item.poster) {
             const img = document.createElement('img');
             img.src = item.poster;
             img.className = 'result-poster';
@@ -714,7 +717,8 @@ function renderResults(results, container, state) {
                      plexBtn.className = 'plex-play-btn';
                      plexBtn.title = 'Open in Plex';
                      const plexImg = document.createElement('img');
-                     plexImg.src = 'https://favicone.com/plex.tv?s=32';
+                     // Local asset: favicone.com serves no icon for plex.tv.
+                     plexImg.src = 'icons/Plex_icon.png';
                      plexImg.alt = 'Plex';
                      plexImg.style.cssText = 'width: 18px; height: 18px; border-radius: 2px;';
                      plexBtn.appendChild(plexImg);
@@ -728,7 +732,9 @@ function renderResults(results, container, state) {
                          if (redirectMode === 'web' || !plexSettings.plexUrl) {
                              // Web mode: Open Plex web URL
                              if (item.plexUrl) {
-                                 if (validateUrl(item.plexUrl)) chrome.tabs.create({ url: item.plexUrl });
+                                 // plexUrl comes from the Seerr search response — vet it
+                                 // like any other service-supplied link.
+                                 openUrlSafely(item.plexUrl, state?.configs || {}, 'Plex');
                              } else {
                                  // Fallback: Search on Plex
                                  const plexSearchUrl = `https://app.plex.tv/desktop/#!/search?query=${encodeURIComponent(item.title)}`;
@@ -748,21 +754,21 @@ function renderResults(results, container, state) {
                                          // Extract the Plex GUID (format: plex://movie/xxxxx or plex://show/xxxxx)
                                          const plexGuid = metadata.guid;
                                          console.debug('Opening Plex app with GUID:', plexGuid);
-                                         if (validateUrl(plexGuid)) chrome.tabs.create({ url: plexGuid });
+                                         openUrlSafely(plexGuid, state?.configs || {}, 'Plex');
                                      } else {
                                          // Fallback to web
                                          const fallbackUrl = item.plexUrl || `https://app.plex.tv`;
-                                         if (validateUrl(fallbackUrl)) chrome.tabs.create({ url: fallbackUrl });
+                                         openUrlSafely(fallbackUrl, state?.configs || {}, 'Plex');
                                      }
                                  } else {
                                      // API failed, fallback to web
                                      const fallbackUrl = item.plexUrl || `https://app.plex.tv`;
-                                     if (validateUrl(fallbackUrl)) chrome.tabs.create({ url: fallbackUrl });
+                                     openUrlSafely(fallbackUrl, state?.configs || {}, 'Plex');
                                  }
                              } catch (err) {
                                  console.error('Plex API error:', err);
                                  const fallbackUrl = item.plexUrl || `https://app.plex.tv`;
-                                 if (validateUrl(fallbackUrl)) chrome.tabs.create({ url: fallbackUrl });
+                                 openUrlSafely(fallbackUrl, state?.configs || {}, 'Plex');
                              }
                          }
                      });

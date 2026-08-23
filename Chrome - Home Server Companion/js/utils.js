@@ -2,18 +2,29 @@
  * Utility functions for Home Server Companion
  */
 
+// Populates globalThis.hscChangelogEntries. Imported for the side effect so
+// that the options page, which is a classic script, can share the one list.
+import './core/changelogEntries.js';
+
 /**
  * Escapes HTML special characters to prevent XSS attacks.
  * Use this when inserting untrusted data into HTML context via innerHTML.
+ *
+ * Quotes are escaped too: callers interpolate into attribute values
+ * (`title="${escapeHtml(x)}"`), and the previous textContent round-trip left
+ * `"` and `'` intact, which let a value break out of its attribute.
+ *
  * @param {string} str - The string to escape
- * @returns {string} - The escaped string safe for HTML insertion
+ * @returns {string} - The escaped string safe for HTML text and attribute context
  */
 export function escapeHtml(str) {
     if (str === null || str === undefined) return '';
-    const text = String(str);
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**
@@ -45,19 +56,36 @@ export function validateUrl(urlString) {
  */
 export function isLocalHost(hostname) {
     if (!hostname) return false;
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true;
-    // RFC1918 private IPv4 ranges
-    if (/^10\./.test(hostname)) return true;
-    if (/^192\.168\./.test(hostname)) return true;
-    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)) return true;
-    // IPv4 link-local
-    if (/^169\.254\./.test(hostname)) return true;
-    // IPv6 unique-local / link-local
-    if (/^(fc|fd)[0-9a-f]{2}:/i.test(hostname)) return true;
-    if (/^fe80:/i.test(hostname)) return true;
-    // Common local TLDs used on home networks
-    if (/\.(local|home|lan|internal|intranet)$/i.test(hostname)) return true;
-    return false;
+    // URL.hostname wraps IPv6 literals in brackets — strip them before matching.
+    const host = String(hostname).toLowerCase().replace(/^\[/, '').replace(/\]$/, '');
+    if (host === 'localhost' || host === '::1') return true;
+
+    // Private IPv4 ranges. The host must be a well-formed IPv4 literal before
+    // any numeric range applies: matching `10.`/`192.168.` as a string prefix
+    // would classify registrable names like `192.168.evil.com` as private and
+    // open them without the confirmation prompt.
+    const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+    if (v4) {
+        const octets = v4.slice(1).map(Number);
+        if (octets.some(o => o > 255)) return false;
+        const [a, b] = octets;
+        if (a === 127) return true;                        // loopback
+        if (a === 10) return true;                         // RFC1918
+        if (a === 192 && b === 168) return true;           // RFC1918
+        if (a === 172 && b >= 16 && b <= 31) return true;  // RFC1918
+        if (a === 169 && b === 254) return true;           // link-local
+        return false;
+    }
+
+    // IPv6 unique-local / link-local — only for actual IPv6 literals.
+    if (host.includes(':')) {
+        return /^(fc|fd)[0-9a-f]{2}:/.test(host) || /^fe80:/.test(host);
+    }
+
+    // Home-network suffixes. None of these TLDs are publicly registrable, but
+    // the name is still held to a single label before the suffix so it cannot
+    // be a subdomain of something else.
+    return /^[a-z0-9-]+\.(local|home|lan|internal|intranet)$/.test(host);
 }
 
 /**
@@ -121,7 +149,7 @@ export function collectTrustedBaseUrls(configs = {}) {
  * @param {object} configs - App configs (used to derive trusted hosts)
  * @param {string} [source] - Optional origin label shown in the prompt
  */
-export function openUrlSafely(candidateUrl, configs = {}, source = '') {
+export async function openUrlSafely(candidateUrl, configs = {}, source = '') {
     if (!validateUrl(candidateUrl)) return false;
     const trusted = collectTrustedBaseUrls(configs);
     if (isTrustedNavigationUrl(candidateUrl, trusted)) {
@@ -131,8 +159,14 @@ export function openUrlSafely(candidateUrl, configs = {}, source = '') {
     let host = '';
     try { host = new URL(candidateUrl).hostname; } catch { /* ignore */ }
     const origin = source ? ` (from ${source})` : '';
-    const ok = confirm(
-        `This link${origin} points to an external site:\n\n${host}\n\nOpen it anyway?`
+    // In-page modal rather than window.confirm(): a native dialog makes the
+    // extension popup lose focus and close, so the prompt is never seen and
+    // the click looks like it did nothing.
+    const ok = await showConfirmModal(
+        'Open external link?',
+        `This link${origin} points to ${host}, which is not one of your configured servers. Open it anyway?`,
+        'Open',
+        '#2196f3'
     );
     if (ok) chrome.tabs.create({ url: candidateUrl });
     return ok;
@@ -362,6 +396,81 @@ export function showPromptModal(title, message, defaultValue = '', confirmColor 
  * Shows IP geolocation info in a modal
  * @param {string} ip - IP address to lookup
  */
+const MAP_TILE_SIZE = 256;
+
+/**
+ * Projects a coordinate into global pixel space at a zoom level (Web Mercator),
+ * the space OpenStreetMap's raster tiles are cut from.
+ * @param {number} lat
+ * @param {number} lon
+ * @param {number} zoom
+ * @returns {{x: number, y: number}} Pixel position on the whole-world canvas
+ */
+function latLonToWorldPixel(lat, lon, zoom) {
+    const scale = MAP_TILE_SIZE * Math.pow(2, zoom);
+    const sinLat = Math.sin(lat * Math.PI / 180);
+    return {
+        x: (lon + 180) / 360 * scale,
+        y: (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * scale
+    };
+}
+
+/**
+ * Builds a static map as a grid of OpenStreetMap raster tiles.
+ *
+ * An <iframe> embed cannot be used: the extension CSP sets `frame-src 'none'`,
+ * so Chrome replaces it with a "content blocked" placeholder. Images are not
+ * restricted, so the tiles are fetched and positioned by hand instead, which
+ * keeps the CSP untouched.
+ *
+ * The layer is a fixed 3x3 grid anchored with `left/top: 50%` and shifted by
+ * the point's offset inside it, so the coordinate lands dead centre without
+ * the container's width ever being measured.
+ *
+ * @param {number} lat
+ * @param {number} lon
+ * @param {number} [zoom=12]
+ * @returns {HTMLElement} The tile layer
+ */
+function buildStaticMap(lat, lon, zoom = 12) {
+    const layer = document.createElement('div');
+    layer.className = 'ip-map-tiles';
+
+    const world = latLonToWorldPixel(lat, lon, zoom);
+    const tileCount = Math.pow(2, zoom);
+    const centreTileX = Math.floor(world.x / MAP_TILE_SIZE);
+    const centreTileY = Math.floor(world.y / MAP_TILE_SIZE);
+    const firstTileX = centreTileX - 1;
+    const firstTileY = centreTileY - 1;
+
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+            const tileX = firstTileX + col;
+            const tileY = firstTileY + row;
+            // Rows outside the projection have no tile; columns wrap the globe.
+            if (tileY < 0 || tileY >= tileCount) continue;
+            const wrappedX = ((tileX % tileCount) + tileCount) % tileCount;
+
+            const tile = document.createElement('img');
+            tile.className = 'ip-map-tile';
+            tile.alt = '';
+            tile.setAttribute('aria-hidden', 'true');
+            tile.loading = 'lazy';
+            tile.style.left = `${col * MAP_TILE_SIZE}px`;
+            tile.style.top = `${row * MAP_TILE_SIZE}px`;
+            tile.src = `https://tile.openstreetmap.org/${zoom}/${wrappedX}/${tileY}.png`;
+            layer.appendChild(tile);
+        }
+    }
+
+    // Where the coordinate sits inside the 3x3 layer.
+    const offsetX = world.x - firstTileX * MAP_TILE_SIZE;
+    const offsetY = world.y - firstTileY * MAP_TILE_SIZE;
+    layer.style.transform = `translate(${-offsetX}px, ${-offsetY}px)`;
+
+    return layer;
+}
+
 export async function showIpInfoModal(ip) {
     // Create modal immediately with loading state
     const modal = document.createElement('div');
@@ -484,24 +593,30 @@ export async function showIpInfoModal(ip) {
             bodyEl.appendChild(grid);
             
             // Map
-            const mapContainer = document.createElement('div');
-            mapContainer.className = 'ip-map-container';
-            const iframe = document.createElement('iframe');
-            iframe.className = 'ip-map-frame';
-            // OpenStreetMap using new lat/long fields (latitude/longitude)
-            const lat = data.latitude;
-            const lon = data.longitude;
-            iframe.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.05},${lat - 0.03},${lon + 0.05},${lat + 0.03}&layer=mapnik&marker=${lat},${lon}`;
-            iframe.frameBorder = "0";
-            iframe.loading = "lazy";
-            
-            const coords = document.createElement('div');
-            coords.className = 'ip-map-coords';
-            coords.textContent = `${lat}, ${lon}`;
-            
-            mapContainer.appendChild(iframe);
-            mapContainer.appendChild(coords);
-            bodyEl.appendChild(mapContainer);
+            const lat = Number(data.latitude);
+            const lon = Number(data.longitude);
+            if (Number.isFinite(lat) && Number.isFinite(lon)) {
+                const mapContainer = document.createElement('div');
+                mapContainer.className = 'ip-map-container';
+
+                mapContainer.appendChild(buildStaticMap(lat, lon));
+
+                const marker = document.createElement('div');
+                marker.className = 'ip-map-marker';
+                mapContainer.appendChild(marker);
+
+                const credit = document.createElement('div');
+                credit.className = 'ip-map-attribution';
+                credit.textContent = '© OpenStreetMap contributors';
+                mapContainer.appendChild(credit);
+
+                const coords = document.createElement('div');
+                coords.className = 'ip-map-coords';
+                coords.textContent = `${lat}, ${lon}`;
+                mapContainer.appendChild(coords);
+
+                bodyEl.appendChild(mapContainer);
+            }
 
         } else {
             const errDiv = document.createElement('div');
@@ -521,96 +636,99 @@ export async function showIpInfoModal(ip) {
 
 export async function checkAndShowChangelog() {
     const version = chrome.runtime.getManifest().version;
-    
+
     // Wrapper for local storage
     const getStorage = (key) => new Promise(resolve => chrome.storage.local.get(key, resolve));
     const result = await getStorage(['last_run_version']);
-    
-    if (result.last_run_version !== version) {
-        // Create changelog content safely using DOM API
-        const changelogItems = [
-            { title: 'Tracearr:', desc: 'New service for monitoring Plex streams with live progress bars, stream details, and a statistics dashboard.' },
-            { title: 'Seerr (formerly Overseerr):', desc: 'Rebranded with Multi-Auth support (API Key, Local Account, Plex Sign-In). Your existing settings migrate automatically on first launch.' },
-            { title: 'Unraid Temperatures:', desc: 'Live CPU, Motherboard, and Hottest Disk temperature cards on the Unraid dashboard (requires Unraid OS 7.3+ / API v4.30).' },
-            { title: 'Docker Template Icons:', desc: 'Unraid containers now show their template icons directly in the list — no more two-letter placeholders.' },
-            { title: 'Instant Load:', desc: 'Unraid tab renders from the last snapshot immediately while fetching fresh data in the background. No more blank screens.' },
-            { title: 'Responsive Design:', desc: 'Mobile and tablet optimized interface with touch-friendly navigation and a reusable component library.' },
-            { title: 'Security Hardening:', desc: 'Tighter Content Security Policy, DOM injection protection, and confirmation prompts before opening external links from Docker labels.' },
-            { title: 'Performance:', desc: 'Up to 3× faster dashboard refresh — smarter polling, staggered badge updates, and fewer API roundtrips.' },
-            { title: 'Bug Fixes:', desc: 'Fullscreen button now opens correctly, Seerr request statuses display accurately, Tracearr empty state clears when streams start.' }
-        ];
-        
-        // Create modal with DOM
-        const modal = document.createElement('div');
-        modal.className = 'custom-modal-backdrop';
 
-        const content = document.createElement('div');
-        content.className = 'custom-modal';
-        // Constrain to popup viewport — Chrome extension popups are small.
-        // Use flex column so the body can scroll while header/footer stay pinned.
-        content.style.maxHeight = '85vh';
-        content.style.display = 'flex';
-        content.style.flexDirection = 'column';
+    if (result.last_run_version === version) return;
 
-        const header = document.createElement('div');
-        header.className = 'custom-modal-header';
-        header.style.flexShrink = '0';
-        header.textContent = `What's New in v${version}`;
-
-        const body = document.createElement('div');
-        body.className = 'custom-modal-body';
-        body.style.textAlign = 'left';
-        body.style.padding = '14px 18px';
-        body.style.fontSize = '12.5px';
-        body.style.overflowY = 'auto';
-        body.style.flex = '1 1 auto';
-        body.style.minHeight = '0';
-
-        const ul = document.createElement('ul');
-        ul.style.cssText = 'padding-left: 18px; margin: 0; list-style-type: disc;';
-
-        changelogItems.forEach(item => {
-            const li = document.createElement('li');
-            li.style.marginBottom = '6px';
-            li.style.lineHeight = '1.4';
-            const b = document.createElement('b');
-            b.textContent = item.title;
-            li.appendChild(b);
-            li.appendChild(document.createTextNode(' ' + item.desc));
-            ul.appendChild(li);
-        });
-
-        body.appendChild(ul);
-        
-        const footer = document.createElement('div');
-        footer.className = 'custom-modal-footer';
-        footer.style.flexShrink = '0';
-
-        const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'modal-btn confirm';
-        confirmBtn.style.backgroundColor = '#2196f3';
-        confirmBtn.textContent = 'Awesome!';
-        footer.appendChild(confirmBtn);
-        
-        content.appendChild(header);
-        content.appendChild(body);
-        content.appendChild(footer);
-        modal.appendChild(content);
-        
-        document.body.appendChild(modal);
-        requestAnimationFrame(() => modal.classList.add('show'));
-        
-        await new Promise(resolve => {
-            const cleanup = () => {
-                modal.classList.remove('show');
-                setTimeout(() => modal.remove(), 200);
-                resolve();
-            };
-            confirmBtn.addEventListener('click', cleanup);
-            modal.addEventListener('click', (e) => { if (e.target === modal) cleanup(); });
-        });
-        
-        // Save new version so it doesn't show again
-        await new Promise(resolve => chrome.storage.local.set({ last_run_version: version }, resolve));
+    // A profile that has never recorded a version and has never finished the
+    // setup wizard is a fresh install, not an upgrade. It was being shown
+    // "What's New in v4.0.0" as its first ever screen, listing changes against
+    // a version it never ran. Record the version and say nothing.
+    if (!result.last_run_version) {
+        const sync = await new Promise(resolve =>
+            chrome.storage.sync.get(['setupCompleted'], resolve));
+        if (!sync.setupCompleted) {
+            await new Promise(resolve =>
+                chrome.storage.local.set({ last_run_version: version }, resolve));
+            return;
+        }
     }
+
+    const changelogItems = globalThis.hscChangelogEntries;
+    
+    // Create modal with DOM
+    const modal = document.createElement('div');
+    modal.className = 'custom-modal-backdrop';
+
+    const content = document.createElement('div');
+    content.className = 'custom-modal';
+    // Constrain to popup viewport — Chrome extension popups are small.
+    // Use flex column so the body can scroll while header/footer stay pinned.
+    content.style.maxHeight = '85vh';
+    content.style.display = 'flex';
+    content.style.flexDirection = 'column';
+
+    const header = document.createElement('div');
+    header.className = 'custom-modal-header';
+    header.style.flexShrink = '0';
+    header.textContent = `What's New in v${version}`;
+
+    const body = document.createElement('div');
+    body.className = 'custom-modal-body';
+    body.style.textAlign = 'left';
+    body.style.padding = '14px 18px';
+    body.style.fontSize = '12.5px';
+    body.style.overflowY = 'auto';
+    body.style.flex = '1 1 auto';
+    body.style.minHeight = '0';
+
+    const ul = document.createElement('ul');
+    ul.style.cssText = 'padding-left: 18px; margin: 0; list-style-type: disc;';
+
+    changelogItems.forEach(item => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '6px';
+        li.style.lineHeight = '1.4';
+        const b = document.createElement('b');
+        b.textContent = item.title;
+        li.appendChild(b);
+        li.appendChild(document.createTextNode(' ' + item.desc));
+        ul.appendChild(li);
+    });
+
+    body.appendChild(ul);
+    
+    const footer = document.createElement('div');
+    footer.className = 'custom-modal-footer';
+    footer.style.flexShrink = '0';
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'modal-btn confirm';
+    confirmBtn.style.backgroundColor = '#2196f3';
+    confirmBtn.textContent = 'Awesome!';
+    footer.appendChild(confirmBtn);
+    
+    content.appendChild(header);
+    content.appendChild(body);
+    content.appendChild(footer);
+    modal.appendChild(content);
+    
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add('show'));
+    
+    await new Promise(resolve => {
+        const cleanup = () => {
+            modal.classList.remove('show');
+            setTimeout(() => modal.remove(), 200);
+            resolve();
+        };
+        confirmBtn.addEventListener('click', cleanup);
+        modal.addEventListener('click', (e) => { if (e.target === modal) cleanup(); });
+    });
+    
+    // Save new version so it doesn't show again
+    await new Promise(resolve => chrome.storage.local.set({ last_run_version: version }, resolve));
 }

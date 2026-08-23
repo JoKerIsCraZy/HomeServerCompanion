@@ -3,29 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <title>Extension Options</title>
+    <link rel="stylesheet" href="css/tokens.css" />
     <style>
-      /* ===== Modern Design System ===== */
-      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+      /* ===== Modern Design System =====
+         The palette comes from css/tokens.css, linked above. This page used to
+         define its own copy of every colour and load Inter from Google Fonts,
+         which meant it drifted from the rest of the extension (its secondary
+         text was #a0aec0 against the shared #b0b8c4, its success green #48bb78
+         against #22c55e) and made a network request to a third party every
+         time Settings was opened.
 
+         The names below are aliases, so the 758 lines underneath keep saying
+         --card-bg and --text-secondary while the values live in one place.
+         Only what is genuinely local to this page is defined outright. */
       :root {
-        --bg-color: #121212;
-        --card-bg: #1e1e1e;
-        --card-bg-hover: #252525;
-        --glass-border: #333333;
-        --glass-border-hover: rgba(255, 255, 255, 0.15);
-        --text-primary: #ffffff;
-        --text-secondary: #a0aec0;
-        --text-muted: #718096;
+        --bg-color: var(--color-bg-primary);
+        --card-bg: var(--color-bg-secondary);
+        --card-bg-hover: var(--color-bg-tertiary);
+        --glass-border: var(--border-color);
+        --glass-border-hover: rgba(255, 255, 255, 0.18);
+        --text-primary: var(--color-text-primary);
+        --text-secondary: var(--color-text-secondary);
+        --text-muted: var(--color-text-muted);
+        --success: var(--status-success);
+        --success-bg: var(--status-success-bg);
+        --error: var(--status-error);
+        --error-bg: var(--status-error-bg);
+        --transition-smooth: var(--transition-normal);
+
+        /* Local to Settings: the accent this page is built around, and the
+           overshoot easing the tab highlight uses. */
         --accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         --accent-primary: #667eea;
         --accent-secondary: #764ba2;
-        --success: #48bb78;
-        --success-bg: rgba(72, 187, 120, 0.15);
-        --error: #fc8181;
-        --error-bg: rgba(252, 129, 129, 0.15);
         --shadow-glow: 0 0 40px rgba(102, 126, 234, 0.15);
-        --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
 
@@ -34,8 +45,11 @@
       }
 
       body {
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
+        /* The shared stack. Settings was the only page in the extension set in
+           Inter, pulled from Google Fonts at load; everything else is Segoe UI
+           via --font-family-base. Two typefaces in one product, and a remote
+           request from an extension page to get the second one. */
+        font-family: var(--font-family-base);
         background: var(--bg-color);
         color: var(--text-primary);
         margin: 0;
@@ -92,55 +106,175 @@
         gap: 16px;
       }
 
-      .sub-tabs {
-        position: relative;
-        display: inline-flex;
-        background: #252525;
-        padding: 6px;
-        border-radius: 12px;
-        gap: 4px;
-        border: 1px solid var(--glass-border);
+      .docker-source-list {
+        display: flex;
         flex-wrap: wrap;
+        gap: 8px 20px;
+        margin-top: 4px;
       }
 
-      .tab-glider {
-        position: absolute;
-        top: 6px;
-        left: 6px;
-        height: 36px;
-        background: var(--accent-gradient);
-        border-radius: 10px;
-        z-index: 0;
-        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        width: 0;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      .docker-source {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .docker-source input {
+        width: auto;
+        margin: 0;
+      }
+
+      .docker-source img {
+        width: 16px;
+        height: 16px;
+        object-fit: contain;
+      }
+
+      .settings-title {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      /* ===== Navigation =====
+         A vertical list. This was a horizontal pill with a gradient highlight
+         sliding behind the active tab, and thirteen tabs have never fitted one
+         row inside a container capped at 950px — so it wrapped, and the
+         highlight had to jump rows, which is the one thing a sliding highlight
+         cannot do gracefully. A column cannot wrap, takes any number of
+         services, and has room for the icon and a state dot. */
+      .settings-layout {
+        display: grid;
+        grid-template-columns: 190px minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+      }
+
+      .settings-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        position: sticky;
+        top: 24px;
+      }
+
+      .nav-heading {
+        margin: 16px 0 6px 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--text-muted);
       }
 
       .tab-btn {
-        background: transparent !important;
-        color: var(--text-secondary);
-        border: none;
-        padding: 10px 16px;
-        border-radius: 12px;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 8px 12px;
         position: relative;
-        z-index: 2;
-        pointer-events: auto;
-        transition: all var(--transition-smooth);
-        white-space: nowrap;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        /* The accent the active item borrows. Overridden per service below;
+           anything without one of its own falls back to the page accent. */
+        --nav-accent: var(--accent-primary);
+        transition: background var(--transition-fast),
+                    color var(--transition-fast);
       }
 
       .tab-btn:hover {
         color: var(--text-primary);
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.05);
       }
 
       .tab-btn.active {
-        color: white !important;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        color: var(--text-primary);
+        /* colour-mix keeps one accent per service driving both the fill and
+           the marker, instead of thirteen hand-picked translucent pairs. */
+        background: color-mix(in srgb, var(--nav-accent) 16%, transparent);
       }
+
+      /* The marker is its own bar, not an inset box-shadow.
+         An inset shadow is clipped to the border radius, so `inset 3px 0 0`
+         on an 8px-rounded button did not stop at the left edge: at each
+         rounded corner the offset shadow and the element's own curve run on
+         different arcs, and the sliver between them showed as a coloured
+         speck in the corner — four of them per active item, in the service's
+         colour, which is what made switching quickly look like it was
+         scattering dots. A positioned bar cannot reach the corners at all. */
+      .tab-btn.active::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 18px;
+        border-radius: 0 2px 2px 0;
+        background: var(--nav-accent);
+      }
+
+      .nav-icon {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        object-fit: contain;
+        border-radius: 4px;
+      }
+
+      /* General has no icon of its own and is not a service. The empty box
+         keeps its label on the same left edge as the rest. */
+      .nav-icon-blank {
+        display: inline-block;
+      }
+
+      .nav-label {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Hollow until the service has a URL. Saying which of eleven services
+         are set up is the whole reason this column has room for it. */
+      .nav-status {
+        width: 7px;
+        height: 7px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        border: 1px solid var(--text-muted);
+        background: transparent;
+      }
+
+      .nav-status.is-set {
+        border-color: var(--status-success);
+        background: var(--status-success);
+      }
+
+      .tab-btn[data-target="unraid"]    { --nav-accent: var(--accent-unraid); }
+      .tab-btn[data-target="sabnzbd"]   { --nav-accent: var(--accent-sab); }
+      .tab-btn[data-target="sonarr"]    { --nav-accent: var(--accent-sonarr); }
+      .tab-btn[data-target="radarr"]    { --nav-accent: var(--accent-radarr); }
+      .tab-btn[data-target="tautulli"]  { --nav-accent: var(--accent-tautulli); }
+      .tab-btn[data-target="plex"]      { --nav-accent: #e5a00d; }
+      .tab-btn[data-target="seerr"]     { --nav-accent: var(--accent-seerr); }
+      .tab-btn[data-target="prowlarr"]  { --nav-accent: var(--accent-prowlarr); }
+      .tab-btn[data-target="wizarr"]    { --nav-accent: var(--accent-wizarr); }
+      .tab-btn[data-target="dockhand"]  { --nav-accent: var(--accent-dockhand); }
+      .tab-btn[data-target="portainer"] { --nav-accent: var(--accent-portainer); }
+      .tab-btn[data-target="tracearr"]  { --nav-accent: var(--accent-tracearr); }
 
       /* Header Links */
       .header-links {
@@ -169,6 +303,13 @@
         background: rgba(255, 255, 255, 0.08);
         border-color: var(--glass-border-hover);
         transform: translateY(-2px);
+      }
+
+      /* The changelog trigger is a button element, so it needs the font and
+         cursor the anchors get for free. */
+      button.header-link {
+        font-family: inherit;
+        cursor: pointer;
       }
 
       /* ===== Sections ===== */
@@ -273,7 +414,10 @@
       input[type="number"]:hover,
       select:hover {
         border-color: var(--glass-border-hover);
-        background: rgba(255, 255, 255, 0.05);
+        /* background-color, not the `background` shorthand: the shorthand
+           resets background-image and background-position, which would wipe
+           the custom dropdown arrow set on `select` below. */
+        background-color: rgba(255, 255, 255, 0.05);
       }
 
       input[type="text"]:focus,
@@ -282,7 +426,8 @@
       input[type="number"]:focus,
       select:focus {
         border-color: var(--accent-primary);
-        background: rgba(102, 126, 234, 0.05);
+        /* background-color, not the shorthand — see select:hover above. */
+        background-color: rgba(102, 126, 234, 0.05);
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
       }
 
@@ -641,14 +786,45 @@
           align-items: flex-start;
         }
 
-        .sub-tabs {
-          width: 100%;
-          justify-content: flex-start;
+        /* Too narrow for two columns: the nav goes back on top as a single
+           scrolling row, which is what a handful of visible items wants. */
+        .settings-layout {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 16px;
+        }
+
+        .settings-nav {
+          position: static;
+          flex-direction: row;
+          overflow-x: auto;
+          padding-bottom: 4px;
+        }
+
+        .settings-nav .nav-heading,
+        .settings-nav .nav-label {
+          display: none;
+        }
+
+        .settings-nav .nav-icon-blank {
+          width: 18px;
         }
 
         .tab-btn {
-          padding: 8px 12px;
+          width: auto;
+          padding: 8px;
           font-size: 12px;
+        }
+
+        /* Bar along the bottom instead of down the side, and still inset
+           from the corners for the same reason. */
+        .tab-btn.active::before {
+          left: 50%;
+          top: auto;
+          bottom: 0;
+          transform: translateX(-50%);
+          width: 18px;
+          height: 3px;
+          border-radius: 2px 2px 0 0;
         }
 
         h2 {
@@ -756,25 +932,7 @@
       <div class="content">
         <!-- Header / Navigation -->
         <div class="tabs-header">
-          <div class="sub-tabs">
-            <div class="tab-glider" id="glider"></div>
-            <button class="tab-btn active" data-target="general">
-              General
-            </button>
-            <button class="tab-btn" data-target="dashboard">Dashboard</button>
-            <button class="tab-btn" data-target="unraid">Unraid</button>
-            <button class="tab-btn" data-target="sabnzbd">Sabnzbd</button>
-            <button class="tab-btn" data-target="sonarr">Sonarr</button>
-            <button class="tab-btn" data-target="radarr">Radarr</button>
-            <button class="tab-btn" data-target="tautulli">Tautulli</button>
-            <button class="tab-btn" data-target="plex">Plex</button>
-
-            <button class="tab-btn" data-target="seerr">Seerr</button>
-            <button class="tab-btn" data-target="prowlarr">Prowlarr</button>
-            <button class="tab-btn" data-target="wizarr">Wizarr</button>
-            <button class="tab-btn" data-target="portainer">Portainer</button>
-            <button class="tab-btn" data-target="tracearr">Tracearr</button>
-          </div>
+          <h1 class="settings-title">Settings</h1>
 
           <div class="header-links">
             <a
@@ -841,8 +999,108 @@
               </svg>
               Issues
             </a>
+            <button
+              id="showChangelogBtn"
+              type="button"
+              class="header-link"
+              title="See what's new in this release"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="18"
+                width="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polygon
+                  points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
+                ></polygon>
+              </svg>
+              What's new
+            </button>
           </div>
         </div>
+
+        <div class="settings-layout">
+          <nav class="settings-nav" aria-label="Settings sections">
+            <button class="tab-btn active" data-target="general">
+              <span class="nav-icon nav-icon-blank" aria-hidden="true"></span>
+              <span class="nav-label">General</span>
+            </button>
+
+            <div class="nav-heading">Services</div>
+            <button class="tab-btn" data-target="dashboard">
+              <img class="nav-icon" src="icons/icon48.png" alt="" />
+              <span class="nav-label">Dashboard</span>
+              <span class="nav-status" data-service="dashboard" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="unraid">
+              <img class="nav-icon" src="icons/unraid.png" alt="" />
+              <span class="nav-label">Unraid</span>
+              <span class="nav-status" data-service="unraid" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="sabnzbd">
+              <img class="nav-icon" src="icons/sabnzbd.png" alt="" />
+              <span class="nav-label">SABnzbd</span>
+              <span class="nav-status" data-service="sabnzbd" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="sonarr">
+              <img class="nav-icon" src="icons/sonarr.png" alt="" />
+              <span class="nav-label">Sonarr</span>
+              <span class="nav-status" data-service="sonarr" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="radarr">
+              <img class="nav-icon" src="icons/radarr.png" alt="" />
+              <span class="nav-label">Radarr</span>
+              <span class="nav-status" data-service="radarr" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="tautulli">
+              <img class="nav-icon" src="icons/tautulli.png" alt="" />
+              <span class="nav-label">Tautulli</span>
+              <span class="nav-status" data-service="tautulli" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="plex">
+              <img class="nav-icon" src="icons/Plex_icon.png" alt="" />
+              <span class="nav-label">Plex</span>
+              <span class="nav-status" data-service="plex" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="seerr">
+              <img class="nav-icon" src="icons/seerr.png" alt="" />
+              <span class="nav-label">Seerr</span>
+              <span class="nav-status" data-service="seerr" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="prowlarr">
+              <img class="nav-icon" src="icons/prowlarr.png" alt="" />
+              <span class="nav-label">Prowlarr</span>
+              <span class="nav-status" data-service="prowlarr" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="wizarr">
+              <img class="nav-icon" src="icons/wizarr.png" alt="" />
+              <span class="nav-label">Wizarr</span>
+              <span class="nav-status" data-service="wizarr" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="dockhand">
+              <img class="nav-icon" src="icons/dockhand.png" alt="" />
+              <span class="nav-label">Dockhand</span>
+              <span class="nav-status" data-service="dockhand" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="portainer">
+              <img class="nav-icon" src="icons/portainer.png" alt="" />
+              <span class="nav-label">Portainer</span>
+              <span class="nav-status" data-service="portainer" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="tracearr">
+              <img class="nav-icon" src="icons/tracearr.png" alt="" />
+              <span class="nav-label">Tracearr</span>
+              <span class="nav-status" data-service="tracearr" aria-hidden="true"></span>
+            </button>
+          </nav>
+
+          <div class="settings-panels">
         <!-- General Section -->
         <div id="general" class="section active">
           <h2>General Settings</h2>
@@ -851,7 +1109,7 @@
             <div
               id="service-order-list"
               style="
-                border: 1px solid var(--border);
+                border: 1px solid var(--glass-border);
                 border-radius: 6px;
                 overflow: hidden;
               "
@@ -876,9 +1134,32 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="badgeCheckInterval"
-              >Background Badge Check Interval</label
-            >
+            <label>Docker search sources</label>
+            <div class="docker-source-list">
+              <label class="docker-source">
+                <input type="checkbox" id="dockerSearchUnraid" checked />
+                <img src="icons/unraid.png" alt="" aria-hidden="true" />
+                Unraid
+              </label>
+              <label class="docker-source">
+                <input type="checkbox" id="dockerSearchPortainer" checked />
+                <img src="icons/portainer.png" alt="" aria-hidden="true" />
+                Portainer
+              </label>
+              <label class="docker-source">
+                <input type="checkbox" id="dockerSearchDockhand" checked />
+                <img src="icons/dockhand.png" alt="" aria-hidden="true" />
+                Dockhand
+              </label>
+            </div>
+            <div class="help-text">
+              Which services the <code>d:</code> prefix searches. All three can
+              manage the same Docker host, and then one container comes back
+              once per source — untick the ones you do not want in the results.
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="badgeCheckInterval">Badge refresh interval</label>
             <select id="badgeCheckInterval" style="width: 100%">
               <option value="3000">3 seconds</option>
               <option value="5000" selected>5 seconds (Default)</option>
@@ -888,8 +1169,11 @@
               <option value="60000">60 seconds</option>
             </select>
             <div class="help-text">
-              How often the extension checks for badge updates (active
-              downloads, warnings, etc.)
+              How often the sidebar counters refresh for services you are not
+              currently looking at — SABnzbd, Sonarr, Radarr, Tautulli,
+              Tracearr and Portainer. Only while an extension window is open;
+              nothing polls once it is closed. A change takes effect the next
+              time the popup opens.
             </div>
           </div>
           <div class="actions">
@@ -898,17 +1182,6 @@
             </button>
           </div>
           <div id="statusGeneral" class="status"></div>
-
-          <div class="form-group" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
-            <label>About</label>
-            <div class="help-text" style="margin-bottom: 8px;">
-              See what's new in this release. The changelog is normally shown
-              automatically once after every update.
-            </div>
-            <button id="showChangelogBtn" class="btn-secondary" type="button">
-              Show What's New
-            </button>
-          </div>
         </div>
 
         <!-- Dashboard Section -->
@@ -956,7 +1229,7 @@
           <div class="form-group">
             <label for="sabnzbdUrl">Server URL</label>
             <div class="input-group" style="display: flex">
-              <select id="sabnzbdProtocol" style="width: auto">
+              <select id="sabnzbdProtocol" aria-label="Sabnzbd protocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
               </select>
@@ -1004,7 +1277,7 @@
           <div class="form-group">
             <label for="sonarrUrl">Server URL</label>
             <div class="input-group" style="display: flex">
-              <select id="sonarrProtocol" style="width: auto">
+              <select id="sonarrProtocol" aria-label="Sonarr protocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
               </select>
@@ -1052,7 +1325,7 @@
           <div class="form-group">
             <label for="radarrUrl">Server URL</label>
             <div class="input-group" style="display: flex">
-              <select id="radarrProtocol" style="width: auto">
+              <select id="radarrProtocol" aria-label="Radarr protocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
               </select>
@@ -1100,7 +1373,7 @@
           <div class="form-group">
             <label for="tautulliUrl">Server URL</label>
             <div class="input-group" style="display: flex">
-              <select id="tautulliProtocol" style="width: auto">
+              <select id="tautulliProtocol" aria-label="Tautulli protocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
               </select>
@@ -1161,7 +1434,7 @@
             <div class="form-group">
               <label for="plexUrl">Plex Server URL</label>
               <div class="input-group" style="display: flex">
-                <select id="plexProtocol" style="width: auto">
+                <select id="plexProtocol" aria-label="Plex protocol" style="width: auto">
                   <option value="http://">http://</option>
                   <option value="https://">https://</option>
                 </select>
@@ -1215,9 +1488,9 @@
           <div class="form-group">
             <label for="seerrUrl">Server URL</label>
             <div class="input-group" style="display: flex">
-              <select id="seerrProtocol" style="width: auto">
-                <option value="http://">http://</option>
+              <select id="seerrProtocol" aria-label="Seerr protocol" style="width: auto">
                 <option value="https://">https://</option>
+                <option value="http://">http://</option>
               </select>
               <input
                 type="text"
@@ -1260,7 +1533,7 @@
             <div style="background: rgba(252, 129, 129, 0.1); border: 1px solid rgba(252, 129, 129, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px;">
               <span style="font-size: 16px;">⚠️</span>
               <p style="color: #fc8181; font-size: 12px; margin: 0;">
-                <strong>Security Notice:</strong> Your password will be stored in plain text in the browser's local storage. Use a unique password for Seerr.
+                <strong>Security Notice:</strong> Your password is used once to sign in and is not stored — only the resulting session is kept. You will be asked to sign in again when that session expires. Use <code>https://</code> so the password is not sent over the network in the clear.
               </p>
             </div>
             <div class="form-group">
@@ -1325,7 +1598,7 @@
           <div class="form-group">
             <label for="unraidUrl">Server URL</label>
             <div class="input-group" style="display: flex">
-              <select id="unraidProtocol" style="width: auto">
+              <select id="unraidProtocol" aria-label="Unraid protocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
               </select>
@@ -1376,7 +1649,7 @@
           <div class="form-group">
             <label for="prowlarrUrl">Server URL</label>
             <div class="input-group" style="display: flex">
-              <select id="prowlarrProtocol" style="width: auto">
+              <select id="prowlarrProtocol" aria-label="Prowlarr protocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
               </select>
@@ -1424,7 +1697,7 @@
           <div class="form-group">
             <label for="wizarrUrl">Server URL</label>
             <div class="input-group" style="display: flex">
-              <select id="wizarrProtocol" style="width: auto">
+              <select id="wizarrProtocol" aria-label="Wizarr protocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
               </select>
@@ -1456,6 +1729,60 @@
         </div>
 
         <!-- Portainer Section -->
+        <div id="dockhand" class="section">
+          <h2>Dockhand Settings</h2>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; cursor: pointer">
+              <input
+                type="checkbox"
+                id="dockhandEnabled"
+                style="width: auto; margin-right: 10px"
+              />
+              Enable Dockhand
+            </label>
+            <div class="help-text">
+              Disabling the service will remove it from the sidebar and
+              navigation.
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dockhandUrl">Server URL</label>
+            <div class="input-group" style="display: flex">
+              <select id="dockhandProtocol" aria-label="Dockhand protocol" style="width: auto">
+                <option value="http://">http://</option>
+                <option value="https://">https://</option>
+              </select>
+              <input
+                type="text"
+                id="dockhandUrl"
+                placeholder="localhost:port"
+                style="flex: 1"
+              />
+            </div>
+            <div class="help-text">
+              Enter host and port, e.g., 192.168.1.10:3000
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dockhandKey">API Token</label>
+            <input type="password" id="dockhandKey" />
+            <div class="help-text">
+              Dockhand → Settings → API Tokens. The token starts with
+              <code>dh_</code> and needs at least the <code>view</code>
+              permission, plus <code>start</code> and <code>stop</code> for the
+              container buttons. Ten failed attempts lock the token out for
+              five minutes.
+            </div>
+          </div>
+          <div class="actions">
+            <button id="saveDockhand" class="btn-primary">Save Dockhand</button>
+            <button id="testDockhand" class="btn-secondary">
+              Test Connection
+            </button>
+          </div>
+          <div id="statusDockhand" class="status"></div>
+        </div>
+
         <div id="portainer" class="section">
           <h2>Portainer Settings</h2>
           <div class="form-group">
@@ -1498,7 +1825,7 @@
             <div class="form-group">
               <label for="portainerUrl">Server URL</label>
               <div class="input-group" style="display: flex">
-                <select id="portainerProtocol" style="width: auto">
+                <select id="portainerProtocol" aria-label="Portainer protocol" style="width: auto">
                   <option value="http://">http://</option>
                   <option value="https://">https://</option>
                 </select>
@@ -1632,7 +1959,7 @@
           <div class="form-group">
             <label for="tracearrUrl">Server URL</label>
             <div class="input-group" style="display: flex">
-              <select id="tracearrProtocol" style="width: auto">
+              <select id="tracearrProtocol" aria-label="Tracearr protocol" style="width: auto">
                 <option value="http://">http://</option>
                 <option value="https://">https://</option>
               </select>
@@ -1662,9 +1989,15 @@
           </div>
           <div id="statusTracearr" class="status"></div>
         </div>
+          </div>
+        </div>
       </div>
     </div>
 
+    <!-- The migration rules, shared with js/core/migrations.js. Must load
+         before options.js, which calls them on startup. -->
+    <script src="js/core/migrationRules.js"></script>
+    <script src="js/core/changelogEntries.js"></script>
     <script src="js/options.js"></script>
   </body>
 </html>

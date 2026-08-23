@@ -30,9 +30,14 @@ export async function initSonarr(url, key, state) {
         if (sonarrView) {
             const missingBtn = sonarrView.querySelector('.tab-btn[data-tab="missing"]');
             if (missingBtn) {
-                missingBtn.addEventListener('click', () => {
+                // Assigned, not added. initSonarr runs on every visit to the
+                // view, so addEventListener stacked another handler each time
+                // and the fifth visit fired five concurrent loads off one
+                // click - five renders into the same container, and five
+                // requests whenever the cache was cold.
+                missingBtn.onclick = () => {
                    loadSonarrMissing(url, key, state);
-                });
+                };
                 
                 // If tab is already active (restored state), load immediately
                 if (missingBtn.classList.contains('active')) {
@@ -399,13 +404,10 @@ function renderSonarrQueue(records, state) {
     refreshBtn.onmouseout = () => { refreshBtn.style.background = "rgba(255,255,255,0.05)"; refreshBtn.style.color = "var(--text-secondary)"; };
     refreshBtn.onclick = refreshQueue;
     
-    // Check if style already added in Radarr; Sonarr might run alone too, so safe to check and add
-    const style = document.createElement('style');
-    style.textContent = `.refresh-btn.spinning svg { animation: spin 1s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
-    if (!document.querySelector('style[data-refresh-spin]')) {
-        style.dataset.refreshSpin = 'true';
-        document.head.appendChild(style);
-    }
+    // Spinner styling lives in css/components.css. This used to build the
+    // rule at render time because @keyframes spin was only ever defined in
+    // setup.css, which the popup does not load — and whichever of these two
+    // views happened to render first is what made Portainer's spinner work.
     
     toolbar.appendChild(linkBtn);
     toolbar.appendChild(refreshBtn);
@@ -793,8 +795,13 @@ function renderSonarrQueue(records, state) {
                 btnCancel.onclick = (ev) => {
                     ev.stopPropagation();
                     optionsDiv.remove();
+                    // Put the x back. It is hidden below while the options are
+                    // open, and cancelling used to remove only the options -
+                    // so the button never returned and that row could not be
+                    // removed again until the whole queue re-rendered.
+                    delBtn.style.display = '';
                 };
-                
+
                 delBtn.style.display = 'none';
                 delBtn.parentNode.appendChild(optionsDiv);
             };
@@ -949,7 +956,7 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         }
         
         episodeValue.textContent = episodeText;
-        episodeValue.style.cssText = 'color: var(--text-secondary); padding: 8px; background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);';
+        episodeValue.style.cssText = 'color: var(--text-secondary); padding: 8px; background: var(--color-bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);';
         episodeNameDiv.appendChild(episodeLabel);
         episodeNameDiv.appendChild(episodeValue);
         dialog.appendChild(episodeNameDiv);
@@ -1139,7 +1146,7 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = 'Cancel';
-        cancelBtn.style.cssText = 'padding: 8px 16px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
+        cancelBtn.style.cssText = 'padding: 8px 16px; background: var(--color-bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
         cancelBtn.onclick = () => {
             dialog.remove();
             backdrop.remove();
@@ -1469,7 +1476,13 @@ async function updateSonarrBadge(url, key, existingQueue = null) {
         }
     } catch (e) {
         console.error("Sonarr badge update error", e);
-        badge.classList.add('hidden');
+        // The badge keeps its last value. A count that is a few seconds old
+        // says more than no count, and a blank badge reads as "nothing
+        // queued" rather than "could not ask".
+        // Rethrown: BadgeManager turns this into the sidebar's error state,
+        // and the scheduler uses it to back off. Swallowing it left both
+        // dead.
+        throw e;
     }
 }
 
@@ -1485,11 +1498,11 @@ async function loadSonarrMissing(url, key, state, forceRefresh = false) {
         try {
             const cache = await new Promise(resolve => chrome.storage.local.get(['sonarrMissingCache'], resolve));
             if (cache.sonarrMissingCache) {
-                const { timestamp, data } = cache.sonarrMissingCache;
+                const { timestamp, data, total } = cache.sonarrMissingCache;
                 const age = (Date.now() - timestamp) / 1000 / 60; // Minutes
                 if (age < 15) {
-                    renderSonarrMissing(data, state);
-                    return; 
+                    renderSonarrMissing(data, state, total);
+                    return;
                 }
             }
         } catch(e) { console.warn("Cache read error", e); }
@@ -1504,14 +1517,18 @@ async function loadSonarrMissing(url, key, state, forceRefresh = false) {
     try {
         const data = await Sonarr.getSonarrMissing(url, key);
         const records = data.records || [];
-        
-        renderSonarrMissing(records, state);
-        
+        // The request asks for one page. totalRecords is how many there really
+        // are, and the header has to say so rather than counting the page.
+        const total = typeof data.totalRecords === 'number' ? data.totalRecords : records.length;
+
+        renderSonarrMissing(records, state, total);
+
         // Save Cache
         chrome.storage.local.set({
             sonarrMissingCache: {
                 timestamp: Date.now(),
-                data: records
+                data: records,
+                total
             }
         });
         
@@ -1528,7 +1545,7 @@ async function loadSonarrMissing(url, key, state, forceRefresh = false) {
  * Renders missing episodes as a Poster Grid (similar to Calendar/Recent)
  * Filters for Released episodes only.
  */
-function renderSonarrMissing(records, state) {
+function renderSonarrMissing(records, state, total = null) {
     const container = document.getElementById("sonarr-missing");
     if (!container) return;
     container.textContent = '';
@@ -1548,9 +1565,13 @@ function renderSonarrMissing(records, state) {
     toolbar.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;";
     
     const countBadge = document.createElement('div');
-    countBadge.textContent = `${filtered.length} Missing`;
+    // Say when the list is a page of a longer one. It used to print the page
+    // length as though it were the whole backlog.
+    countBadge.textContent = (typeof total === 'number' && total > filtered.length)
+        ? `${filtered.length} of ${total} Missing`
+        : `${filtered.length} Missing`;
     countBadge.style.cssText = "font-weight: bold; color: var(--text-secondary); font-size: 0.9em;";
-    
+
     const refreshBtn = document.createElement('button');
 
     // Create refresh SVG
@@ -1628,17 +1649,10 @@ function renderSonarrMissing(records, state) {
         searchAllBtn.style.opacity = '0.7';
         
         try {
-            await fetch(`${state.configs.sonarrUrl}/api/v3/command`, {
-                 method: 'POST',
-                 headers: { 
-                    'X-Api-Key': state.configs.sonarrKey,
-                    'Content-Type': 'application/json'
-                 },
-                 body: JSON.stringify({ name: 'MissingEpisodeSearch' })
-            });
+            await Sonarr.searchAllMissingEpisodes(state.configs.sonarrUrl, state.configs.sonarrKey);
             showNotification('Started search for all missing episodes', 'success');
         } catch (e) {
-            showNotification('Error starting search', 'error');
+            showNotification(`Error starting search: ${e.message}`, 'error');
         }
         
         setTimeout(() => {
@@ -1806,21 +1820,14 @@ function renderSonarrMissing(records, state) {
              searchBtn.style.pointerEvents = "none";
              searchBtn.textContent = "⏳";
              try {
-                 await fetch(`${state.configs.sonarrUrl}/api/v3/command`, {
-                     method: 'POST',
-                     headers: { 
-                        'X-Api-Key': state.configs.sonarrKey,
-                        'Content-Type': 'application/json'
-                     },
-                     body: JSON.stringify({
-                         name: 'EpisodeSearch',
-                         episodeIds: [item.id]
-                     })
-                 });
+                 // Through the service layer, which checks the status. The
+                 // bare fetch this replaces resolved for 401/404/500 alike,
+                 // so a rejected API key still reported "Search started ✓".
+                 await Sonarr.searchEpisodes(state.configs.sonarrUrl, state.configs.sonarrKey, [item.id]);
                  showNotification('Search started', 'success');
                  searchBtn.textContent = "✓";
              } catch(err) {
-                 showNotification('Search failed', 'error');
+                 showNotification(`Search failed: ${err.message}`, 'error');
                  searchBtn.textContent = "❌";
              }
         };

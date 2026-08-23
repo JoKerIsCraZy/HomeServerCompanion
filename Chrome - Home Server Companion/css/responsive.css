@@ -80,10 +80,10 @@
         display: none;
     }
 
-    /* Dashboard: 2 columns */
-    .dashboard-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
+    /* No column count here. The popup is a fixed 700px viewport, so it falls
+       in this band and was held at two columns — against the auto-fill rule in
+       services/dashboard.css, which fits four at that width and reflows on its
+       own below it. */
 
     /* Compact header */
     #main-header {
@@ -96,12 +96,9 @@
 }
 
 /* === Desktop (800px - 1200px) === */
-@media (min-width: 800px) and (max-width: 1199px) {
-    /* Dashboard: 3 columns */
-    .dashboard-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
-    }
-}
+/* The dashboard grid is deliberately absent. Three columns here was fewer
+   than the four the narrower popup shows, which is backwards, and the
+   !important also beat the fullscreen stylesheets inside this range. */
 
 /* === Fullscreen Mode === */
 body.fullscreen-mode .app-container {
@@ -121,9 +118,13 @@ body.fullscreen-mode .content-area {
     max-width: none;
 }
 
-/* Larger cards in fullscreen */
+/* Larger cards in fullscreen.
+   The column count used to carry !important, which beat both
+   css/fullscreen.css and css/fullscreen-v4.css regardless of load order and
+   locked the dashboard to four columns at every width — including inside the
+   narrow breakpoints further down this very file. The grid is left to
+   fullscreen-v4.css, which reflows with auto-fit. */
 body.fullscreen-mode .dashboard-grid {
-    grid-template-columns: repeat(4, 1fr) !important;
     gap: var(--space-6);
 }
 

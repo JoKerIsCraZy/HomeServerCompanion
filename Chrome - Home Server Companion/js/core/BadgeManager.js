@@ -6,10 +6,17 @@
 
 import eventBus from './EventBus.js';
 import appState from './AppState.js';
+import poller from './Poller.js';
 
 class BadgeManager {
     constructor() {
         this.intervals = new Map();
+        // Pending stagger timers. stopAll() used to clear only the registered
+        // tasks, and the staggered starts are setTimeouts that have not fired
+        // yet - so a second startAll() within the first six seconds left the
+        // earlier round of timers running and every badge registered twice,
+        // each registration firing its first request immediately.
+        this.pendingStarts = [];
         this.activeService = null;
         this.defaultInterval = 5000;
     }
@@ -21,6 +28,7 @@ class BadgeManager {
      */
     startAll(activeService, configs) {
         this.activeService = activeService;
+        this._watchInterval();
 
         const badgeServices = [
             { id: 'sabnzbd', module: '../ui/sabnzbd.js', fn: 'updateSabnzbdBadge' },
@@ -28,6 +36,7 @@ class BadgeManager {
             { id: 'radarr', module: '../ui/radarr.js', fn: 'updateRadarrBadge' },
             { id: 'tautulli', module: '../ui/tautulli.js', fn: 'updateTautulliBadge' },
             { id: 'tracearr', module: '../ui/tracearr.js', fn: 'updateTracearrBadge' },
+            { id: 'dockhand', module: '../ui/dockhand.js', fn: 'updateDockhandBadge' },
             { id: 'portainer', module: '../ui/portainer.js', fn: 'updatePortainerBadge_Dashboard' }
         ];
 
@@ -44,9 +53,38 @@ class BadgeManager {
 
             const delay = index * 1000; // 1 second stagger
 
-            setTimeout(() => {
+            this.pendingStarts.push(setTimeout(() => {
                 this._startServiceBadge(svc, interval);
-            }, delay);
+            }, delay));
+        });
+    }
+
+    /**
+     * Restarts polling when the configured interval changes.
+     *
+     * The interval was read once, when the popup started. In the popup that is
+     * invisible — it is reopened constantly — but the fullscreen window stays
+     * up for days, so a change made in Options never took hold there until the
+     * window was reloaded.
+     *
+     * Registered once for the lifetime of the page.
+     * @private
+     */
+    _watchInterval() {
+        if (this._intervalWatcher) return;
+        this._intervalWatcher = true;
+
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area !== 'sync' || !changes.badgeCheckInterval) return;
+            const { oldValue, newValue } = changes.badgeCheckInterval;
+            if (oldValue === newValue) return;
+
+            // Re-read the whole config rather than patching the interval into
+            // the old one: a service may have been enabled or reconfigured in
+            // the same visit to Options.
+            chrome.storage.sync.get(null, (configs) => {
+                this.startAll(this.activeService, configs);
+            });
         });
     }
 
@@ -78,23 +116,28 @@ class BadgeManager {
                 // Add error indicator after repeated failures
                 const navItem = document.querySelector(`.nav-item[data-target="${service.id}"]`);
                 if (navItem) navItem.classList.add('badge-error');
+                // Rethrow: the scheduler needs to see the failure to back off.
+                throw error;
             }
         };
 
-        // Initial call
-        updateFn();
-
-        // Start interval
-        const intervalId = setInterval(updateFn, interval);
-        this.intervals.set(service.id, intervalId);
+        // Registered with the shared scheduler rather than a bare interval, so
+        // badge polling stops with everything else when the page is hidden and
+        // backs off when a service is unreachable. Without that, a fullscreen
+        // tab left open kept six services under constant load.
+        poller.register(`badge:${service.id}`, updateFn, { interval, group: 'badge' });
+        this.intervals.set(service.id, `badge:${service.id}`);
     }
 
     /**
      * Stop all badge updates
      */
     stopAll() {
-        for (const intervalId of this.intervals.values()) {
-            clearInterval(intervalId);
+        for (const timerId of this.pendingStarts) clearTimeout(timerId);
+        this.pendingStarts = [];
+
+        for (const taskName of this.intervals.values()) {
+            poller.unregister(taskName);
         }
         this.intervals.clear();
     }

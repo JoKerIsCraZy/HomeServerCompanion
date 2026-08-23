@@ -1,5 +1,17 @@
 /* css/fullscreen-v4.css */
 /**
+ * The last word on fullscreen layout.
+ *
+ * Loaded after both css/fullscreen.css and css/responsive.css, which is what
+ * makes the rules here win. That ordering is load-bearing: eight of these
+ * selectors are also in fullscreen.css, and five are also in responsive.css.
+ * Moving this file earlier in popup.html, or merging it into either of them,
+ * hands those selectors to a different definition.
+ *
+ * The "v4" in the name is the release it arrived in, not a schema version.
+ */
+
+/**
  * Fullscreen Mode Styles
  * Enhanced layout for standalone window
  */
@@ -58,9 +70,11 @@ body.fullscreen-mode .widget {
 }
 
 /* Enhanced cards in fullscreen */
-body.fullscreen-mode .card {
-    min-height: 200px;
-}
+/* No min-height here. `.card` is the shared surface: Unraid's compact
+   CPU/RAM/Array metric cards, every Prowlarr search result row, the "no
+   streams" notice. Forcing 200px turned a 40px result row into a block and
+   inflated the metric cards it was never aimed at. Cards that want a floor
+   set it themselves. */
 
 /* Hide fullscreen button in fullscreen mode */
 body.fullscreen-mode #fullscreen-btn {

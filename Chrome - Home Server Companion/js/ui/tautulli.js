@@ -1,5 +1,6 @@
 import * as Tautulli from "../../services/tautulli.js";
 import { showNotification, showPromptModal, showIpInfoModal, validateUrl } from "../utils.js";
+import poller from "../core/Poller.js";
 
 /**
  * Initializes the Tautulli service view.
@@ -17,7 +18,7 @@ export async function initTautulli(url, key, state) {
         
         // Update badge directly from this data to ensure sync
         // Update badge directly using shared function
-        updateTautulliBadge(url, key, activity.sessions || []);
+        updateTautulliBadge(url, key, activity.sessions || []).catch(() => {}); // fire-and-forget: the view has its own error handling
       } catch (e) {
         console.error("Tautulli Auto-refresh error", e);
       }
@@ -26,11 +27,8 @@ export async function initTautulli(url, key, state) {
     // Initial Run
     await update();
 
-    // Clear existing interval if any
-    if (state.refreshInterval) clearInterval(state.refreshInterval);
-
-    // Set new interval (2 seconds)
-    state.refreshInterval = setInterval(update, 2000);
+    // Unchanged 2s cadence while visible.
+    poller.register('tautulli', update, { interval: 2000, immediate: false });
 }
 
 function renderTautulliActivity(sessions, url, key, state) {
@@ -151,13 +149,13 @@ function renderTautulliActivity(sessions, url, key, state) {
           if(titleSpanTarget) {
               titleSpanTarget.title = "Open in Tautulli";
               titleSpanTarget.style.cursor = "pointer";
-              titleSpanTarget.classList.add("hover-underline"); // We can add a class or inline style
+              // .hover-underline is a real rule now (css/services/tautulli.css).
+              // It used to be applied here with nothing behind it, and the two
+              // mouseenter/mouseleave listeners underneath did the underlining
+              // instead - two listeners per media title for what is one line
+              // of CSS.
+              titleSpanTarget.classList.add("hover-underline");
               titleSpanTarget.addEventListener('click', openMedia);
-              
-              // Add inline hover effect via JS since we are here, or rely on CSS. 
-              // Simplest is direct style for now as requested "text cursor behavior"
-              titleSpanTarget.addEventListener("mouseenter", () => titleSpanTarget.style.textDecoration = "underline");
-              titleSpanTarget.addEventListener("mouseleave", () => titleSpanTarget.style.textDecoration = "none");
           }
           
           if(posterEl) {
@@ -199,9 +197,13 @@ function renderTautulliActivity(sessions, url, key, state) {
             );
             
             if (reason !== null) {
-              await Tautulli.terminateSession(url, key, session.session_id, reason);
-              showNotification('Stream terminated', 'success');
-              setTimeout(() => initTautulli(url, key, state), 1000);
+              try {
+                await Tautulli.terminateSession(url, key, session.session_id, reason);
+                showNotification('Stream terminated', 'success');
+                setTimeout(() => initTautulli(url, key, state), 1000);
+              } catch (err) {
+                showNotification(`Could not kill stream: ${err.message}`, 'error');
+              }
             }
           };
           const killIcon = cardWrapper.querySelector('.kill-icon-btn');
@@ -345,5 +347,8 @@ export async function updateTautulliBadge(url, key, existingSessions = null) {
     }
   } catch (e) {
     console.error("Tautulli badge update error", e);
+    // Rethrown: BadgeManager turns this into the sidebar's error state, and
+    // the scheduler uses it to back off.
+    throw e;
   }
 }

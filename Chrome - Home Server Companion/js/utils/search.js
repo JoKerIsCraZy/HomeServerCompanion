@@ -125,7 +125,11 @@ export async function aggregatedSearch(query, configs) {
             id: item.id,
             title: item.title || item.name,
             year: item.releaseDate ? item.releaseDate.split('-')[0] : (item.firstAirDate ? item.firstAirDate.split('-')[0] : ''),
-            poster: item.posterPath ? `https://image.tmdb.org/t/p/w200${item.posterPath}` : 'icons/placeholder.png',
+            // null, not a fake icons/placeholder path: no such file is
+            // shipped. The renderer always caught the sentinel before it
+            // reached an <img>, so nothing broke, but a path to a file that
+            // does not exist is a trap for the next reader.
+            poster: item.posterPath ? `https://image.tmdb.org/t/p/w200${item.posterPath}` : null,
             type: item.mediaType,
             status: status,
             overview: item.overview,

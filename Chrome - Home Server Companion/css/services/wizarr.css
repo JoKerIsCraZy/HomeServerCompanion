@@ -35,7 +35,7 @@
   padding: 8px 12px;
   border-radius: 6px;
   border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  background: var(--color-bg-secondary);
   color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
@@ -44,7 +44,7 @@
 
 .wizarr-server-dropdown:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-wizarr);
 }
 
 .wizarr-add-btn {
@@ -52,7 +52,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #d03142 0%, #aa2030 100%);
+  background: linear-gradient(135deg, var(--accent-wizarr) 0%, var(--accent-wizarr-dark) 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -205,7 +205,7 @@
 
 .wizarr-form-section input:focus {
   outline: none;
-  border-color: #d03142;
+  border-color: var(--accent-wizarr);
 }
 
 .wizarr-form-section input::placeholder {
@@ -216,7 +216,7 @@
 .wizarr-select {
   padding: 12px 14px;
   border-radius: 8px;
-  border: 1px solid #d03142;
+  border: 1px solid var(--accent-wizarr);
   background: #1c1c1c;
   color: var(--text-primary);
   font-size: 14px;
@@ -229,7 +229,7 @@
 
 .wizarr-select:focus {
   outline: none;
-  border-color: #d03142;
+  border-color: var(--accent-wizarr);
 }
 
 /* Section Box */
@@ -291,7 +291,7 @@
 }
 
 .wizarr-toggle input:checked + .wizarr-toggle-track {
-  background: #d03142;
+  background: var(--accent-wizarr);
 }
 
 .wizarr-toggle input:checked + .wizarr-toggle-track::after {
@@ -310,7 +310,7 @@
   border: 1px solid rgba(208, 49, 66, 0.4);
   border-radius: 6px;
   background: transparent;
-  color: #d03142;
+  color: var(--accent-wizarr);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -319,7 +319,7 @@
 
 .wizarr-preset-btn:hover {
   background: rgba(208, 49, 66, 0.15);
-  border-color: #d03142;
+  border-color: var(--accent-wizarr);
 }
 
 .wizarr-preset-btn:active {
@@ -350,7 +350,7 @@
 
 .wizarr-input-row input:focus {
   outline: none;
-  border-color: #d03142;
+  border-color: var(--accent-wizarr);
 }
 
 /* Libraries List in Modal */
@@ -409,7 +409,7 @@
 }
 
 .wizarr-btn-primary {
-  background: linear-gradient(135deg, #d03142 0%, #aa2030 100%);
+  background: linear-gradient(135deg, var(--accent-wizarr) 0%, var(--accent-wizarr-dark) 100%);
   color: white;
   border: none;
   box-shadow: 0 2px 8px rgba(208, 49, 66, 0.3);
@@ -459,7 +459,7 @@
 }
 
 .wizarr-invites-count {
-  background: linear-gradient(135deg, #d03142 0%, #aa2030 100%);
+  background: linear-gradient(135deg, var(--accent-wizarr) 0%, var(--accent-wizarr-dark) 100%);
   color: white;
   padding: 3px 10px;
   border-radius: 12px;
@@ -505,7 +505,7 @@
   font-family: "JetBrains Mono", "Consolas", "Monaco", monospace;
   font-size: 13px;
   font-weight: 600;
-  color: #d03142;
+  color: var(--accent-wizarr);
   letter-spacing: 0.5px;
 }
 
@@ -546,7 +546,7 @@
 
 .wizarr-copy-btn {
   background: rgba(208, 49, 66, 0.12);
-  color: #d03142;
+  color: var(--accent-wizarr);
 }
 
 .wizarr-copy-btn:hover {
@@ -607,7 +607,7 @@
 
 .wizarr-status-badge.unlimited {
   background: rgba(208, 49, 66, 0.15);
-  color: #d03142;
+  color: var(--accent-wizarr);
 }
 
 /* Success Animation for Copy */

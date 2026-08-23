@@ -70,36 +70,26 @@ export async function initSeerr(url, key, state) {
     const trendingRefreshBtn = document.getElementById('seerr-trending-refresh');
     if (trendingRefreshBtn && !trendingRefreshBtn.dataset.listenerAttached) {
         trendingRefreshBtn.addEventListener('click', () => {
-             // Add spinning animation
-             const icon = trendingRefreshBtn.querySelector('svg');
-             if(icon) {
-                 icon.style.transition = 'transform 1s linear';
-                 icon.style.transform = 'rotate(360deg)';
-                 const spinInterval = setInterval(() => {
-                    icon.style.transform = `rotate(${360 + 360}deg)`; // Mock spin
-                 }, 1000);
+             // The .spinning class, like Sonarr, Radarr and Portainer. This
+             // used to drive the transform by hand: a one-second transition to
+             // rotate(360deg), then a setInterval writing rotate(720deg) every
+             // second — the same value every tick, so the icon turned once and
+             // then sat still for the rest of the load. The comment on that
+             // line read "Mock spin".
+             trendingRefreshBtn.classList.add('spinning');
+             trendingRefreshBtn.disabled = true;
 
-                 // Stop generic spinning class if used, but manual rotation is fine for simple feedback
-                 trendingRefreshBtn.disabled = true;
-
-                  const trendingFilter = document.getElementById('seerr-trending-filter')?.value || 'both';
-                  loadTrending(url, key, trendingFilter, authMethod).finally(() => {
-                     clearInterval(spinInterval);
-                     icon.style.transform = 'none';
-                     trendingRefreshBtn.disabled = false;
-                 });
-             } else {
-                 // Fallback without icon animation
-                 const trendingFilter = document.getElementById('seerr-trending-filter')?.value || 'both';
-                 loadTrending(url, key, trendingFilter, authMethod);
-             }
+             const trendingFilter = document.getElementById('seerr-trending-filter')?.value || 'both';
+             loadTrending(url, key, trendingFilter, authMethod).finally(() => {
+                 trendingRefreshBtn.classList.remove('spinning');
+                 trendingRefreshBtn.disabled = false;
+             });
         });
         
         // Add simple hover effect
         trendingRefreshBtn.onmouseover = () => { trendingRefreshBtn.style.background = "rgba(255,255,255,0.1)"; trendingRefreshBtn.style.color = "#fff"; };
         trendingRefreshBtn.onmouseout = () => { trendingRefreshBtn.style.background = "transparent"; trendingRefreshBtn.style.color = "#ddd"; };
         
-        trendingRefreshBtn.dataset.listenerAttached = "true";
         trendingRefreshBtn.dataset.listenerAttached = "true";
     }
 
@@ -760,10 +750,16 @@ function renderHydratedRequests(requests, url, key, authMethod = 'apikey') {
             if (approveBtn) {
                approveBtn.onclick = async () => {
                   approveBtn.disabled = true;
-                  const success = await Seerr.approveRequest(url, key, req.id, authMethod);
-                  if (success) {
+                  try {
+                      await Seerr.approveRequest(url, key, req.id, authMethod);
                       loadRequests(url, key, document.getElementById('seerr-filter')?.value || 'pending', authMethod);
                       showNotification(`Request "${title}" approved`, 'success');
+                  } catch (e) {
+                      // The button used to stay disabled with nothing said:
+                      // the user clicked Approve, it greyed out, and that was
+                      // the end of it until they left the view and came back.
+                      approveBtn.disabled = false;
+                      showNotification(`Could not approve "${title}": ${e.message}`, 'error');
                   }
                };
             }
@@ -780,10 +776,13 @@ function renderHydratedRequests(requests, url, key, authMethod = 'apikey') {
                     );
 
                     if (confirmed) {
-                        const success = await Seerr.declineRequest(url, key, req.id, authMethod);
-                        if (success) {
-                             loadRequests(url, key, document.getElementById('seerr-filter')?.value || 'pending', authMethod);
-                             showNotification(`Request "${title}" declined`, '#f44336'); // Red for declined
+                        try {
+                            await Seerr.declineRequest(url, key, req.id, authMethod);
+                            loadRequests(url, key, document.getElementById('seerr-filter')?.value || 'pending', authMethod);
+                            showNotification(`Request "${title}" declined`, '#f44336'); // Red for declined
+                        } catch (e) {
+                            declineBtn.disabled = false;
+                            showNotification(`Could not decline "${title}": ${e.message}`, 'error');
                         }
                     } else {
                         declineBtn.disabled = false;

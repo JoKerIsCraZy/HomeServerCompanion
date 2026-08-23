@@ -1,8 +1,13 @@
 // js/ui/tracearr.js
 import * as Tracearr from "../../services/tracearr.js";
 import { showNotification, showPromptModal, escapeHtml, validateUrl } from "../utils.js";
+import poller from "../core/Poller.js";
 
-let statisticsLoaded = false;
+/** When the Statistics tab last finished loading, as an epoch ms timestamp. */
+let statisticsLoadedAt = 0;
+
+/** Statistics older than this are refetched when the tab is shown again. */
+const STATS_MAX_AGE_MS = 30000;
 
 /**
  * Initialize Tracearr view
@@ -11,51 +16,49 @@ let statisticsLoaded = false;
  * @param {Object} state - App state
  */
 export async function initTracearr(url, key, state) {
-    // Reset statistics loaded flag when view is initialized
-    statisticsLoaded = false;
+    statisticsLoadedAt = 0;
+
+    // Credentials live on the module so the tab listener - which is attached
+    // once and then reused - never closes over a stale pair. Changing them in
+    // Options used to leave the old ones baked into the handler forever.
+    activeCredentials = { url, key };
 
     const update = async () => {
         try {
             const streams = await Tracearr.getTracearrStreams(url, key);
             renderTracearrStreams(streams || [], url, key, state);
-            updateTracearrBadge(url, key, streams || []);
+            updateTracearrBadge(url, key, streams || []).catch(() => {}); // fire-and-forget: the view has its own error handling
         } catch (e) {
             console.error("Tracearr Auto-refresh error", e);
         }
     };
 
-    // Initial Run
     await update();
 
-    // Check if Statistics tab is already active and load it
-    const activeTab = document.querySelector('#tracearr-view .tab-btn.active');
-    if (activeTab && activeTab.dataset.tab === 'statistics') {
-        loadStatistics(url, key);
-        statisticsLoaded = true;
-    }
+    const showStatsIfStale = () => {
+        if (Date.now() - statisticsLoadedAt < STATS_MAX_AGE_MS) return;
+        const { url: u, key: k } = activeCredentials;
+        loadStatistics(u, k);
+    };
 
-    // Setup tab switching for Statistics
+    const activeTab = document.querySelector('#tracearr-view .tab-btn.active');
+    if (activeTab && activeTab.dataset.tab === 'statistics') showStatsIfStale();
+
     const tabsContainer = document.querySelector('#tracearr-view .tabs');
     if (tabsContainer && !tabsContainer.dataset.listenerAttached) {
         tabsContainer.addEventListener('click', (e) => {
             const tabBtn = e.target.closest('.tab-btn');
-            if (!tabBtn) return;
-
-            const tabId = tabBtn.dataset.tab;
-            if (tabId === 'statistics' && !statisticsLoaded) {
-                loadStatistics(url, key);
-                statisticsLoaded = true;
-            }
+            if (tabBtn && tabBtn.dataset.tab === 'statistics') showStatsIfStale();
         });
         tabsContainer.dataset.listenerAttached = 'true';
     }
 
-    // Clear existing interval if any
-    if (state.refreshInterval) clearInterval(state.refreshInterval);
-
-    // Set new interval (5 seconds for streams)
-    state.refreshInterval = setInterval(update, 5000);
+    // Unchanged 5s cadence while visible.
+    poller.register('tracearr', update, { interval: 5000, immediate: false });
 }
+
+/** Credentials for handlers that outlive a single init call. */
+let activeCredentials = { url: '', key: '' };
 
 /**
  * Load Statistics tab content
@@ -67,337 +70,324 @@ async function loadStatistics(url, key) {
     container.innerHTML = '<div class="loading">Loading statistics...</div>';
 
     try {
-        const [generalStats, todayStats, users, violations, history, activity] = await Promise.all([
-            Tracearr.getTracearrStats(url, key),
-            Tracearr.getTracearrStatsToday(url, key),
-            Tracearr.getTracearrUsers(url, key),
-            Tracearr.getTracearrViolations(url, key).catch(() => []),
-            Tracearr.getTracearrHistory(url, key).catch(() => ({ items: [] })),
-            Tracearr.getTracearrActivity(url, key).catch(() => ({ trends: [] }))
+        // v2 has no aggregate stats endpoint, so the figures are rolled up from
+        // one history window plus the streams summary. Violations still come
+        // from v1 — the v2 public API has no equivalent — and are optional, so
+        // a server that has dropped v1 loses the tile rather than the tab.
+        const [rollup, identities, violations] = await Promise.all([
+            // 14 days: a baseline needs enough days that one busy evening does
+            // not become "typical".
+            Tracearr.getTracearrRollup(url, key, 14),
+            Tracearr.getTracearrUsers(url, key).catch(() => []),
+            Tracearr.getTracearrViolations(url, key).catch(() => [])
         ]);
 
-        // Debug logging
-
-        renderStatistics(container, generalStats, todayStats, users, violations, history, activity);
+        renderStatistics(container, rollup, identities,
+            Array.isArray(violations) ? violations : []);
+        statisticsLoadedAt = Date.now();
     } catch (e) {
-        container.innerHTML = `<div class="error-banner">Failed to load statistics: ${escapeHtml(e.message)}</div>`;
+        // The timestamp is deliberately not set here: a failed load must stay
+        // retryable, and the old boolean latch made an error permanent.
+        container.replaceChildren();
+        const err = document.createElement('div');
+        err.className = 'error-banner';
+        err.textContent = `Failed to load statistics: ${e.message}`;
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.className = 'trr-updated';
+        retry.textContent = 'Try again';
+        retry.addEventListener('click', () => loadStatistics(url, key));
+        container.append(err, retry);
     }
 }
 
 /**
- * Render Statistics tab
+ * Renders the Statistics tab.
+ *
+ * The figures are deliberately few. A count with nothing to compare it against
+ * supports no decision, so today's watch time leads, plays get a baseline over
+ * the rollup window, users are shown as a ratio, and the counters that cannot
+ * change while the popup is open are demoted to one footer line. Violations
+ * render only when there are some: an absent banner is the all-clear.
+ *
+ * @param {HTMLElement} container - Tab content container
+ * @param {Object} rollup - Result of Tracearr.getTracearrRollup
+ * @param {Array} identities - Result of Tracearr.getTracearrUsers
+ * @param {Array} violations - Rule violations (v1); may be empty
  */
-function renderStatistics(container, generalStats, todayStats, users, violations, history, activity) {
-    container.textContent = '';
+function renderStatistics(container, rollup, identities, violations) {
+    container.replaceChildren();
 
-    // Helper to safely get number value
-    const num = (val) => val !== undefined && val !== null ? Number(val) : 0;
+    const totalUsers = identities.length;
+    const violationList = Array.isArray(violations) ? violations : [];
 
-    // === HERO SECTION ===
-    const heroSection = document.createElement('div');
-    heroSection.style.cssText = `
-        background: linear-gradient(135deg, rgba(0, 188, 212, 0.1) 0%, rgba(0, 172, 193, 0.05) 100%);
-        border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 24px;
-        border: 1px solid rgba(0, 188, 212, 0.2);
-    `;
+    container.appendChild(buildStatsHeader(rollup, totalUsers));
 
-    const heroTitle = document.createElement('div');
-    heroTitle.style.cssText = `
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        color: #00bcd4;
-        margin-bottom: 16px;
-        font-weight: 600;
-    `;
-    heroTitle.textContent = 'Overview';
+    const trend = buildTrendStrip(rollup);
+    if (trend) container.appendChild(trend);
 
-    const heroGrid = document.createElement('div');
-    heroGrid.style.cssText = `
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
-    `;
+    if (violationList.length > 0) {
+        container.appendChild(buildViolationBanner(violationList));
+    }
 
-    const heroStats = [
-        { label: 'Active Streams', value: num(generalStats.activeStreams), icon: '🔴', color: '#ff5252' },
-        { label: 'Plays Today', value: num(todayStats.todayPlays), icon: '🎬', color: '#00bcd4' },
-        { label: 'Watch Time', value: formatWatchTime(todayStats.watchTimeHours), icon: '⏱️', color: '#4caf50' },
-        { label: 'Active Users', value: num(todayStats.activeUsersToday), icon: '👥', color: '#ff9800' }
-    ];
+    const roster = buildTopUsers(rollup, identities);
+    if (roster) container.appendChild(roster);
 
-    heroStats.forEach(stat => {
-        const statCard = document.createElement('div');
-        statCard.style.cssText = `
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        `;
+    container.appendChild(buildAllTimeFooter(rollup, totalUsers));
+}
 
-        const iconBox = document.createElement('div');
-        iconBox.textContent = stat.icon;
-        iconBox.style.cssText = `
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: ${stat.color}20;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        `;
+/**
+ * Header: watch time as the primary figure, everything else as one subline.
+ * Mirrors the SABnzbd header so the two services read as one product.
+ * @param {Object} rollup
+ * @param {number} totalUsers
+ * @returns {HTMLElement}
+ */
+function buildStatsHeader(rollup, totalUsers) {
+    const header = document.createElement('div');
+    header.className = 'trr-header';
 
-        const info = document.createElement('div');
-        info.innerHTML = `
-            <div style="font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1;">${stat.value}</div>
-            <div style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">${stat.label}</div>
-        `;
+    const hero = document.createElement('div');
+    hero.className = 'trr-hero';
+    hero.setAttribute('aria-live', 'polite');
 
-        statCard.appendChild(iconBox);
-        statCard.appendChild(info);
-        heroGrid.appendChild(statCard);
+    const watched = rollup.today.watchTimeMs;
+    if (watched > 0) {
+        hero.textContent = formatDuration(watched);
+    } else {
+        // No zeroes: a quiet day is a state, not the number nought.
+        hero.classList.add('is-idle');
+        hero.textContent = 'Quiet day';
+    }
+
+    const subline = document.createElement('div');
+    subline.className = 'trr-subline';
+    const parts = [];
+    if (rollup.today.plays > 0) {
+        parts.push(`${rollup.today.plays} ${rollup.today.plays === 1 ? 'play' : 'plays'}`);
+    }
+    if (totalUsers > 0) parts.push(`${rollup.today.activeUsers} of ${totalUsers} users`);
+    if (rollup.activeStreams > 0) parts.push(`${rollup.activeStreams} watching now`);
+    subline.textContent = parts.join(' · ') || 'Nothing played today';
+
+    const stack = document.createElement('div');
+    stack.className = 'trr-hero-stack';
+    stack.append(hero, subline);
+
+    const updated = document.createElement('button');
+    updated.type = 'button';
+    updated.className = 'trr-updated';
+    updated.title = 'Refresh statistics';
+    updated.textContent = 'Refresh';
+    updated.addEventListener('click', () => {
+        const { url, key } = activeCredentials;
+        statisticsLoadedAt = 0;
+        loadStatistics(url, key);
     });
 
-    heroSection.appendChild(heroTitle);
-    heroSection.appendChild(heroGrid);
-    container.appendChild(heroSection);
+    header.append(stack, updated);
+    return header;
+}
 
-    // === STATS GRID ===
-    const statsSection = document.createElement('div');
-    statsSection.style.cssText = `
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        margin-bottom: 24px;
-    `;
+/**
+ * Daily plays over the rollup window, as a bar chart with the window mean.
+ *
+ * This is the element that turns a bare count into a judgement: "16 plays" says
+ * nothing, "16 today against a typical 12" says the day is busy. Returns null
+ * when there is nothing to chart, so no empty frame is drawn.
+ *
+ * @param {Object} rollup
+ * @returns {HTMLElement|null}
+ */
+function buildTrendStrip(rollup) {
+    const records = rollup.records || [];
+    if (records.length === 0) return null;
 
-    const statCards = [
-        { title: 'Total Sessions', value: num(generalStats.totalSessions).toLocaleString(), subtitle: 'All time streams', icon: '▶️', trend: '' },
-        { title: 'Total Users', value: num(generalStats.totalUsers).toLocaleString(), subtitle: 'Registered users', icon: '👥', trend: '' },
-        { title: 'Sessions Today', value: num(todayStats.todaySessions).toLocaleString(), subtitle: 'Today\'s streams', icon: '📺', trend: '' },
-        { title: 'Violations', value: num(generalStats.recentViolations).toLocaleString(), subtitle: 'Recent violations', icon: '⚠️', trend: '' }
-    ];
+    const days = rollup.windowDays;
 
-    statCards.forEach(stat => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.style.cssText = `
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            border-radius: 12px;
-            background: var(--card-bg);
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: transform 0.2s, box-shadow 0.2s;
-        `;
-        card.onmouseover = () => {
-            card.style.transform = 'translateY(-2px)';
-            card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-        };
-        card.onmouseout = () => {
-            card.style.transform = 'translateY(0)';
-            card.style.boxShadow = 'none';
-        };
+    // Bucket by local calendar day. The key is built from the local date parts
+    // rather than toISOString(), which would shift the day boundary to UTC and
+    // file late-evening plays under tomorrow.
+    const localKey = (d) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-        const iconBox = document.createElement('div');
-        iconBox.textContent = stat.icon;
-        iconBox.style.cssText = `
-            width: 56px;
-            height: 56px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, rgba(0, 188, 212, 0.2), rgba(0, 172, 193, 0.1));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-        `;
+    const buckets = new Map();
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        buckets.set(localKey(d), { date: d, count: 0 });
+    }
+    for (const rec of records) {
+        if (!rec.startedAt) continue;
+        const bucket = buckets.get(localKey(new Date(rec.startedAt)));
+        if (bucket) bucket.count++;
+    }
 
-        const content = document.createElement('div');
-        content.style.cssText = 'flex: 1;';
-        content.innerHTML = `
-            <div style="font-size: 24px; font-weight: 700; color: var(--text-primary);">${stat.value}</div>
-            <div style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">${stat.title}</div>
-            <div style="font-size: 11px; color: var(--text-secondary); opacity: 0.7;">${stat.subtitle}</div>
-        `;
+    const counts = [...buckets.values()].map((b) => b.count);
+    const peak = Math.max(...counts, 1);
+    const mean = counts.reduce((a, b) => a + b, 0) / counts.length;
+    const todayKey = localKey(new Date());
+    const todayCount = buckets.get(todayKey)?.count || 0;
 
-        card.appendChild(iconBox);
-        card.appendChild(content);
-        statsSection.appendChild(card);
+    const section = document.createElement('div');
+    section.className = 'trr-trend';
+
+    const chart = document.createElement('div');
+    chart.className = 'trr-trend-bars';
+    chart.setAttribute('role', 'img');
+    chart.setAttribute('aria-label',
+        `Plays per day over the last ${days} days. Today ${todayCount}, typical ${Math.round(mean)}.`);
+
+    for (const [day, bucket] of buckets) {
+        const isToday = day === todayKey;
+        const { count, date } = bucket;
+        const weekday = date.toLocaleDateString(undefined, { weekday: 'long' });
+
+        const column = document.createElement('div');
+        column.className = 'trr-trend-col';
+        if (isToday) column.classList.add('is-today');
+        column.title = `${isToday ? 'Today' : weekday}: ${count} ${count === 1 ? 'play' : 'plays'}`;
+
+        const bar = document.createElement('div');
+        bar.className = 'trr-trend-bar';
+        // A zero-play day still gets a sliver, so the axis stays readable.
+        bar.style.height = `${Math.max((count / peak) * 100, 3)}%`;
+
+        const label = document.createElement('span');
+        label.className = 'trr-trend-day';
+        // `short`, not `narrow`: the single-letter form collides in several
+        // locales — German gives D for both Dienstag and Donnerstag, M for both
+        // Montag and Mittwoch.
+        label.textContent = date.toLocaleDateString(undefined, { weekday: 'short' });
+
+        column.append(bar, label);
+        chart.appendChild(column);
+    }
+
+    const caption = document.createElement('div');
+    caption.className = 'trr-trend-caption';
+    caption.textContent =
+        `Plays per day, last ${days} days · today ${todayCount}, typical ${Math.round(mean)}`;
+
+    section.append(chart, caption);
+    return section;
+}
+
+/**
+ * Violations banner. Only ever built when there is at least one, so the absence
+ * of this element is what says "all clear" - no tile is spent on a zero.
+ * @param {Array} violations
+ * @returns {HTMLElement}
+ */
+function buildViolationBanner(violations) {
+    const banner = document.createElement('div');
+    banner.className = 'trr-violations';
+
+    const heading = document.createElement('div');
+    heading.className = 'trr-violations-title';
+    heading.textContent = `${violations.length} ${violations.length === 1 ? 'violation' : 'violations'}`;
+    banner.appendChild(heading);
+
+    violations.slice(0, 3).forEach((v) => {
+        const row = document.createElement('div');
+        row.className = 'trr-violations-row';
+        const who = v.username || v.user || 'Unknown user';
+        const what = v.rule || v.reason || v.type || 'Rule violation';
+        row.textContent = `${who} · ${what}`;
+        banner.appendChild(row);
     });
 
-    container.appendChild(statsSection);
-
-    // === TOP USERS ===
-    if (users && users.data && users.data.length > 0) {
-        const usersHeader = document.createElement('div');
-        usersHeader.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        `;
-        usersHeader.innerHTML = `
-            <div>
-                <h2 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">Top Users</h2>
-                <p style="font-size: 12px; color: var(--text-secondary); margin: 2px 0 0 0;">By session count</p>
-            </div>
-            <div style="font-size: 24px; opacity: 0.3;">👥</div>
-        `;
-
-        const usersGrid = document.createElement('div');
-        usersGrid.style.cssText = `
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        `;
-
-        const topUsers = users.data
-            .sort((a, b) => num(b.sessionCount) - num(a.sessionCount))
-            .slice(0, 6);
-
-        topUsers.forEach((user, index) => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.style.cssText = `
-                padding: 16px;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                border: 1px solid rgba(255,255,255,0.05);
-            `;
-
-            const rank = document.createElement('div');
-            rank.textContent = `#${index + 1}`;
-            rank.style.cssText = `
-                font-size: 24px;
-                font-weight: 700;
-                color: ${index < 3 ? '#00bcd4' : 'rgba(255,255,255,0.3)'};
-                min-width: 40px;
-            `;
-
-            const avatar = document.createElement('img');
-            avatar.src = user.avatarUrl || user.thumbUrl || 'icons/icon48.png';
-            avatar.style.cssText = `
-                width: 44px;
-                height: 44px;
-                border-radius: 50%;
-                object-fit: cover;
-                background: rgba(255,255,255,0.1);
-            `;
-            avatar.onerror = () => { avatar.src = 'icons/icon48.png'; };
-
-            const info = document.createElement('div');
-            info.style.cssText = 'flex: 1; min-width: 0;';
-
-            const name = document.createElement('div');
-            name.textContent = user.displayName || user.username || 'Unknown';
-            name.style.cssText = `
-                font-weight: 600;
-                font-size: 14px;
-                color: var(--text-primary);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            `;
-
-            const stats = document.createElement('div');
-            stats.innerHTML = `
-                <span style="font-size: 12px; color: var(--text-secondary);">
-                    <strong style="color: #00bcd4;">${num(user.sessionCount)}</strong> sessions
-                </span>
-            `;
-
-            info.appendChild(name);
-            info.appendChild(stats);
-
-            card.appendChild(rank);
-            card.appendChild(avatar);
-            card.appendChild(info);
-            usersGrid.appendChild(card);
-        });
-
-        container.appendChild(usersHeader);
-        container.appendChild(usersGrid);
-    }
-
-    // === ALERTS SECTION ===
-    if (num(todayStats.alertsLast24h) > 0 || num(generalStats.recentViolations) > 0) {
-        const alertsSection = document.createElement('div');
-        alertsSection.innerHTML = '<h2 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">Alerts & Violations</h2>';
-
-        const alertsGrid = document.createElement('div');
-        alertsGrid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;';
-
-        const alertCards = [
-            { label: 'Last 24h', value: num(todayStats.alertsLast24h), type: 'alert' },
-            { label: 'Recent Violations', value: num(generalStats.recentViolations), type: 'violation' }
-        ];
-
-        alertCards.forEach(alert => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.style.cssText = `
-                padding: 16px;
-                border-radius: 12px;
-                border-left: 3px solid ${alert.type === 'alert' ? '#ff9800' : '#f44336'};
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            `;
-            card.innerHTML = `
-                <div>
-                    <div style="font-size: 20px; font-weight: 700;">${alert.value}</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">${alert.label}</div>
-                </div>
-                <div style="font-size: 24px;">${alert.type === 'alert' ? '🚨' : '⚠️'}</div>
-            `;
-            alertsGrid.appendChild(card);
-        });
-
-        alertsSection.appendChild(alertsGrid);
-        container.appendChild(alertsSection);
-    }
+    return banner;
 }
 
 /**
- * Create a stat card
+ * Top users over the rollup window, as a two-column row list.
+ *
+ * A row rather than a card gives the name real width - the old three-column
+ * card grid left about 53px for it, so most Plex usernames ellipsised.
+ *
+ * @param {Object} rollup
+ * @param {Array} identities
+ * @returns {HTMLElement|null}
  */
-function createStatCard(icon, value, label) {
-    const card = document.createElement('div');
-    card.className = 'card tracearr-stat-card';
-    card.style.cssText = 'text-align: center; padding: 16px;';
+function buildTopUsers(rollup, identities) {
+    const ranked = (rollup.topUsers || []).filter((u) => u.plays > 0).slice(0, 6);
+    if (ranked.length === 0) return null;
 
-    const iconEl = document.createElement('div');
-    iconEl.textContent = icon;
-    iconEl.style.cssText = 'font-size: 24px; margin-bottom: 8px;';
+    const byId = new Map(identities.map((i) => [i.id, i]));
+    const peak = ranked[0].plays || 1;
 
-    const valueEl = document.createElement('div');
-    valueEl.textContent = value;
-    valueEl.style.cssText = 'font-size: 20px; font-weight: bold; color: var(--accent-tracearr);';
+    const section = document.createElement('div');
+    section.className = 'trr-section';
 
-    const labelEl = document.createElement('div');
-    labelEl.textContent = label;
-    labelEl.style.cssText = 'font-size: 12px; color: var(--text-secondary); margin-top: 4px;';
+    const heading = document.createElement('h2');
+    heading.className = 'trr-section-title';
+    heading.textContent = `Top users · last ${rollup.windowDays} days`;
+    section.appendChild(heading);
 
-    card.appendChild(iconEl);
-    card.appendChild(valueEl);
-    card.appendChild(labelEl);
-    return card;
+    const list = document.createElement('div');
+    list.className = 'trr-user-list';
+
+    ranked.forEach((entry, index) => {
+        const identity = byId.get(entry.id);
+        const row = document.createElement('div');
+        row.className = 'trr-user-row';
+
+        const rank = document.createElement('span');
+        rank.className = 'trr-user-rank';
+        rank.textContent = `${index + 1}`;
+
+        const name = document.createElement('span');
+        name.className = 'trr-user-name';
+        name.textContent = identity?.username || entry.username || 'Unknown';
+        name.title = name.textContent;
+
+        const meter = document.createElement('span');
+        meter.className = 'trr-user-meter';
+        const fill = document.createElement('span');
+        fill.className = 'trr-user-meter-fill';
+        fill.style.width = `${Math.round((entry.plays / peak) * 100)}%`;
+        meter.appendChild(fill);
+
+        const count = document.createElement('span');
+        count.className = 'trr-user-count';
+        count.textContent = formatDuration(entry.watchTimeMs);
+        count.title = `${entry.plays} ${entry.plays === 1 ? 'play' : 'plays'}`;
+
+        row.append(rank, name, meter, count);
+        list.appendChild(row);
+    });
+
+    section.appendChild(list);
+    return section;
 }
 
 /**
- * Format watch time for display
+ * Window totals, demoted to a single muted line. They carry no urgency, so they
+ * have no claim on the primary type sizes.
+ * @param {Object} rollup
+ * @param {number} totalUsers
+ * @returns {HTMLElement}
  */
-function formatWatchTime(hours) {
-    if (!hours) return '0h';
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    if (m === 0) return `${h}h`;
-    return `${h}h ${m}m`;
+function buildAllTimeFooter(rollup, totalUsers) {
+    const footer = document.createElement('div');
+    footer.className = 'trr-footer';
+    footer.textContent =
+        `${rollup.window.plays} plays in ${rollup.windowDays} days · ${totalUsers} users registered`;
+    return footer;
+}
+
+/**
+ * Formats a duration in milliseconds as a compact "8h 12m" / "45m" figure.
+ * @param {number} ms
+ * @returns {string}
+ */
+function formatDuration(ms) {
+    const totalMinutes = Math.round((Number(ms) || 0) / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
 }
 
 function renderTracearrStreams(streams, url, key, state) {
@@ -572,9 +562,17 @@ function renderTracearrStreams(streams, url, key, state) {
                     );
 
                     if (reason !== null) {
-                        await Tracearr.terminateTracearrStream(url, key, stream.id, reason);
-                        showNotification('Stream terminated', 'success');
-                        setTimeout(() => initTracearr(url, key, state), 1000);
+                        try {
+                            await Tracearr.terminateTracearrStream(url, key, stream.id, reason);
+                            showNotification('Stream terminated', 'success');
+                            setTimeout(() => initTracearr(url, key, state), 1000);
+                        } catch (err) {
+                            // The service rethrows, and this listener had no
+                            // catch: the rejection went unhandled, no
+                            // notification appeared either way, and the stream
+                            // just carried on playing.
+                            showNotification(`Could not kill stream: ${err.message}`, 'error');
+                        }
                     }
                 });
             }
@@ -712,8 +710,13 @@ export async function updateTracearrBadge(url, key, streams) {
     if (!streams) {
         try {
             streams = await Tracearr.getTracearrStreams(url, key);
-        } catch {
-            return; // Silently fail — don't hide badge on network error
+        } catch (e) {
+            // The badge keeps its last value, which is the right call — but
+            // returning quietly also told BadgeManager the update had
+            // succeeded, so the sidebar never showed the error and the
+            // scheduler never slowed down.
+            console.warn("Tracearr badge update failed:", e.message);
+            throw e;
         }
     }
 

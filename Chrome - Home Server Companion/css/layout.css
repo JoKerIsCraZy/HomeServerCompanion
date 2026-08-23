@@ -217,13 +217,10 @@ body.dark-mode .nav-item {
   margin-bottom: 15px;
 }
 
-.sub-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin: 15px 0;
-  padding: 0 10px;
-}
+/* .sub-tabs is defined in css/tabs.css, which owns the pill, the glider and
+   the buttons. The copy that used to sit here set display, gap and padding
+   that tabs.css overrides anyway, plus a `margin: 15px 0` that it does not —
+   so the margin leaked through from a rule nobody was reading. */
 
 .sub-view.hidden {
   display: none;

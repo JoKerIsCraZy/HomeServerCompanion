@@ -1,0 +1,81 @@
+/* css/services/dockhand.css */
+/**
+ * Dockhand view.
+ *
+ * Deliberately short. The container list reuses the Unraid row classes
+ * (.unraid-row, .unraid-row-actions, .unraid-update-flag) rather than
+ * restating them under a dockhand- prefix: they are the same object — a
+ * Docker container as a card with hover actions and a state on the right —
+ * and two copies would drift the way the Settings palette drifted from
+ * tokens.css. What is here is only what differs.
+ */
+
+#dockhand-view .unraid-hero {
+    color: var(--accent-dockhand);
+}
+
+/* The environment picker sits in the header, beside the counts. */
+.dockhand-env-wrap {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.dockhand-env-wrap .sort-select {
+    max-width: 180px;
+}
+
+/* A container that is up but failing its healthcheck is still is-running, so
+   its dot would otherwise be as green as a healthy one. The id keeps this
+   ahead of .unraid-row.is-running without an !important. */
+#dockhand-view .unraid-row-state.is-warn,
+#dockhand-view .unraid-row.is-running .unraid-row-state.is-warn {
+    color: var(--status-warning);
+}
+#dockhand-view .unraid-row-state.is-warn .unraid-row-dot,
+#dockhand-view .unraid-row.is-running .unraid-row-state.is-warn .unraid-row-dot {
+    background: var(--status-warning);
+}
+
+/* Dockhand names the version an update would move to, so the badge is wider
+   than Unraid's bare "Update" and has to be allowed to be. */
+#dockhand-view .unraid-update-flag {
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- Log viewer --- */
+.dockhand-log-modal {
+    /* Wider than the confirm dialogs this shares a backdrop with: log lines
+       are long, and wrapping every one of them costs more than the width. */
+    width: min(760px, 92vw);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.dockhand-log-modal .custom-modal-body {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+}
+
+.dockhand-logs {
+    margin: 0;
+    max-height: 55vh;
+    overflow: auto;
+    padding: var(--space-3);
+    background: var(--color-bg-primary);
+    border-radius: var(--border-radius-sm, 6px);
+    font-family: "Cascadia Mono", "Consolas", "SF Mono", monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    /* pre-wrap, not pre: a stack trace should not push the modal sideways,
+       and horizontal scrolling to read a log is miserable. */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    tab-size: 4;
+}

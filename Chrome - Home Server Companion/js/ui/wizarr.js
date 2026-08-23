@@ -19,6 +19,7 @@ export async function initWizarr(url, key) {
         showError("Please configure Wizarr in settings.");
         return;
     }
+    clearError();
     
     // Setup event listeners (only once)
     setupEventListeners();
@@ -32,15 +33,35 @@ export async function initWizarr(url, key) {
     ]);
 }
 
+/**
+ * Shows a banner above the view without destroying it.
+ *
+ * This used to call replaceChildren() on #wizarr-content, and that element is
+ * not a shell - it holds the entire static Wizarr markup from popup.html: the
+ * server selector, the New Invite button, the invitations list. Wiping it
+ * left nothing for a later successful load to render into, so once the
+ * "configure Wizarr" message had appeared the tab stayed broken. In the popup
+ * that lasted until it was closed; in the fullscreen window, which stays open
+ * for days, it was permanent.
+ * @param {string} message
+ */
 function showError(message) {
     const container = document.getElementById('wizarr-content');
-    if (container) {
-        container.replaceChildren();
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-banner';
-        errorDiv.textContent = message;
-        container.appendChild(errorDiv);
+    if (!container) return;
+
+    let banner = container.querySelector('.wizarr-error-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.className = 'error-banner wizarr-error-banner';
+        container.prepend(banner);
     }
+    banner.textContent = message;
+}
+
+/** Removes the banner showError put up, if any. */
+function clearError() {
+    const banner = document.querySelector('#wizarr-content .wizarr-error-banner');
+    if (banner) banner.remove();
 }
 
 function setupEventListeners() {
@@ -282,18 +303,30 @@ async function handleCreateInvite(e) {
         
         const result = await Wizarr.createInvitation(currentUrl, currentKey, options);
         
-        // Copy new invite link to clipboard
+        // The invitation exists on the server from here on. Copying is a
+        // convenience on top of that, and it fails routinely in a popup —
+        // clipboard.writeText rejects whenever the document is not focused.
+        // Sharing the outer try meant that rejection was reported as
+        // "Error: Document is not focused", the modal stayed open, and the
+        // list never refreshed, so people created the invitation twice.
+        let copied = false;
         if (result.invitation && result.invitation.code) {
             const inviteUrl = Wizarr.getInviteUrl(currentUrl, result.invitation.code);
-            await navigator.clipboard.writeText(inviteUrl);
+            try {
+                await navigator.clipboard.writeText(inviteUrl);
+                copied = true;
+            } catch (copyError) {
+                console.warn('Invitation created but not copied:', copyError.message);
+            }
         }
-        
-        // Close modal and refresh list
+
         closeModal();
         await loadInvitations();
-        
-        // Show success notification with copied hint
-        showNotification('Invitation created & copied!', 'success');
+
+        showNotification(
+            copied ? 'Invitation created & copied!' : 'Invitation created',
+            'success'
+        );
         
     } catch (error) {
         console.error('Failed to create invite:', error);
@@ -337,7 +370,11 @@ async function loadInvitations() {
             return inv.status === 'used' || 
                    inv.used === true || 
                    (inv.used_by && inv.used_by.length > 0) ||
-                   inv.used_at !== null;
+                   inv.used_at != null;   // != , not !== : an absent used_at is
+                                          // undefined, and `undefined !== null`
+                                          // is true — which marked every
+                                          // invitation as used and left the
+                                          // active count at zero.
         };
         
         // Sort by id descending (newest first)
@@ -392,7 +429,7 @@ async function loadInvitations() {
                 statusSpan.textContent = 'Expired';
             } else if (invite.unlimited) {
                 statusSpan.className = 'wizarr-status-badge unlimited';
-                statusSpan.textContent = 'âˆž';
+                statusSpan.textContent = '∞';
             } else {
                 statusSpan.className = 'wizarr-status-badge active';
                 statusSpan.textContent = 'Active';
@@ -444,17 +481,26 @@ async function loadInvitations() {
 
 async function copyInviteLink(code, element) {
     const inviteUrl = Wizarr.getInviteUrl(currentUrl, code);
-    const originalHtml = element.innerHTML;
+    // Remembered on the element, not in a local: a second click inside the
+    // 1500ms window used to capture the "Copied!" label as the original and
+    // restore that instead, leaving the button stuck on it permanently.
+    if (element.dataset.originalHtml === undefined) {
+        element.dataset.originalHtml = element.innerHTML;
+    }
+    const originalHtml = element.dataset.originalHtml;
+    clearTimeout(Number(element.dataset.copyTimer) || 0);
 
     try {
         await navigator.clipboard.writeText(inviteUrl);
         element.classList.add('wizarr-copied');
         element.innerHTML = '✓ Copied!';
 
-        setTimeout(() => {
+        element.dataset.copyTimer = String(setTimeout(() => {
             element.classList.remove('wizarr-copied');
             element.innerHTML = originalHtml;
-        }, 1500);
+            delete element.dataset.originalHtml;
+            delete element.dataset.copyTimer;
+        }, 1500));
     } catch (error) {
         console.error('Failed to copy:', error);
     }

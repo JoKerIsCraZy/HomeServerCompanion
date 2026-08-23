@@ -33,7 +33,21 @@ export const getSonarrCalendar = async (url, apiKey) => {
  */
 export const getSonarrQueue = async (url, apiKey) => {
     try {
-        const response = await fetch(`${url}/api/v3/queue`, {
+        // includeSeries/includeEpisode default to false, so the queue records
+        // arrived with `series` and `episode` null — which is what the poster,
+        // the show name and the season/episode line are read from. The view
+        // papered over it by calling /parse on every release name to recover a
+        // title it should already have had.
+        //
+        // pageSize is explicit because the server's default of 20 silently
+        // truncated a busy queue.
+        const params = new URLSearchParams({
+            page: '1',
+            pageSize: '100',
+            includeSeries: 'true',
+            includeEpisode: 'true'
+        });
+        const response = await fetch(`${url}/api/v3/queue?${params}`, {
             headers: {
                 'X-Api-Key': apiKey
             }
@@ -218,6 +232,62 @@ export const getSonarrMissing = async (url, apiKey, pageSize = 50) => {
         return await response.json();
     } catch (error) {
         console.error("Sonarr Missing Error:", error);
+        throw error;
+    }
+};
+
+
+/**
+ * Posts a command and confirms the server accepted it.
+ *
+ * fetch() only rejects on a network fault, so the callers that used to POST
+ * here directly reported "Search started" for a rejected API key, a 404 from
+ * a wrong base path and a 500 alike.
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {Object} body - Command payload, `name` plus its arguments.
+ * @returns {Promise<Object>} The queued command resource.
+ */
+const runSonarrCommand = async (url, apiKey, body) => {
+    const response = await fetch(`${url}/api/v3/command`, {
+        method: 'POST',
+        headers: {
+            'X-Api-Key': apiKey,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    });
+    if (!response.ok) throw new Error(`Command Error: ${response.status}`);
+    return await response.json();
+};
+
+/**
+ * Triggers a search for specific episodes.
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {number[]} episodeIds
+ * @returns {Promise<Object>}
+ */
+export const searchEpisodes = async (url, apiKey, episodeIds) => {
+    try {
+        return await runSonarrCommand(url, apiKey, { name: 'EpisodeSearch', episodeIds });
+    } catch (error) {
+        console.error("Sonarr Episode Search Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Triggers Sonarr's own search across every missing episode.
+ * @param {string} url
+ * @param {string} apiKey
+ * @returns {Promise<Object>}
+ */
+export const searchAllMissingEpisodes = async (url, apiKey) => {
+    try {
+        return await runSonarrCommand(url, apiKey, { name: 'MissingEpisodeSearch' });
+    } catch (error) {
+        console.error("Sonarr Missing Search Error:", error);
         throw error;
     }
 };

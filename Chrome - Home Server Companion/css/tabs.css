@@ -40,7 +40,7 @@
     position: relative;
     z-index: 1;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .tabs .tab-btn:hover {
@@ -102,7 +102,13 @@
 /* Sub-tabs with Glider (Unraid, Seerr) */
 .sub-tabs {
     position: relative;
-    display: inline-flex;
+    /* flex + fit-content, not inline-flex. The pill still hugs its buttons,
+       but as a block-level box it no longer sits on a line box collecting that
+       line's leading above and below, and its margins collapse with the
+       heading above it like any other block. */
+    display: flex;
+    width: fit-content;
+    margin: var(--space-3) 0;
     background: rgba(255, 255, 255, 0.05);
     padding: 5px;
     border-radius: 12px;
@@ -133,7 +139,7 @@
     position: relative;
     z-index: 1;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .sub-tabs .sub-tab-btn:hover {
@@ -151,6 +157,18 @@
     box-shadow: 0 2px 5px rgba(255, 152, 0, 0.3);
 }
 #unraid-view .sub-tab-btn.active {
+    color: #fff;
+}
+
+/* Dockhand - Blue.
+   Not optional decoration: .tab-glider carries no background of its own, so a
+   view without one of these rules has an invisible highlight and no way to see
+   which sub-tab is active. */
+#dockhand-view .sub-tabs .tab-glider {
+    background: linear-gradient(135deg, #4a94f5, #2f80ed);
+    box-shadow: 0 2px 5px rgba(47, 128, 237, 0.3);
+}
+#dockhand-view .sub-tab-btn.active {
     color: #fff;
 }
 

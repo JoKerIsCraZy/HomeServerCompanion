@@ -127,8 +127,11 @@ export async function getTrending(url, apiKey, page = 1, authMethod = 'apikey') 
         const data = await response.json();
         return data.results || [];
     } catch (error) {
+        // Rethrow. Returning [] here rendered an empty Discover grid that was
+        // indistinguishable from "nothing is trending", and the caller
+        // already has a catch that shows a proper error banner.
         console.error('Failed to fetch Seerr trending:', error);
-        return [];
+        throw error;
     }
 }
 
@@ -155,8 +158,13 @@ export async function getRequests(url, apiKey, status = 'pending', authMethod = 
 
         return await response.json();
     } catch (error) {
+        // Rethrow. The dashboard decides a service is online by whether this
+        // rejects, so swallowing the error reported Seerr as online with 0
+        // pending requests whether the server was unreachable, the API key
+        // rejected, or there really were none. The Requests view has its own
+        // catch, which now finally gets to run.
         console.error('Failed to fetch Seerr requests:', error);
-        return { results: [] };
+        throw error;
     }
 }
 
@@ -177,11 +185,14 @@ export async function approveRequest(url, apiKey, requestId, authMethod = 'apike
             method: 'POST',
             ...fetchOptions
         });
-        if (!response.ok) throw new Error('Failed to approve');
+        if (!response.ok) throw new Error(`Failed to approve: ${response.status}`);
         return true;
     } catch (e) {
+        // Rethrow, like every other call in this file. Returning false left
+        // the caller with no reason to show and, worse, an easy failure to
+        // ignore - which is exactly what happened.
         console.error(e);
-        return false;
+        throw e;
     }
 }
 
@@ -202,11 +213,11 @@ export async function declineRequest(url, apiKey, requestId, authMethod = 'apike
             method: 'POST',
             ...fetchOptions
         });
-        if (!response.ok) throw new Error('Failed to decline');
+        if (!response.ok) throw new Error(`Failed to decline: ${response.status}`);
         return true;
     } catch (e) {
         console.error(e);
-        return false;
+        throw e;
     }
 }
 
@@ -314,8 +325,19 @@ export async function request(url, apiKey, payload, authMethod = 'apikey') {
     });
 
     if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || `Status ${response.status}`);
+        // Guarded. An error body is not always JSON - a reverse proxy answers
+        // 502 in HTML, a rejected key can answer 401 with nothing at all - and
+        // response.json() throws on those. That SyntaxError then replaced the
+        // real failure, so the user was told "Unexpected token '<'" instead of
+        // the status that would have explained it.
+        let detail = '';
+        try {
+            const errData = await response.json();
+            detail = errData?.message || '';
+        } catch {
+            // Body was not JSON; the status is all we have, and it is enough.
+        }
+        throw new Error(detail || `Status ${response.status}`);
     }
     return await response.json();
 }

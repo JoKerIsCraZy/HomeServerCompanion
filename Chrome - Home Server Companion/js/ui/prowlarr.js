@@ -1,9 +1,42 @@
 ﻿import * as Prowlarr from "../../services/prowlarr.js";
-import { showNotification } from "../utils.js";
+import { showNotification, openUrlSafely } from "../utils.js";
+import poller from "../core/Poller.js";
 
 // --- PROWLARR UI LOGIC ---
 
+/**
+ * App configs captured on init, so link handlers can vet indexer-supplied URLs
+ * against the user's own configured hosts. Callers that have the state at hand
+ * (the unified search) pass it explicitly instead.
+ */
+let appConfigs = {};
+
+/**
+ * Turns an element into a gated link: no `href`, so the destination cannot be
+ * reached without passing through `openUrlSafely()`. Indexer responses are
+ * third-party data, and an extension popup shows no status bar, so the user
+ * would otherwise have no way to see where a click leads.
+ * @param {HTMLElement} el - Element to wire up
+ * @param {string} link - Candidate URL from the indexer
+ * @param {object} configs - App configs used to derive trusted hosts
+ * @param {string} label - Origin label shown in the confirmation prompt
+ */
+function wireGatedLink(el, link, configs, label) {
+    let host = link;
+    try { host = new URL(link).hostname; } catch { /* keep raw string */ }
+    el.removeAttribute('href');
+    el.removeAttribute('target');
+    el.style.cursor = 'pointer';
+    el.title = `Open ${host}`;
+    el.addEventListener('click', (e) => {
+        e.preventDefault();
+        openUrlSafely(link, configs || {}, label);
+    });
+}
+
 export async function initProwlarr(url, apiKey, state) {
+
+    appConfigs = state?.configs || {};
 
 
     const indexersContainer = document.getElementById("prowlarr-indexers");
@@ -26,9 +59,8 @@ export async function initProwlarr(url, apiKey, state) {
     // Initial Load
     await loadProwlarrData(url, apiKey);
 
-    state.refreshInterval = setInterval(() => {
-        loadProwlarrData(url, apiKey);
-    }, 60000);
+    poller.register('prowlarr', () => loadProwlarrData(url, apiKey),
+        { interval: 60000, immediate: false });
 }
 
 const loadProwlarrData = async (url, apiKey) => {
@@ -102,7 +134,7 @@ const loadProwlarrData = async (url, apiKey) => {
              if (container) {
                  container.replaceChildren();
                  const errDiv = document.createElement('div');
-                 errDiv.className = 'error-state';
+                 errDiv.className = 'error-banner';
                  errDiv.textContent = `Failed to load: ${error.message}`;
                  container.appendChild(errDiv);
              }
@@ -119,7 +151,7 @@ const renderIndexers = (indexers, statuses = []) => {
     if (!Array.isArray(indexers)) {
         console.error("Prowlarr Indexers is not an array:", indexers);
         const errDiv = document.createElement('div');
-        errDiv.className = 'error-state';
+        errDiv.className = 'error-banner';
         errDiv.textContent = 'Invalid data received';
         container.replaceChildren(errDiv);
         return;
@@ -168,10 +200,9 @@ const renderIndexers = (indexers, statuses = []) => {
                 const urlObj = new URL(rawUrl);
                 domain = urlObj.hostname;
                 
-                // Set Link
-                nameEl.href = rawUrl;
+                // Set Link — gated: baseUrl comes from the indexer definition.
+                wireGatedLink(nameEl, rawUrl, appConfigs, 'Prowlarr indexer');
                 nameEl.title = `Go to ${domain}`;
-                nameEl.style.cursor = "pointer";
                 nameEl.onmouseover = () => { nameEl.style.textDecoration = "underline"; };
                 nameEl.onmouseout = () => { nameEl.style.textDecoration = "none"; };
             } else {
@@ -497,7 +528,7 @@ const renderStats = (stats, indexers = []) => {
             ths.forEach((th, idx) => {
                 th.textContent = headers[idx]; // Reset text
                 if (idx === sortCol) {
-                    th.textContent += sortAsc ? " â–²" : " â–¼";
+                    th.textContent += sortAsc ? " ▲" : " ▼";
                 }
             });
         };
@@ -600,7 +631,13 @@ async function initProwlarrSearch(url, apiKey) {
                         resultsToSave = oldState.results;
                     }
                 }
-            } catch(e) {}
+            } catch (e) {
+                // A corrupt entry means the previous search cannot be
+                // restored, which is survivable — but leaving it in place
+                // would fail again on every load, so it goes.
+                console.warn('Prowlarr: discarding unreadable saved search:', e.message);
+                localStorage.removeItem(STORAGE_KEY_STATE);
+            }
         }
 
         const state = {
@@ -889,14 +926,14 @@ async function executeSearch(url, apiKey, saveCallback) {
     } catch (e) {
         container.replaceChildren();
         const errDiv = document.createElement('div');
-        errDiv.className = 'error-state';
+        errDiv.className = 'error-banner';
         errDiv.style.cssText = 'padding: 20px; text-align: center; color: #e74c3c;';
         errDiv.textContent = `Search failed: ${e.message}`;
         container.appendChild(errDiv);
     }
 }
 
-export function renderSearchResults(results, customContainer = null) {
+export function renderSearchResults(results, customContainer = null, configs = appConfigs) {
     const container = customContainer || document.getElementById("prowlarr-search-results");
     if (!container) return;
     
@@ -926,10 +963,10 @@ export function renderSearchResults(results, customContainer = null) {
             const link = res.infoUrl || res.guid;
             
             const a = document.createElement('a');
-            a.href = link;
-            a.target = '_blank';
             a.style.cssText = 'color: inherit; text-decoration: none; transition: color 0.2s;';
             a.textContent = res.title; // Safe: textContent escapes HTML
+            // infoUrl/guid come from the indexer — gate the navigation.
+            wireGatedLink(a, link, configs, 'Prowlarr result');
             
             a.onmouseover = () => a.style.color = "var(--accent-prowlarr)";
             a.onmouseout = () => a.style.color = "inherit";
@@ -1013,7 +1050,13 @@ export function renderSearchResults(results, customContainer = null) {
                         const cfg = JSON.parse(stored);
                         prowlarrUrl = cfg.url;
                         prowlarrKey = cfg.key;
-                    } catch(e) {}
+                    } catch (e) {
+                        // Falls through to chrome.storage below. The cached
+                        // copy is only a shortcut, so a corrupt one is
+                        // dropped rather than repaired.
+                        console.warn('Prowlarr: discarding unreadable cached config:', e.message);
+                        localStorage.removeItem('prowlarr_config');
+                    }
                     
                     // Fallback: try to get from chrome storage
                     if (!prowlarrUrl || !prowlarrKey) {
@@ -1050,7 +1093,10 @@ export function renderSearchResults(results, customContainer = null) {
         }
         
         if (res.downloadUrl) {
-            dlBtn.href = res.downloadUrl;
+            // downloadUrl is indexer-supplied — gate it like the title link so
+            // the button cannot fetch from an attacker-chosen host silently.
+            wireGatedLink(dlBtn, res.downloadUrl, configs, 'Prowlarr download');
+            dlBtn.title = 'Download';
         } else {
             dlBtn.style.display = "none";
         }
@@ -1069,17 +1115,19 @@ const formatSize = (bytes) => {
 };
 
 const formatAge = (dateStr) => {
-    if (!dateStr) return "-";
-    // If it's just a number (age in hours/days?), treat as such. Prowlarr returns age (int) in 'age' field
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
-        // Maybe it's an integer 'age' (often minutes in Arr apps)
-        if (typeof dateStr === 'number') {
-             const days = Math.floor(dateStr / 1440); // 24*60
-             return days + "d";
-        }
-        return "?";
+    if (dateStr === null || dateStr === undefined || dateStr === '') return "-";
+
+    // The numeric case has to be tested first. It used to sit behind an
+    // isNaN(new Date(value)) guard, and `new Date(1440)` is a perfectly good
+    // date - 1970-01-01 plus 1440ms - so the guard never opened. An `age` in
+    // minutes was therefore measured against 1970 and rendered as "56y".
+    if (typeof dateStr === 'number') {
+        const days = Math.floor(dateStr / 1440); // Prowlarr reports age in minutes
+        return days + "d";
     }
+
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "?";
     
     const now = new Date();
     const diff = now - date;
@@ -1102,7 +1150,11 @@ export async function populateProwlarrCategories(url, apiKey, categorySelect) {
         try {
             const parsed = JSON.parse(cached);
             if (Date.now() - parsed.timestamp < 86400000) categories = parsed.data;
-        } catch(e) {}
+        } catch (e) {
+            // Categories are refetched below when the cache cannot be read.
+            console.warn('Prowlarr: discarding unreadable category cache:', e.message);
+            localStorage.removeItem(CACHE_KEY);
+        }
     }
     
     
@@ -1139,98 +1191,128 @@ export async function populateProwlarrCategories(url, apiKey, categorySelect) {
 
 export function populateProwlarrIndexers(url, apiKey, indexerOptions, indexerTrigger = null) {
     const CACHE_KEY_INDEXERS = "prowlarr_cache";
-    const cachedIndexers = localStorage.getItem(CACHE_KEY_INDEXERS);
-    if (cachedIndexers) {
-            try {
-                const parsed = JSON.parse(cachedIndexers);
-                const indexers = parsed.indexers || [];
-                if (indexers.length > 0) {
-                    indexerOptions.replaceChildren();
-                    
-                    // "All" Option - built with DOM API
-                    const allDiv = document.createElement("div");
-                    allDiv.className = "dropdown-item";
-                    const allCheckbox = document.createElement('input');
-                    allCheckbox.type = 'checkbox';
-                    allCheckbox.checked = true;
-                    allCheckbox.id = 'idx-all-' + Math.random().toString(36).substr(2, 9); // Unique ID if multiple instances?
-                    // Actually, let's keep it simple for now, scoping is handled by container
-                    
-                    const allLabel = document.createElement('label');
-                    allLabel.textContent = 'All Indexers';
-                    allDiv.appendChild(allCheckbox);
-                    allDiv.appendChild(document.createTextNode(' '));
-                    allDiv.appendChild(allLabel);
-                    indexerOptions.appendChild(allDiv);
-                    
-                    indexers.sort((a,b) => a.name.localeCompare(b.name));
-                    
-                    indexers.forEach(idx => {
-                        const div = document.createElement("div");
-                        div.className = "dropdown-item";
-                                    const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.value = idx.id;
-                        checkbox.className = 'indexer-checkbox';
-                        const label = document.createElement('label');
-                        label.textContent = idx.name;
-                        div.appendChild(checkbox);
-                        div.appendChild(document.createTextNode(' '));
-                        div.appendChild(label);
-                        div.onclick = (e) => {
-                            if (e.target.tagName !== 'INPUT') {
-                                const cb = div.querySelector('input');
-                                cb.checked = !cb.checked;
-                                updateIndexerSelection();
-                            } else {
-                                updateIndexerSelection();
-                            }
-                        };
-                        indexerOptions.appendChild(div);
-                    });
-                    
-                    const updateIndexerSelection = () => {
-                        const checked = Array.from(indexerOptions.querySelectorAll(".indexer-checkbox:checked"));
-                        if (checked.length === 0) {
-                            allCheckbox.checked = true;
-                        } else if (allCheckbox.checked && checked.length > 0) {
-                            allCheckbox.checked = false; 
-                        }
-                        if (indexerTrigger) updateIndexerTriggerText();
-                    };
 
-                    allDiv.onclick = (e) => {
-                        if (e.target.tagName !== 'INPUT') {
-                            allCheckbox.checked = !allCheckbox.checked;
-                        }
-                        
-                        const otherCbs = indexerOptions.querySelectorAll(".indexer-checkbox");
-                        if (allCheckbox.checked) {
-                                otherCbs.forEach(cb => cb.checked = false);
-                        }
-                        if (indexerTrigger) updateIndexerTriggerText();
-                    };
-                    
-                    const otherCbs = indexerOptions.querySelectorAll(".indexer-checkbox");
-                    otherCbs.forEach(cb => {
-                        cb.addEventListener("change", () => {
-                            if (cb.checked) allCheckbox.checked = false;
-                            updateIndexerSelection();
-                        });
-                    });
-                    
-                    function updateIndexerTriggerText() {
-                        const checked = Array.from(indexerOptions.querySelectorAll(".indexer-checkbox:checked"));
-                        if (allCheckbox.checked || checked.length === 0) {
-                            indexerTrigger.textContent = "All Indexers";
-                        } else if (checked.length === 1) {
-                            const name = checked[0].parentElement.querySelector("label").textContent;
-                            indexerTrigger.textContent = name;
-                        } else {
-                            indexerTrigger.textContent = `${checked.length} Indexers`;
-                        }
-                    }
-                }
-            } catch (e) { console.warn("Indexers cache parse error", e); }
+    let cached = [];
+    try {
+        cached = JSON.parse(localStorage.getItem(CACHE_KEY_INDEXERS) || '{}').indexers || [];
+    } catch (e) {
+        console.warn("Indexers cache parse error", e);
+    }
+
+    if (cached.length > 0) {
+        renderIndexerOptions(cached, indexerOptions, indexerTrigger);
+        return;
+    }
+
+    // Nothing cached. This used to be the end of the function: the cache is
+    // only ever written by the Indexers tab, so anyone who opened Search
+    // first got a filter dropdown with nothing in it and no hint as to why.
+    Prowlarr.getProwlarrIndexers(url, apiKey)
+        .then(indexers => {
+            if (Array.isArray(indexers) && indexers.length > 0) {
+                renderIndexerOptions(indexers, indexerOptions, indexerTrigger);
+            }
+        })
+        .catch(e => console.warn("Could not load indexers for the filter:", e.message));
+}
+
+/**
+ * Builds the indexer checkbox list into the dropdown.
+ * @param {Array} indexers - Indexers, from the cache or straight from the API.
+ * @param {HTMLElement} indexerOptions - The dropdown body.
+ * @param {HTMLElement|null} indexerTrigger - The label summarising the selection.
+ */
+function renderIndexerOptions(indexers, indexerOptions, indexerTrigger = null) {
+    indexerOptions.replaceChildren();
+
+    // "All" Option - built with DOM API
+    const allDiv = document.createElement("div");
+    allDiv.className = "dropdown-item";
+    const allCheckbox = document.createElement('input');
+    allCheckbox.type = 'checkbox';
+    allCheckbox.checked = true;
+    // A fixed id, because two places look this element up by exactly this
+    // string: executeSearch, to decide whether to narrow the search, and the
+    // saved-state restore. The id used to carry a random suffix, so both
+    // lookups returned null forever, executeSearch left indexerIds null, and
+    // every search went to every indexer no matter what was ticked. Only one
+    // dropdown exists in the page and replaceChildren() above removes the
+    // previous one, so the id cannot collide.
+    allCheckbox.id = 'idx-all';
+
+    const allLabel = document.createElement('label');
+    allLabel.textContent = 'All Indexers';
+    allDiv.appendChild(allCheckbox);
+    allDiv.appendChild(document.createTextNode(' '));
+    allDiv.appendChild(allLabel);
+    indexerOptions.appendChild(allDiv);
+
+    indexers.sort((a,b) => a.name.localeCompare(b.name));
+
+    indexers.forEach(idx => {
+        const div = document.createElement("div");
+        div.className = "dropdown-item";
+                    const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = idx.id;
+        checkbox.className = 'indexer-checkbox';
+        const label = document.createElement('label');
+        label.textContent = idx.name;
+        div.appendChild(checkbox);
+        div.appendChild(document.createTextNode(' '));
+        div.appendChild(label);
+        div.onclick = (e) => {
+            if (e.target.tagName !== 'INPUT') {
+                const cb = div.querySelector('input');
+                cb.checked = !cb.checked;
+                updateIndexerSelection();
+            } else {
+                updateIndexerSelection();
+            }
+        };
+        indexerOptions.appendChild(div);
+    });
+
+    const updateIndexerSelection = () => {
+        const checked = Array.from(indexerOptions.querySelectorAll(".indexer-checkbox:checked"));
+        if (checked.length === 0) {
+            allCheckbox.checked = true;
+        } else if (allCheckbox.checked && checked.length > 0) {
+            allCheckbox.checked = false; 
+        }
+        if (indexerTrigger) updateIndexerTriggerText();
+    };
+
+    allDiv.onclick = (e) => {
+        if (e.target.tagName !== 'INPUT') {
+            allCheckbox.checked = !allCheckbox.checked;
+        }
+
+        const otherCbs = indexerOptions.querySelectorAll(".indexer-checkbox");
+        if (allCheckbox.checked) {
+                otherCbs.forEach(cb => cb.checked = false);
+        }
+        if (indexerTrigger) updateIndexerTriggerText();
+    };
+
+    const otherCbs = indexerOptions.querySelectorAll(".indexer-checkbox");
+    otherCbs.forEach(cb => {
+        cb.addEventListener("change", () => {
+            if (cb.checked) allCheckbox.checked = false;
+            updateIndexerSelection();
+        });
+    });
+
+    function updateIndexerTriggerText() {
+        const checked = Array.from(indexerOptions.querySelectorAll(".indexer-checkbox:checked"));
+        if (allCheckbox.checked || checked.length === 0) {
+            indexerTrigger.textContent = "All Indexers";
+        } else if (checked.length === 1) {
+            const name = checked[0].parentElement.querySelector("label").textContent;
+            indexerTrigger.textContent = name;
+        } else {
+            indexerTrigger.textContent = `${checked.length} Indexers`;
+        }
     }
 }
+

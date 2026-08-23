@@ -32,11 +32,20 @@
     --accent-radarr: #ffc107;
     --accent-tautulli: #ff9800;
     --accent-seerr: #9c27b0;
-    --accent-unraid: #2196f3;
+    /* Unraid's own brand orange. This was #2196f3 — byte-identical to
+       --accent-sonarr, so two neighbours in the sidebar shared a colour while
+       the real orange sat hardcoded in four places in the stylesheet. */
+    --accent-unraid: #f15a2c;
     --accent-prowlarr: #7e57c2;
-    --accent-wizarr: #00bcd4;
+    /* Wizarr's own red. This read #00bcd4 — byte-identical to
+       --accent-tracearr — while every rule in wizarr.css hardcoded #d03142,
+       so the token was both a duplicate and wrong, and nothing used it. */
+    --accent-wizarr: #d03142;
+    --accent-wizarr-dark: #aa2030;
     --accent-portainer: #13ae4e;
     --accent-tracearr: #00bcd4;
+    /* Dockhand's own blue, taken from its icon. */
+    --accent-dockhand: #2f80ed;
 
     /* === Colors - Status === */
     --status-success: #22c55e;

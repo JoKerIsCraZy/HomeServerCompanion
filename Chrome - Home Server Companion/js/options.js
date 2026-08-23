@@ -1,76 +1,16 @@
-const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'seerr', 'prowlarr', 'wizarr', 'portainer', 'tracearr'];
-
-/**
- * v4.0 storage migrations. Mirrors `js/core/migrations.js` for the module-based
- * popup context — kept inline here because options.js is loaded as a classic
- * script. Both implementations must stay in sync.
- *
- * - Moves `overseerr*` keys to `seerr*` (copy, then drop legacy keys).
- * - Renames `overseerr` -> `seerr` in `serviceOrder`.
- * - Inserts `tracearr` into `serviceOrder` after `tautulli` if missing.
- */
-function runStorageMigrations(items) {
-    let changed = false;
-    const removedKeys = [];
-
-    const overseerrKeys = Object.keys(items).filter(k => k.startsWith('overseerr'));
-    if (overseerrKeys.length > 0) {
-        overseerrKeys.forEach(key => {
-            const seerrKey = key.replace(/^overseerr/, 'seerr');
-            const targetEmpty = !(seerrKey in items)
-                || items[seerrKey] === undefined
-                || items[seerrKey] === null
-                || items[seerrKey] === '';
-            if (targetEmpty) items[seerrKey] = items[key];
-            delete items[key];
-            removedKeys.push(key);
-        });
-        changed = true;
-    }
-
-    if (Array.isArray(items.serviceOrder)) {
-        const overseerrIdx = items.serviceOrder.indexOf('overseerr');
-        if (overseerrIdx !== -1) {
-            if (!items.serviceOrder.includes('seerr')) {
-                items.serviceOrder[overseerrIdx] = 'seerr';
-            } else {
-                items.serviceOrder.splice(overseerrIdx, 1);
-            }
-            changed = true;
-        }
-        if (!items.serviceOrder.includes('tracearr')) {
-            const tautulliIdx = items.serviceOrder.indexOf('tautulli');
-            if (tautulliIdx !== -1) {
-                items.serviceOrder.splice(tautulliIdx + 1, 0, 'tracearr');
-            } else {
-                items.serviceOrder.push('tracearr');
-            }
-            changed = true;
-        }
-    }
-
-    return { changed, removedKeys };
-}
+const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'seerr', 'prowlarr', 'wizarr', 'dockhand', 'portainer', 'tracearr'];
 
 // ==================== CHANGELOG POPUP ====================
 /**
  * Changelog entries shown in the "Show What's New" modal and in the
  * auto-popup on first launch after an update.
  *
- * Kept in sync with `checkAndShowChangelog()` in `js/utils.js` — same list,
- * just also reachable from the options page which runs as a classic script.
+ * The list lives in js/core/changelogEntries.js, which options.html loads with
+ * a script tag before this file. It used to be copied here by hand and kept in
+ * step by a comment saying so - which is exactly how both copies survived a
+ * version bump unchanged.
  */
-const CHANGELOG_ITEMS = [
-    { title: 'Tracearr:', desc: 'New service for monitoring Plex streams with live progress bars, stream details, and a statistics dashboard.' },
-    { title: 'Seerr (formerly Overseerr):', desc: 'Rebranded with Multi-Auth support (API Key, Local Account, Plex Sign-In). Your existing settings migrate automatically on first launch.' },
-    { title: 'Unraid Temperatures:', desc: 'Live CPU, Motherboard, and Hottest Disk temperature cards on the Unraid dashboard (requires Unraid OS 7.3+ / API v4.30).' },
-    { title: 'Docker Template Icons:', desc: 'Unraid containers now show their template icons directly in the list — no more two-letter placeholders.' },
-    { title: 'Instant Load:', desc: 'Unraid tab renders from the last snapshot immediately while fetching fresh data in the background. No more blank screens.' },
-    { title: 'Responsive Design:', desc: 'Mobile and tablet optimized interface with touch-friendly navigation and a reusable component library.' },
-    { title: 'Security Hardening:', desc: 'Tighter Content Security Policy, DOM injection protection, and confirmation prompts before opening external links from Docker labels.' },
-    { title: 'Performance:', desc: 'Up to 3× faster dashboard refresh — smarter polling, staggered badge updates, and fewer API roundtrips.' },
-    { title: 'Bug Fixes:', desc: 'Fullscreen button now opens correctly, Seerr request statuses display accurately, Tracearr empty state clears when streams start.' }
-];
+const CHANGELOG_ITEMS = globalThis.hscChangelogEntries;
 
 /**
  * Shows the changelog popup without touching the `last_run_version` flag,
@@ -127,6 +67,12 @@ function showChangelogPopup() {
     modal.appendChild(content);
 
     document.body.appendChild(modal);
+
+    // Lock the page behind the modal. The changelog body keeps its own
+    // overflow-y:auto, so a long list still scrolls inside the dialog.
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     requestAnimationFrame(() => {
         modal.style.opacity = '1';
         content.style.transform = 'scale(1)';
@@ -137,6 +83,7 @@ function showChangelogPopup() {
         content.style.transform = 'scale(0.95)';
         setTimeout(() => modal.remove(), 200);
         document.removeEventListener('keydown', keyHandler);
+        document.body.style.overflow = previousBodyOverflow;
     };
 
     const keyHandler = (e) => {
@@ -279,7 +226,7 @@ function deletePortainerInstance() {
         serviceOrder = serviceOrder.filter(s => s !== instanceOrderId);
 
         // Save both instances and order
-        chrome.storage.sync.set({ portainerInstances, serviceOrder }, () => {
+        saveSync({ portainerInstances, serviceOrder }, 'Portainer', () => {
             showStatus('Portainer', 'Instance deleted!', 'success');
 
             // Refresh the order list
@@ -348,7 +295,7 @@ function savePortainerInstance() {
             }
 
             // Save both instances and order
-            chrome.storage.sync.set({ portainerInstances, serviceOrder }, () => {
+            saveSync({ portainerInstances, serviceOrder }, 'Portainer', () => {
                 showStatus('Portainer', 'Instance saved!', 'success');
                 renderPortainerTabs();
 
@@ -377,7 +324,7 @@ function loadPortainerInstances() {
                 icon: ''
             }];
             // Save migrated data
-            chrome.storage.sync.set({ portainerInstances });
+            saveSync({ portainerInstances }, 'Portainer');
         } else {
             // Create default empty instance
             portainerInstances = [{
@@ -445,7 +392,25 @@ function setupPortainerIconUpload() {
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    const dataUrl = canvas.toDataURL('image/png', 0.8);
+                    // WebP, not PNG. toDataURL's quality argument only
+                    // applies to lossy formats, so the 0.8 that used to sit
+                    // beside 'image/png' did nothing and a 64px icon came out
+                    // at several KB of base64. The whole portainerInstances
+                    // array is one sync item with an 8KB ceiling, so two
+                    // instances with icons were enough to break the save —
+                    // silently, before saveSync existed. WebP keeps the
+                    // transparency PNG was chosen for and is a fraction of the
+                    // size; PNG remains the fallback if a build ever lacks it.
+                    let dataUrl = canvas.toDataURL('image/webp', 0.85);
+                    if (!dataUrl.startsWith('data:image/webp')) {
+                        dataUrl = canvas.toDataURL('image/png');
+                    }
+                    if (dataUrl.length > 6000) {
+                        showStatus('Portainer',
+                            'That icon is too detailed to sync. Try a simpler or smaller image.',
+                            'error');
+                        return;
+                    }
                     iconImg.src = dataUrl;
                     iconImg.style.display = 'block';
                     iconPlaceholder.style.display = 'none';
@@ -469,45 +434,82 @@ function setupPortainerIconUpload() {
 }
 // ==================== END PORTAINER MULTI-INSTANCE ====================
 
-// --- UI Navigation ---
+/**
+ * Writes to sync storage and reports a failure instead of assuming there was
+ * none.
+ *
+ * chrome.storage.sync allows 8192 bytes per item and 102400 in total. No write
+ * in this file checked chrome.runtime.lastError, so one that broke either
+ * limit still ran its success path: the user was told "Settings saved!" and
+ * the change was gone at the next reload. A Portainer instance list carrying
+ * uploaded icons is the realistic way to reach the per-item limit — the whole
+ * array is a single item.
+ *
+ * @param {Object} data - Keys to write
+ * @param {string} service - Section name for the status line; '' to stay quiet
+ * @param {Function} [onSuccess] - Runs only when the write actually landed
+ */
+function saveSync(data, service, onSuccess) {
+    chrome.storage.sync.set(data, () => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+            console.error('Sync write failed:', err.message);
+            if (service) {
+                showStatus(service, /quota/i.test(err.message || '')
+                    ? 'Too much data to sync — a smaller instance icon usually fixes this.'
+                    : `Could not save: ${err.message}`, 'error');
+            }
+            return;
+        }
+        if (onSuccess) onSuccess();
+    });
+}
+
 // --- UI Navigation ---
 const tabs = document.querySelectorAll('.tab-btn');
-const glider = document.getElementById('glider');
 
-const moveGlider = (el) => {
-    if (!el || !glider) return;
-    const subTabs = el.parentElement;
-    const subTabsRect = subTabs.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
+/**
+ * Marks each service in the navigation as configured or not.
+ *
+ * The old tab strip said nothing about state, so finding out which of the
+ * eleven services were set up meant opening all eleven.
+ * @param {Object} items - A chrome.storage.sync snapshot
+ */
+function updateNavStatus(items) {
+    document.querySelectorAll('.nav-status').forEach(dot => {
+        const id = dot.dataset.service;
 
-    // Calculate position relative to parent
-    const left = elRect.left - subTabsRect.left - 6; // 6px padding
-    const top = elRect.top - subTabsRect.top - 6;
+        // Absent means on: that is how the rest of the app reads these keys.
+        const enabled = items[`${id}Enabled`] !== false;
 
-    glider.style.width = `${el.offsetWidth}px`;
-    glider.style.transform = `translate(${left}px, ${top}px)`;
-};
+        let hasCredentials;
+        if (id === 'dashboard') {
+            // Nothing to configure. There is no dashboardUrl key anywhere in
+            // the extension — the dashboard aggregates the other services —
+            // so testing for one left its dot permanently hollow.
+            hasCredentials = true;
+        } else if (id === 'portainer') {
+            // Portainer keeps its servers in an array rather than a URL key.
+            hasCredentials = Array.isArray(items.portainerInstances)
+                && items.portainerInstances.some(i => i && i.url);
+        } else {
+            hasCredentials = Boolean(items[`${id}Url`]);
+        }
 
-// Initialize Glider
-const initGlider = () => {
-    const initialActive = document.querySelector('.tab-btn.active');
-    if (initialActive) {
-        moveGlider(initialActive);
-    }
-};
-
-// Wait for fonts/layout
-window.addEventListener('load', initGlider);
-// Also try immediately
-initGlider();
+        dot.classList.toggle('is-set', hasCredentials && enabled);
+        // A configured service that has been switched off is not the same as
+        // one that was never set up, and the dot alone cannot say which.
+        dot.title = !hasCredentials ? 'Not set up yet'
+            : !enabled ? 'Set up, but switched off'
+            : 'Ready';
+    });
+}
 
 tabs.forEach(item => {
     item.addEventListener('click', () => {
         // Active Tab
         tabs.forEach(el => el.classList.remove('active'));
         item.classList.add('active');
-
-        moveGlider(item);
 
         // Active Section
         const target = item.dataset.target;
@@ -543,9 +545,10 @@ document.addEventListener('keydown', (e) => {
 const loadOptions = () => {
     chrome.storage.sync.get(null, (items) => {
         // v4.0 storage migrations (idempotent — safe to re-run)
-        const migration = runStorageMigrations(items);
+        // Defined by js/core/migrationRules.js, loaded before this script.
+        const migration = globalThis.hscRunStorageMigrations(items);
         if (migration.changed) {
-            chrome.storage.sync.set(items, () => {
+            saveSync(items, '', () => {
                 if (migration.removedKeys.length > 0) {
                     chrome.storage.sync.remove(migration.removedKeys);
                 }
@@ -588,6 +591,18 @@ const loadOptions = () => {
         if (badgeIntervalEl) {
             const interval = items.badgeCheckInterval || 5000;
             badgeIntervalEl.value = interval.toString();
+        }
+
+        // Which sources the unified Docker search queries. An absent key means
+        // all of them: that is what it did before the setting existed, and an
+        // upgrade must not quietly narrow the results.
+        const chosenSources = Array.isArray(items.dockerSearchSources)
+            ? items.dockerSearchSources
+            : null;
+        for (const id of ['unraid', 'portainer', 'dockhand']) {
+            const box = document.getElementById(
+                `dockerSearch${id.charAt(0).toUpperCase()}${id.slice(1)}`);
+            if (box) box.checked = chosenSources === null || chosenSources.includes(id);
         }
 
         services.forEach(service => {
@@ -753,6 +768,14 @@ const saveService = (service) => {
 
                 data[urlId] = fullUrl;
                 originsToRequest.push(`${urlObj.origin}/*`);
+                // And the same host on the other scheme. A reverse proxy that
+                // answers http with a 301 to https is the norm, and following
+                // that redirect crosses into an origin the extension was never
+                // granted — which does not fail as "permission denied" but as
+                // an opaque CORS error about a missing Access-Control-Allow-
+                // Origin header, with nothing pointing at the cause.
+                const otherScheme = urlObj.protocol === 'http:' ? 'https:' : 'http:';
+                originsToRequest.push(`${otherScheme}//${urlObj.host}/*`);
             } catch (e) {
                 showStatus(service, 'Invalid URL format!', 'error');
                 console.warn("Invalid URL:", fullUrl, e);
@@ -839,8 +862,7 @@ const saveService = (service) => {
     }
 
     const performSave = () => {
-        chrome.storage.sync.set(data, () => {
-             // Check results and notify user
+        saveSync(data, service, () => {
              showStatus(service, 'Settings saved!', 'success');
         });
     };
@@ -868,7 +890,7 @@ const saveService = (service) => {
                              enableIpLookupEl.checked = false;
                         }
                         // Still save to storage so they don't lose the text
-                        chrome.storage.sync.set(data);
+                        saveSync(data, service);
                     }
                 });
             }
@@ -1028,6 +1050,12 @@ const testConnection = async (service) => {
 // --- Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
     loadOptions();
+    chrome.storage.sync.get(null, (items) => updateNavStatus(items || {}));
+    // A save anywhere can turn a service from unconfigured to configured.
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'sync') return;
+        chrome.storage.sync.get(null, (later) => updateNavStatus(later || {}));
+    });
     renderOrderList();
 
     // Portainer Multi-Instance Setup
@@ -1053,14 +1081,21 @@ document.addEventListener('DOMContentLoaded', () => {
              // const currentOrder = getCurrentOrder(); // Use window.currentOrder
              const currentOrder = window.currentOrder;
              const startPage = document.getElementById('startPage').value;
+             // Stored as the list of sources that take part. An absent key
+             // means all of them, which is what the search did before this
+             // setting existed.
+             const dockerSearchSources = ['unraid', 'portainer', 'dockhand']
+                 .filter(id => document.getElementById(
+                     `dockerSearch${id.charAt(0).toUpperCase()}${id.slice(1)}`)?.checked);
              const badgeCheckInterval = parseInt(document.getElementById('badgeCheckInterval').value) || 5000;
 
-             chrome.storage.sync.set({
+             saveSync({
+                 dockerSearchSources,
                  serviceOrder: window.currentOrder || currentOrder,
                  startPage: startPage,
                  // enablePersistence: true // We can keep this true internally or deprecate it. Let's rely on StartPage value.
                  badgeCheckInterval: badgeCheckInterval
-             }, () => {
+             }, 'General', () => {
                  showStatus('General', 'Settings saved!', 'success');
              });
         });
@@ -1123,13 +1158,22 @@ const savePlexSettings = () => {
             data.plexUrl = fullUrl;
             data.plexToken = plexToken;
 
-            // Request permission for Plex server
+            // Request permission for the Plex server. The settings are saved
+            // either way - the user may grant it later from the extension's
+            // own permissions page - but a denial has to be said out loud.
+            // This was `if (granted || true)`, which is simply true, so a
+            // denied permission was saved and reported as a clean success and
+            // every later Plex call failed for a reason nothing explained.
             chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, (granted) => {
-                if (granted || true) { // Save even if permission denied
-                    chrome.storage.sync.set(data, () => {
+                saveSync(data, 'Plex', () => {
+                    if (granted) {
                         showStatus('Plex', 'Settings saved!', 'success');
-                    });
-                }
+                    } else {
+                        showStatus('Plex',
+                            'Saved, but access to this server was not granted - Plex features will not work until you allow it.',
+                            'error');
+                    }
+                });
             });
             return;
         } catch (e) {
@@ -1139,7 +1183,7 @@ const savePlexSettings = () => {
     }
 
     // Web mode - just save the mode
-    chrome.storage.sync.set(data, () => {
+    saveSync(data, 'Plex', () => {
         showStatus('Plex', 'Settings saved!', 'success');
     });
 };
@@ -1487,9 +1531,9 @@ async function startPlexOAuth() {
                             clearInterval(pollInterval);
 
                             // Save the Plex auth token
-                            chrome.storage.sync.set({
+                            saveSync({
                                 seerrPlexToken: checkData.authToken
-                            }, () => {
+                            }, '', () => {
                                 setPlexStatus(statusEl, '#48bb78', '✓ Plex account linked successfully!');
                             });
                             return;
@@ -1511,10 +1555,26 @@ async function startPlexOAuth() {
     }
 }
 
+/**
+ * Asks the user to confirm sending a reusable credential over plaintext HTTP.
+ * Anyone on the path — another device on the Wi-Fi, a rogue access point —
+ * can read it off the wire.
+ * @param {string} host - Host the credential would be sent to
+ * @param {string} what - Human-readable name of the credential
+ * @returns {boolean} True if the user accepted
+ */
+function confirmPlaintextCredentials(host, what) {
+    return confirm(
+        `Your ${what} would be sent unencrypted over http:// to:\n\n${host}\n\n` +
+        `Anyone on the same network can read it. Use https:// instead if your ` +
+        `server supports it.\n\nSend it anyway?`
+    );
+}
+
 // Save Seerr with multi-auth support
 async function saveSeerrAuth() {
     const authMethod = document.getElementById('seerrAuthMethod')?.value || 'apikey';
-    const protocol = document.getElementById('seerrProtocol')?.value || 'http://';
+    const protocol = document.getElementById('seerrProtocol')?.value || 'https://';
     const urlInput = document.getElementById('seerrUrl')?.value.trim() || '';
     const enabled = document.getElementById('seerrEnabled')?.checked ?? true;
 
@@ -1525,6 +1585,37 @@ async function saveSeerrAuth() {
 
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const fullUrl = protocol + cleanUrl;
+
+    // The host permission has to be granted BEFORE the first request to this
+    // origin. Without it Chrome treats the fetch as an ordinary cross-origin
+    // web request and CORS blocks it, so the auth call below would fail and
+    // return early — leaving the permission permanently unrequested.
+    // It also has to happen while the click's user gesture is still live, so
+    // nothing may be awaited before this point.
+    let seerrOrigin;
+    try {
+        seerrOrigin = `${new URL(fullUrl).origin}/*`;
+    } catch (e) {
+        showStatus('Seerr', `Invalid URL: ${e.message}`, 'error');
+        return;
+    }
+    const hasHostAccess = await new Promise((resolve) => {
+        chrome.permissions.contains({ origins: [seerrOrigin] }, (result) => {
+            if (result) { resolve(true); return; }
+            chrome.permissions.request({ origins: [seerrOrigin] }, (granted) => resolve(!!granted));
+        });
+    });
+    if (!hasHostAccess) {
+        showStatus('Seerr', 'Permission denied — the extension cannot reach this server.', 'error');
+        return;
+    }
+
+    // An account password and a Plex account token are the only credentials
+    // here that are reusable off this machine, so they are not sent over a
+    // plaintext channel without the user knowingly accepting it. Loopback is
+    // exempt — that traffic never reaches the network.
+    const isLoopback = /^(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost|\[::1\])(:\d+)?$/i.test(cleanUrl);
+    const isPlaintextTransport = protocol === 'http://' && !isLoopback;
 
     const data = {
         seerrEnabled: enabled,
@@ -1550,6 +1641,11 @@ async function saveSeerrAuth() {
             return;
         }
 
+        if (isPlaintextTransport && !confirmPlaintextCredentials(cleanUrl, 'password')) {
+            showStatus('Seerr', 'Cancelled — use https:// so your password is not sent in the clear.', 'error');
+            return;
+        }
+
         // Test local login
         showStatus('Seerr', 'Logging in...', 'success');
         try {
@@ -1565,9 +1661,11 @@ async function saveSeerrAuth() {
                 throw new Error(err.message || `Login failed: ${res.status}`);
             }
 
-            // Store credentials for re-login
+            // Only the email is kept. Authentication runs on the session
+            // cookie the call above set (`credentials: 'include'`); the
+            // password is never replayed, so persisting it would put a
+            // reusable, non-revocable secret into synced storage for nothing.
             data.seerrEmail = email;
-            data.seerrPassword = password;
 
         } catch (e) {
             showStatus('Seerr', `Login failed: ${e.message}`, 'error');
@@ -1579,6 +1677,11 @@ async function saveSeerrAuth() {
         const stored = await new Promise(r => chrome.storage.sync.get(['seerrPlexToken'], r));
         if (!stored.seerrPlexToken) {
             showStatus('Seerr', 'Please sign in with Plex first!', 'error');
+            return;
+        }
+
+        if (isPlaintextTransport && !confirmPlaintextCredentials(cleanUrl, 'Plex account token')) {
+            showStatus('Seerr', 'Cancelled — use https:// so your Plex token is not sent in the clear.', 'error');
             return;
         }
 
@@ -1603,16 +1706,11 @@ async function saveSeerrAuth() {
         }
     }
 
-    // Request permissions
-    try {
-        const urlObj = new URL(fullUrl);
-        await new Promise((resolve) => {
-            chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, resolve);
-        });
-    } catch {}
+    // Host permission was already granted at the top of this function, before
+    // the auth call that needs it.
 
     // Save to storage
-    chrome.storage.sync.set(data, () => {
+    saveSync(data, 'Seerr', () => {
         showStatus('Seerr', 'Settings saved!', 'success');
     });
 }
@@ -1630,6 +1728,26 @@ async function testSeerrConnection() {
 
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const fullUrl = protocol + cleanUrl;
+
+    // Same as saveSeerrAuth(): the host permission must exist before the first
+    // request, and must be asked for while the click's gesture is still live.
+    let testOrigin;
+    try {
+        testOrigin = `${new URL(fullUrl).origin}/*`;
+    } catch (e) {
+        showStatus('Seerr', `Invalid URL: ${e.message}`, 'error');
+        return;
+    }
+    const canReach = await new Promise((resolve) => {
+        chrome.permissions.contains({ origins: [testOrigin] }, (result) => {
+            if (result) { resolve(true); return; }
+            chrome.permissions.request({ origins: [testOrigin] }, (granted) => resolve(!!granted));
+        });
+    });
+    if (!canReach) {
+        showStatus('Seerr', 'Permission denied — the extension cannot reach this server.', 'error');
+        return;
+    }
 
     showStatus('Seerr', 'Testing...', 'success');
 
@@ -1679,12 +1797,10 @@ function loadSeerrAuth(items) {
     localPanel.style.display = method === 'local' ? 'block' : 'none';
     plexPanel.style.display = method === 'plex' ? 'block' : 'none';
 
-    // Load local auth fields
+    // Load local auth fields. The password is deliberately not restored — it
+    // is not stored, and the session cookie carries the authentication.
     if (items.seerrEmail) {
         document.getElementById('seerrEmail').value = items.seerrEmail;
-    }
-    if (items.seerrPassword) {
-        document.getElementById('seerrPassword').value = items.seerrPassword;
     }
 
     // Update Plex status

@@ -85,6 +85,24 @@
     background: #f44336;
 }
 
+/* updateCard() adds .pulse to a dot the moment a service answers, and no rule
+   has ever matched it. The dot is the only thing on the card that says the
+   number above it is live, so it gets the breathing glow it was asking for. */
+.status-dot.online.pulse {
+    animation: status-dot-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes status-dot-pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(76, 175, 80, 0.5); }
+    50%      { box-shadow: 0 0 12px rgba(76, 175, 80, 0.85); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .status-dot.online.pulse {
+        animation: none;
+    }
+}
+
 .service-name {
     font-size: 14px;
     font-weight: 600;

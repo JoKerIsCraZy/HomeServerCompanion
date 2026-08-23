@@ -16,7 +16,18 @@ export const getRadarrQueue = async (url, apiKey) => {
         // Actually, let's just show the Queue and maybe "Movies Missing" count.
         
         // For now, let's fetch Queue as it's most useful.
-        const response = await fetch(`${url}/api/v3/queue`, {
+        // includeMovie defaults to false, so every queue record arrived with
+        // `movie` null — the poster, title and year all read from it. The view
+        // compensated by calling /parse on the release name for each item.
+        //
+        // pageSize is explicit because the server's default of 20 silently
+        // truncated a busy queue.
+        const queueParams = new URLSearchParams({
+            page: '1',
+            pageSize: '100',
+            includeMovie: 'true'
+        });
+        const response = await fetch(`${url}/api/v3/queue?${queueParams}`, {
             headers: {
                 'X-Api-Key': apiKey
             }
@@ -219,13 +230,74 @@ export const getAllMovies = async (url, apiKey) => {
  */
 export const getRadarrMissing = async (url, apiKey, pageSize = 50) => {
     try {
-        const response = await fetch(`${url}/api/v3/wanted/missing?page=1&pageSize=${pageSize}&sortKey=releaseDate&sortDirection=descending&includeMovie=true`, {
+        // sortKey has to name a column of the joined MovieMetadata table.
+        // `releaseDate` is a computed field, not a column: Radarr accepts the
+        // request, ignores the key and falls back to sort title. The tab was
+        // therefore showing the last 50 movies alphabetically — the Z end of
+        // the library — under a header that claimed date order.
+        const response = await fetch(`${url}/api/v3/wanted/missing?page=1&pageSize=${pageSize}&sortKey=movieMetadata.digitalRelease&sortDirection=descending&includeMovie=true`, {
             headers: { 'X-Api-Key': apiKey }
         });
         if (!response.ok) throw new Error(`Missing Error: ${response.status}`);
         return await response.json();
     } catch (error) {
         console.error("Radarr Missing Error:", error);
+        throw error;
+    }
+};
+
+
+/**
+ * Posts a command and confirms the server accepted it.
+ *
+ * fetch() only rejects on a network fault, so the callers that used to POST
+ * here directly reported "Search started" for a rejected API key, a 404 from
+ * a wrong base path and a 500 alike.
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {Object} body - Command payload, `name` plus its arguments.
+ * @returns {Promise<Object>} The queued command resource.
+ */
+const runRadarrCommand = async (url, apiKey, body) => {
+    const response = await fetch(`${url}/api/v3/command`, {
+        method: 'POST',
+        headers: {
+            'X-Api-Key': apiKey,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    });
+    if (!response.ok) throw new Error(`Command Error: ${response.status}`);
+    return await response.json();
+};
+
+/**
+ * Triggers a search for specific movies.
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {number[]} movieIds
+ * @returns {Promise<Object>}
+ */
+export const searchMovies = async (url, apiKey, movieIds) => {
+    try {
+        return await runRadarrCommand(url, apiKey, { name: 'MoviesSearch', movieIds });
+    } catch (error) {
+        console.error("Radarr Movie Search Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Triggers Radarr's own search across every missing movie.
+ * @param {string} url
+ * @param {string} apiKey
+ * @returns {Promise<Object>}
+ */
+export const searchAllMissingMovies = async (url, apiKey) => {
+    try {
+        return await runRadarrCommand(url, apiKey, { name: 'MissingMoviesSearch' });
+    } catch (error) {
+        console.error("Radarr Missing Search Error:", error);
         throw error;
     }
 };

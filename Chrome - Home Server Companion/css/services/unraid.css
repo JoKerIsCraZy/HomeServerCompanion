@@ -1,880 +1,893 @@
-/* Unraid */
-.status-card {
-  text-align: center;
-  padding: 30px;
-}
-.status-indicator {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 10px;
-  color: #ffd600;
-}
-.status-indicator.online {
-  color: #4caf50;
-}
-.status-indicator.offline {
-  color: #f44336;
-}
-
-
-/* Docker & VM Styles */
-.docker-card,
-.vm-card {
-  padding: 12px;
-  gap: 8px;
-  min-height: 110px;
-  position: relative;
-  overflow: hidden;
-}
-
-.unraid-header-row {
-  display: flex;
-  align-items: center;
-
-  justify-content: space-between;
-  margin-bottom: 20px;
-  padding: 0 5px;
-}
-
-#unraid-view .sub-tabs {
-  position: relative;
-  display: inline-flex;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 5px;
-  border-radius: 12px;
-  gap: 5px;
-  z-index: 1;
-  margin-bottom: 0; /* Remove bottom margin as it's in a flex row */
-}
-
-#unraid-view .tab-glider {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  height: calc(100% - 10px);
-  background: #f15a2c; /* Official Unraid Orange */
-  border-radius: 8px;
-  z-index: 0;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  width: 0;
-}
-
-/* Compact Status Card for Header */
-.unraid-header-row #unraid-status-card {
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  box-shadow: none;
-  text-align: right;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.unraid-header-row .status-indicator {
-  font-size: 14px;
-  margin-bottom: 2px;
-}
-
-.unraid-header-row .server-name {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 500;
-  opacity: 0.8;
-}
-
-.unraid-header-row .server-url {
-  display: none; /* Hide URL in compact mode to save space */
-}
-
-#unraid-view .sub-tab-btn {
-  background: transparent !important;
-  color: var(--text-secondary);
-  border: none;
-  padding: 8px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600; /* Match Radarr/Sonarr */
-  font-size: 13px; /* Match Radarr/Sonarr */
-  position: relative;
-  z-index: 1;
-  transition: color 0.2s;
-}
-
-#unraid-view .sub-tab-btn:hover {
-  color: var(--text-primary);
-}
-
-#unraid-view .sub-tab-btn.active {
-  color: white !important;
-  background: transparent !important;
-  font-weight: 700;
-  box-shadow: none !important; /* Remove glow */
-}
-
-/* --- UNRAID DASHBOARD REDESIGN --- */
-
-/* Grid Layouts */
-.unraid-dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.unraid-grid-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-  padding-bottom: 15px;
-}
-
-.unraid-section-wrapper h3 {
-  margin: 0 0 10px 5px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-/* Base Card Style */
-.unraid-card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: transform 0.2s, background 0.2s;
-}
-body.dark-mode .unraid-card {
-  background: #252525;
-  border-color: rgba(255, 255, 255, 0.08);
-}
-.unraid-card:hover {
-  transform: translateY(-2px);
-  background: var(--card-hover-bg);
-}
-
-/* System Cards */
-.system-stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-.full-width-card {
-  grid-column: span 2;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 5px;
-  font-weight: 600;
-}
-.stat-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-.stat-sub {
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
-/* CPU Ring */
-.cpu-ring-container {
-  position: relative;
-  width: 60px;
-  height: 60px;
-  margin: 5px 0;
-}
-.cpu-ring-svg {
-  transform: rotate(-90deg);
-  width: 100%;
-  height: 100%;
-}
-.cpu-ring-bg {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.1);
-  stroke-width: 4;
-}
-.cpu-ring-value {
-  fill: none;
-  stroke: #2196f3;
-  stroke-width: 4;
-  stroke-dasharray: 100 100; /* Calculated in JS */
-  stroke-dashoffset: 25; /* Calculated in JS */
-  stroke-linecap: round;
-  transition: stroke-dashoffset 1s ease-in-out;
-}
-.cpu-text-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 12px;
-  font-weight: bold;
-  color: var(--text-primary);
-}
-
-/* RAM Bar */
-.ram-bar-container {
-  width: 100%;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  margin-top: 8px;
-  overflow: hidden;
-}
-.ram-bar-fill {
-  height: 100%;
-  background: #4caf50;
-  border-radius: 4px;
-  width: 0%;
-  transition: width 1s ease-in-out;
-}
-
-/* Docker/VM Cards */
-.docker-card,
-.vm-card {
-  padding: 12px;
-  gap: 8px;
-  min-height: 110px;
-  position: relative;
-  overflow: hidden;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-icon {
-  width: 24px;
-  height: 24px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  border-radius: 4px;
-}
-
-.card-title {
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-  position: relative; /* Context for tooltip */
-  cursor: default;
-}
-
-/* Premium Tooltip on Hover */
-.card-title:hover::after {
-  content: attr(data-title);
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  background: #333;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  white-space: nowrap;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  pointer-events: none;
-  transform: translateY(-5px);
-  opacity: 0;
-  animation: tooltipFade 0.2s forwards;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-@keyframes tooltipFade {
-  to {
-    opacity: 1;
-    transform: translateY(-2px);
-  }
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #555;
-  flex-shrink: 0;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-}
-.status-dot.started {
-  background: #4caf50;
-  box-shadow: 0 0 5px #4caf50;
-}
-.status-dot.stopped {
-  background: #9e9e9e;
-}
-.status-dot.paused {
-  background: #ff9800;
-}
-
-.card-body {
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
-}
-.card-meta {
-  font-size: 11px;
-  color: var(--text-secondary);
-  line-height: 1.3;
-}
-
-.card-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 5px;
-  margin-top: auto;
-  opacity: 0; /* Hidden by default */
-  transform: translateY(5px);
-  transition: all 0.2s;
-}
-
-.unraid-card:hover .card-actions {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.action-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 6px;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--text-primary);
-  font-size: 10px;
-  transition: all 0.2s;
-}
-#unraid-view .action-btn:hover,
-body.fullscreen-mode #unraid-view .action-btn:hover {
-  background: #F88501 !important; /* Unraid Orange - same as tab glider */
-  color: white !important;
-  transform: scale(1.1);
-}
-
-/* Vertical List Layout - Added for User Request */
-.unraid-vertical-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.unraid-card.row-layout {
-  flex-direction: row;
-  align-items: center;
-  padding: 10px 15px; /* Compact padding */
-  min-height: auto !important; /* Override .docker-card min-height */
-  gap: 15px;
-}
-
-.unraid-card.row-layout .card-header {
-  flex: 1;
-  margin-bottom: 0;
-  min-width: 0;
-}
-
-.unraid-card.row-layout .card-body {
-  display: none; /* Hide metadata for cleaner look */
-}
-
-.unraid-card.row-layout .card-actions {
-  margin-top: 0;
-  display: flex;
-  align-items: center; /* Ensure buttons are perfectly centered vertically */
-  gap: 10px;
-  opacity: 0;
-  transform: translateX(10px);
-  transition: all 0.2s ease;
-}
-
-.unraid-card.row-layout:hover .card-actions,
-.unraid-card.row-layout:focus-within .card-actions,
-.unraid-card.row-layout.loading .card-actions {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-/* Loading state - keep buttons visible */
-.unraid-card.loading .card-actions {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Loading Button Spinner Animation */
-.action-btn.btn-loading {
-  position: relative;
-  pointer-events: none;
-  color: transparent !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-}
-
-.action-btn.btn-loading::after {
-  content: '';
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: btnSpinner 0.6s linear infinite;
-}
-
-@keyframes btnSpinner {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-/* Sort Select */
-.sort-select {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  outline: none;
-  cursor: pointer;
-}
-.sort-select:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-.sort-select option {
-  background: #2b2b2b;
-  color: var(--text-primary);
-}
-
-/* List Header & Search */
-.unraid-list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-.unraid-controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.search-input-full {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px; /* Rounded corners */
-  padding: 8px 12px;
-  font-size: 13px;
-  color: var(--text-primary);
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-}
-.search-input-full:focus {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--primary-color);
-}
-
-/* === MODERN DASHBOARD ENHANCEMENTS === */
-
-/* Compact 3-Column Grid Layout */
-.unraid-dashboard-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 8px !important;
-    margin-bottom: 15px !important;
-}
-
-/* Modern Card Shadows & Hover Effects */
-.unraid-card {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.08),
-    rgba(255, 255, 255, 0.04)
-  ) !important;
-  padding: 10px !important; /* Compact padding */
-  border-radius: 8px !important; /* Smaller radius */
-}
-body.dark-mode .unraid-card {
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.08),
-    rgba(255, 255, 255, 0.04)
-  ) !important;
-}
-.unraid-card:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.1);
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.12),
-    rgba(255, 255, 255, 0.06)
-  ) !important;
-}
-
-
-
-/* Compact Stat Values - White Text */
-.stat-value {
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  font-size: 16px !important; /* Compact size */
-  color: #ffffff !important; /* White text per user request */
-}
-
-/* Compact Labels */
-.stat-label {
-    font-size: 10px !important;
-    margin-bottom: 3px !important;
-}
-
-.stat-sub {
-    font-size: 9px !important;
-    margin-top: 1px !important;
-}
-
-/* Enhanced Full-Width Cards - Compact with Lighter Background */
-.full-width-card {
-  background: linear-gradient(
-    90deg,
-    rgba(241, 90, 44, 0.12),
-    rgba(255, 152, 0, 0.08)
-  ) !important;
-  border-left: 3px solid #F15A2C;
-  padding: 10px 15px !important; /* Compact padding */
-  grid-column: span 3 !important; /* Span all 3 columns */
-}
-.full-width-card .stat-label {
-  font-size: 9px !important; /* Extra compact for full-width */
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-}
-.full-width-card .stat-value {
-  font-size: 15px !important; /* Compact */
-}
-
-/* Animated CPU Ring */
-.cpu-ring-value {
-  animation: pulseRing 2s ease-in-out infinite;
-}
-@keyframes pulseRing {
-  0%,
-  100% {
-    stroke-opacity: 1;
-  }
-  50% {
-    stroke-opacity: 0.7;
-  }
-}
-
-/* RAM Bar Gradient */
-.ram-bar-fill {
-  background: linear-gradient(90deg, #4caf50, #8bc34a);
-  height: 6px !important; /* Compact height */
-}
-
-/* Compact RAM Bar Container */
-.ram-bar-container {
-    height: 6px !important;
-    margin-top: 5px !important;
-    border-radius: 3px !important;
-}
-
-/* Compact CPU Ring */
-.cpu-ring-container {
-    width: 50px !important;
-    height: 50px !important;
-    margin: 3px 0 !important;
-}
-
-.cpu-text-center {
-    font-size: 11px !important;
-}
-
-/* Compact Section Headers */
-.unraid-section-wrapper h3 {
-  position: relative;
-  padding-left: 12px !important;
-  font-size: 11px !important;
-  letter-spacing: 1px !important;
-  margin: 0 0 8px 3px !important;
-}
-.unraid-section-wrapper h3::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 14px;
-  background: linear-gradient(180deg, #f15a2c, #ff9800);
-  border-radius: 2px;
-}
-
-/* Status Colors with Glow */
-.stat-value[style*="color: #4caf50"] {
-  text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
-}
-.stat-value[style*="color: #f44336"] {
-  text-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
-}
-.stat-value[style*="color: #2196f3"] {
-  text-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
-}
-.stat-value[style*="color: #ff9800"] {
-  text-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
-}
-
-/* Stats Grid Improvement */
-.unraid-dashboard-grid {
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-}
-
-/* Mobile Responsive - Compact */
-@media (max-width: 600px) {
-  .unraid-dashboard-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 6px !important;
-  }
-  .full-width-card {
-    grid-column: span 2 !important;
-  }
-}
-
-/* Extra compact for very small screens */
-@media (max-width: 400px) {
-  .unraid-dashboard-grid {
-    grid-template-columns: 1fr !important;
-  }
-  .full-width-card {
-    grid-column: span 1 !important;
-  }
-}
-
-/* Compact spacing */
-.unraid-section-wrapper {
-    margin-bottom: 15px !important;
-}
-
-/* Card Stat Improvements - Removed dark overlay */
-.system-stat-card {
-  position: relative;
-  overflow: hidden;
-}
-/* Removed the dark radial gradient overlay for cleaner look */
-
-/* Better Spacing */
-.unraid-section-wrapper {
-  margin-bottom: 25px;
-}
-
-/* Smooth Transitions */
-.stat-value,
-.ram-bar-fill,
-.storage-fill {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Compact Health Cards */
-#dash-parity-card, #dash-smart-card {
-    border-left-width: 3px;
-    border-left-style: solid;
-}
-#dash-parity-card {
-    border-left-color: #2196f3; /* Default blue for parity */
-}
-#dash-smart-card {
-    border-left-color: #4caf50; /* Default green for healthy */
-}
-
-/* Utility Classes for Status Colors */
-.text-green { color: #4caf50 !important; }
-.text-red { color: #f44336 !important; }
-.text-blue { color: #2196f3 !important; }
-.text-orange { color: #ff9800 !important; }
-.text-warning { color: #ffc107 !important; }
-
-/* === Modern Storage Tab Redesign === */
-
-.unraid-storage-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-}
-
-.storage-group-header {
+/* Unraid — server monitoring
+ *
+ * Rewritten against the component tokens in css/tokens.css. The previous file
+ * carried ~150 dead lines (a superseded disk-card design), three conflicting
+ * definitions of the dashboard grid and 22 competing !important declarations,
+ * while the actual styling lived in 45 inline assignments in the renderer.
+ *
+ * Two rules govern everything here:
+ *   1. Every slot has a fixed height. Data arriving late may change a value,
+ *      never the geometry — this view is read at a glance and must not move
+ *      under the reader.
+ *   2. Nothing is hidden because its data has not arrived. A value that is
+ *      pending renders "--"; only a capability the server genuinely lacks is
+ *      removed, and only once that is known.
+ */
+
+/* Screen-reader-only label. Kept here because Unraid is the first view to
+   need it; move to components.css when a second view does. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ===== Header: identity, visible on every sub-tab =====
+   Live load moved into the System tab's cards. What stays up here is what does
+   not change between polls and is worth knowing from any tab: which server,
+   on what licence, with how much room left. */
+.unraid-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 20px 0 10px 0;
-    padding-bottom: 5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    align-items: flex-start;
+    gap: var(--space-4);
+    min-height: 48px;
+    /* No bottom margin: the sub-tab pill below carries the gap, and now that
+       it is block-level the two would not collapse into one another. */
+}
+.unraid-hero-stack {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+/* The hero names the server. It carries the brand orange because it is an
+   identity, not a warning — conditions are listed below with their own marks. */
+.unraid-hero {
+    font-size: 32px;
+    font-weight: var(--font-weight-bold, 700);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--accent-unraid);
+    font-variant-numeric: tabular-nums;
+}
+/* Before any data, and when the server cannot be reached. */
+.unraid-hero.is-pending {
+    font-size: 24px;
+    color: var(--color-text-secondary);
+}
+.unraid-hero.is-crit {
+    font-size: 24px;
+    color: var(--status-error);
+}
+.unraid-subline {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.storage-group-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-primary);
+/* ===== System tab cards =====
+   The three vitals that used to live in the header are full cards here: the
+   same numbers, plus the context that makes them mean something — which chip,
+   how much memory in gigabytes, how many disks. .card supplies the surface;
+   everything below is the content layout. */
+.ur-section-label {
+    margin: var(--space-5) 0 var(--space-2);
+    font-size: 11px;
+    font-weight: var(--font-weight-bold, 700);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    color: var(--color-text-secondary);
+}
+.ur-section-label:first-child { margin-top: 0; }
+
+#unraid-tab-system .card {
+    padding: var(--space-4);
+}
+#unraid-tab-system > .card {
+    margin-bottom: var(--space-3);
 }
 
-.storage-group-title::before {
-    content: '';
-    display: block;
-    width: 4px;
-    height: 16px;
-    background: var(--primary-color);
-    border-radius: 2px;
+/* CPU beside RAM. Both are single figures with one line of context, so a full
+   row each wasted the width and pushed the array below the fold. */
+.ur-metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
 }
 
-.storage-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 8px 12px; /* Reduced padding */
+/* A status dot carries meaning, so it never carries it alone — every place
+   one appears, a word appears beside it. */
+.ur-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-text-muted);
+    flex-shrink: 0;
+}
+.ur-dot.is-ok { background: var(--status-success); }
+.ur-dot.is-warn { background: var(--status-warning); }
+.ur-dot.is-crit { background: var(--status-error); }
+.ur-dot.is-info { background: var(--status-info); }
+.ur-dot.is-idle { background: var(--color-text-muted); }
+
+/* --- Status, in the header's right-hand slot --- */
+.unraid-header-status {
     display: flex;
     flex-direction: column;
-    gap: 6px; /* Reduced gap */
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+    flex-shrink: 0;
 }
-
-.storage-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    transform: translateX(4px);
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Disk Top Row: Name + Temp + Status */
-.disk-header {
+.ur-state {
     display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+}
+.ur-uptime {
+    margin-top: 0;
+    /* It was a 30px card headline. In the header it sits beside a 32px hero
+       and only has to be legible, so it drops to a size just above the label
+       under it (12px) — still the figure of the stack, no longer a heading. */
+    font-size: 15px;
+    line-height: 1.1;
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+}
+.ur-uptime-sub {
+    margin-top: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* --- Attention banner --- */
+.ur-attention-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-3);
+    background: var(--color-bg-secondary);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-md);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.ur-attention-banner:hover { background: var(--color-bg-tertiary); }
+.ur-attention-banner.is-crit { border-color: rgba(239, 68, 68, 0.45); }
+.ur-attention-banner.is-warn { border-color: rgba(245, 158, 11, 0.45); }
+.ur-att-level {
+    font-weight: var(--font-weight-semibold);
+    flex-shrink: 0;
+}
+.ur-attention-banner.is-crit .ur-att-level { color: var(--status-error); }
+.ur-attention-banner.is-warn .ur-att-level { color: var(--status-warning); }
+.ur-attention-banner.is-info .ur-att-level { color: var(--status-info); }
+.ur-att-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ur-chevron {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-lg);
+    transition: transform var(--transition-fast);
+}
+.ur-attention-banner[aria-expanded="true"] .ur-chevron { transform: rotate(90deg); }
+
+.ur-attention-list {
+    margin-bottom: var(--space-3);
+}
+
+/* --- Metric cards --- */
+.ur-metric-top {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
+    gap: var(--space-3);
 }
-
-.disk-info {
+.ur-metric-name {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+.ur-metric-pct {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--accent-unraid);
+    font-variant-numeric: tabular-nums;
+}
+.ur-metric-pct.is-warn { color: var(--status-warning); }
+.ur-metric-pct.is-crit { color: var(--status-error); }
+.ur-metric-figure {
+    margin-top: var(--space-2);
+    font-size: 26px;
+    line-height: 1.05;
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--accent-unraid);
+    font-variant-numeric: tabular-nums;
+}
+.ur-metric-figure.is-warn { color: var(--status-warning); }
+.ur-metric-figure.is-crit { color: var(--status-error); }
+.ur-metric-sub {
+    margin-top: var(--space-1);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* A fixed-height foot holds the curve on one card and the bar on the other,
+   so the two stay the same height whatever they contain. */
+.ur-metric-foot {
     display: flex;
     align-items: center;
-    gap: 8px;
+    height: 28px;
+    margin-top: var(--space-2);
 }
+.ur-metric-foot .ur-track { margin-top: 0; width: 100%; }
 
-.disk-icon {
-    font-size: 16px;
-    color: var(--text-secondary);
-    opacity: 0.7;
+.ur-temp {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
 }
+.ur-temp.is-warm { color: var(--status-warning); }
+.ur-temp.is-hot { color: var(--status-error); }
+/* A server whose API predates temperature sensors: dimmed in place, never
+   removed, so the card cannot change shape after the first fetch. */
+.ur-temp.is-unavailable { opacity: 0.4; }
+.ur-temp-glyph { font-size: var(--font-size-sm); }
 
-.disk-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.disk-temp {
-    font-size: 10px;
-    font-weight: 600;
-    padding: 1px 5px;
-    border-radius: 3px;
-    background: rgba(0, 0, 0, 0.2);
-    color: var(--text-secondary);
-}
-
-.disk-temp.hot { color: #f44336; background: rgba(244, 67, 54, 0.15); }
-.disk-temp.warm { color: #ff9800; background: rgba(255, 152, 0, 0.15); }
-.disk-temp.cool { color: #4caf50; background: rgba(76, 175, 80, 0.15); }
-
-/* Progress Bar Section */
-.disk-usage-section {
-    position: relative;
-    padding-top: 10px; /* Reduced space */
-}
-
-.disk-bar-bg {
-    height: 6px; /* Thinner bar */
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 3px;
+.ur-spark {
+    width: 100%;
+    height: 28px;
+    /* Hidden, not visible: the newest sample is drawn beyond the right edge
+       and slides in, so it must be clipped until it arrives. */
     overflow: hidden;
 }
+.ur-spark path {
+    fill: none;
+    stroke: var(--accent-unraid);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
 
-.disk-bar-fill {
+.ur-track {
+    margin-top: var(--space-3);
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+.ur-fill {
     height: 100%;
+    width: 0;
     border-radius: 3px;
-    background: linear-gradient(90deg, #2196f3, #4caf50); /* Blue to Green */
-    opacity: 0.9;
-    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
-    transition: width 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+    background: var(--accent-unraid);
+    transition: width var(--transition-normal);
+}
+.ur-fill.is-warn { background: var(--status-warning); }
+.ur-fill.is-crit { background: var(--status-error); }
+
+/* --- Service cards --- */
+.ur-service-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+.ur-service {
+    display: block;
+    padding: var(--space-4);
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+}
+.ur-service:hover { border-color: rgba(255, 255, 255, 0.2); }
+.ur-service-name {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+.ur-service-figure {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+.ur-service-count {
+    font-size: 28px;
+    line-height: 1;
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+}
+.ur-service-total {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+.ur-service-figure .ur-dot { align-self: center; margin-left: auto; }
+.ur-service-sub {
+    display: block;
+    margin-top: var(--space-1);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.disk-bar-fill.warn { background: linear-gradient(90deg, #ff9800, #f57c00); box-shadow: 0 0 10px rgba(255, 152, 0, 0.3); }
-.disk-bar-fill.crit { background: linear-gradient(90deg, #f44336, #d32f2f); box-shadow: 0 0 10px rgba(244, 67, 54, 0.3); }
+/* ===== Attention list — the reason to open this tab ===== */
+.unraid-attention-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 40px;
+    padding: var(--space-2) 0;
+    border-bottom: var(--border-width) solid var(--border-color);
+}
+.unraid-attention-row:last-child { border-bottom: none; }
+.unraid-attention-row .ua-what {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.unraid-attention-row .ua-detail {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+/* Severity is carried by a leading bar as well as colour: colour alone fails
+   for anyone who cannot distinguish it. */
+.unraid-attention-row .ua-mark {
+    width: 3px;
+    height: 22px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    background: var(--color-text-muted);
+}
+.unraid-attention-row.is-warn .ua-mark { background: var(--status-warning); }
+.unraid-attention-row.is-crit .ua-mark { background: var(--status-error); }
 
-/* Floating Stats */
-.disk-stats {
+/* ===== Docker / VM row lists ===== */
+.unraid-list-controls {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+.unraid-list-controls .search-input-full { flex: 1; min-width: 0; }
+
+/* An icon button in this row is as tall as the fields next to it. .icon-btn is
+   a 32px square on its own and .sort-select has min-height: 34px, and two
+   pixels apart on one line reads as a mistake.
+   The height stretches to the row. The width does not: `width: auto` plus
+   aspect-ratio left it flexible, and the search input beside it is `flex: 1`,
+   so the button was squeezed down to its glyph. A fixed basis that cannot
+   shrink is the whole trick. */
+.unraid-list-controls .icon-btn,
+.unraid-list-controls .refresh-btn {
+    align-self: stretch;
+    height: auto;
+    flex: 0 0 34px;
+    width: 34px;
+}
+
+/* The list is a stack of cards. In fullscreen the rule further down turns it
+   into a three-column grid with its own gap, which overrides both of these. */
+.unraid-row-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+/* One card per container or VM. These were flat rows separated by a hairline,
+   which was a density choice for lists that can run to dozens of entries — but
+   it left Docker and VMs looking like a different view from System and
+   Storage, which are built out of cards. Consistency wins; the cost is the gap
+   between cards. */
+.unraid-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 44px;
+    padding: var(--space-2) var(--space-3);
+    background: var(--card-bg);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius);
+}
+
+/* Docker and VM cards behave identically now: the actions sit on the card and
+   fade in under the pointer. The expandable grid, the head wrapper and the
+   open state that used to belong to Docker alone went with the menu. */
+.unraid-row:hover { border-color: rgba(255, 255, 255, 0.14); }
+.unraid-row-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: var(--border-radius-sm, 4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 10px;
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--color-text-secondary);
+    overflow: hidden;
+}
+.unraid-row-icon img { width: 100%; height: 100%; object-fit: contain; }
+.unraid-row-main { flex: 1; min-width: 0; }
+.unraid-row-name {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* The image tag is the field that decides whether an update is wanted, so it
+   is shown rather than hidden behind a hover. */
+.unraid-row-meta {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* State is a word, not only a dot: colour alone is not an accessible signal. */
+.unraid-row-state {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    /* No fixed width. It used to be 62px so that a label swapping between
+       "Running" and "Stopped" could not shift the actions to its left - but
+       the actions are transparent until their own row is hovered, so there is
+       never a column of them to keep aligned, and the only row that shows any
+       is the one under the pointer. All the fixed width did was leave slack:
+       against the card edge while the label sat left, and against the actions
+       once it sat right. Sized to its content there is none on either side.
+       Long outliers like "Pmsuspended" fit now too, instead of ellipsising. */
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+/* One line, always. A label longer than the column used to wrap to two or
+   three, and since a card takes its height from its tallest child that made
+   every card a different height - which in the fullscreen grid reads as three
+   columns that do not line up. Anything too long now ellipsises; the callers
+   put the full text in the title. */
+.unraid-row-state-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.unraid-row-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--color-text-muted);
+}
+.unraid-row.is-running .unraid-row-dot { background: var(--status-success); }
+.unraid-row.is-running .unraid-row-state { color: var(--status-success); }
+
+.unraid-row-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity var(--transition-fast, 0.15s) ease;
+}
+.unraid-row:hover .unraid-row-actions,
+.unraid-row:focus-within .unraid-row-actions {
+    opacity: 1;
+}
+/* A pointer that cannot hover would never reveal them, and on Docker these are
+   now the only way to start, stop or restart anything. */
+@media (hover: none) {
+    .unraid-row-actions { opacity: 1; }
+}
+/* Targets stay at least 28px even while transparent — an invisible control is
+   still a focusable one. */
+.unraid-action {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: var(--border-radius-sm, 4px);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+.unraid-action:hover { color: var(--accent-unraid); background: rgba(255, 255, 255, 0.06); }
+.unraid-action:disabled { opacity: 0.4; cursor: default; }
+
+/* Both a badge and the control that acts on it. Always visible, unlike the
+   hover-revealed row actions: an update you can see is one you can apply. */
+.unraid-update-flag {
+    flex-shrink: 0;
+    padding: 3px 8px;
+    border: var(--border-width) solid rgba(241, 90, 44, 0.45);
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: var(--font-weight-bold, 700);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-unraid);
+    background: rgba(241, 90, 44, 0.14);
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.unraid-update-flag:hover {
+    background: rgba(241, 90, 44, 0.28);
+    border-color: var(--accent-unraid);
+}
+.unraid-update-flag:disabled { opacity: 0.5; cursor: default; }
+
+.unraid-empty {
+    padding: var(--space-4) 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+/* The view had no focus styling at all. */
+#unraid-view :focus-visible {
+    outline: 2px solid var(--accent-unraid);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Stale: polling stopped answering, so what is on screen is history. */
+#unraid-view.is-stale .sub-view {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+/* Motion is decoration here; anyone who asked for less gets none. */
+@media (prefers-reduced-motion: reduce) {
+    #unraid-view *,
+    #unraid-view *::before,
+    #unraid-view *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+/* ===== Fullscreen =====
+   The view widens to 1600px; sizes scale with it. Class-based only — the
+   positional rules this file used to rely on broke the moment markup changed. */
+body.fullscreen-mode .unraid-header { min-height: 76px; margin-bottom: var(--space-5, 20px); }
+body.fullscreen-mode .unraid-hero { font-size: 48px; }
+body.fullscreen-mode .unraid-hero.is-pending,
+body.fullscreen-mode .unraid-hero.is-crit { font-size: 32px; }
+body.fullscreen-mode .unraid-subline { font-size: var(--font-size-md); }
+body.fullscreen-mode .ur-section-label { font-size: 13px; }
+body.fullscreen-mode .ur-uptime { font-size: 22px; }
+body.fullscreen-mode .ur-metric-figure { font-size: 40px; }
+body.fullscreen-mode .ur-metric-pct { font-size: 22px; }
+body.fullscreen-mode .ur-service-count { font-size: 38px; }
+body.fullscreen-mode .ur-metric-foot { height: 44px; }
+body.fullscreen-mode .ur-spark { height: 44px; }
+/* Docker and VMs go three across. The rows are compact, and at 1600px a
+   single column left them as very wide, mostly empty bands — but the
+   auto-fill this replaced fitted four or five, and past three the name column
+   is too narrow for a real container name plus its image tag. */
+body.fullscreen-mode .unraid-row-list {
+    display: grid;
+    /* minmax(0, 1fr), not 1fr. A plain 1fr is minmax(auto, 1fr), and that auto
+       floor stops a column shrinking below its content — one long image tag
+       like ghcr.io/home-assistant-libs/python-matter-server:stable then widens
+       its column, unbalances the other two and pushes the third off-screen.
+       A zero floor makes the thirds equal and lets the text ellipsise. */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-3);
+    /* Deliberately not align-items: start. That guarded the expandable Docker
+       card, which went when the actions moved onto the card itself, and all it
+       does now is let three cards in one row end at three different heights.
+       The default stretch squares them off. */
+}
+/* Tiles, not banded rows: a bottom border under every cell of a grid reads as
+   an underline rather than a separator. */
+body.fullscreen-mode .unraid-row {
+    /* Same reason as the columns: a grid item defaults to min-width: auto. */
+    min-width: 0;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    background: var(--color-bg-secondary);
+}
+/* Only the plain rows need a floor; an expandable one takes its height from
+   its head, and a floor on the row itself would fight the closing animation. */
+body.fullscreen-mode .unraid-row { min-height: 52px; }
+/* The empty-state message is a list child, so it would otherwise sit in one
+   third of a column. */
+body.fullscreen-mode .unraid-row-list .unraid-empty { grid-column: 1 / -1; }
+
+@media (max-width: 1200px) {
+    body.fullscreen-mode .unraid-row-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+    body.fullscreen-mode .unraid-row-list { grid-template-columns: minmax(0, 1fr); }
+}
+body.fullscreen-mode .unraid-row-name { font-size: var(--font-size-md); }
+body.fullscreen-mode .unraid-action { width: 32px; height: 32px; font-size: 15px; }
+
+/* ===== Storage tab =====
+   These rules were lost when this file was rewritten; the renderer that emits
+   them survived because its severity model is the good part of this view —
+   it grades on absolute free bytes, since Unraid fills disks sequentially and
+   a healthy 18 TB disk sits at 95% for years. */
+.unraid-storage-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+.storage-summary {
+    margin-bottom: var(--space-4);
+}
+.storage-summary-free {
+    font-size: 24px;
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+}
+.storage-summary-sub {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: var(--space-2);
+}
+.storage-summary-track { height: 4px; }
+
+.storage-section-title {
+    font-size: 10px;
+    font-weight: var(--font-weight-bold, 700);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    margin: var(--space-4) 0 var(--space-2);
+}
+
+/* One quiet block per device — a hairline alone was invisible on this ground. */
+.storage-row {
+    padding: 9px 10px 11px;
+    margin-bottom: 5px;
+    border-radius: var(--border-radius-md, 8px);
+    background: rgba(255, 255, 255, 0.028);
+    border: var(--border-width) solid rgba(255, 255, 255, 0.05);
+}
+.storage-row:last-child { margin-bottom: 0; }
+.storage-row-head {
     display: flex;
     justify-content: space-between;
-    margin-top: 4px;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.storage-row-name {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold, 600);
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.storage-row-meta {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+/* A normal temperature stays silent; only warm and hot earn a colour. */
+.storage-row-meta.temp-warm { color: var(--status-warning); }
+.storage-row-meta.temp-hot  { color: var(--status-error); }
+/* Spun-down disks recede rather than disappear. */
+.storage-row.is-idle .storage-row-name { opacity: 0.6; }
+
+/* Hardware detail, one step quieter than the capacity line above it. */
+.storage-row-detail {
+    margin-top: 2px;
     font-size: 10px;
-    color: var(--text-secondary);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.storage-row-detail.has-errors { color: var(--status-error); }
+
+.storage-bar-track {
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+.storage-bar-fill {
+    height: 100%;
+    background: var(--accent-unraid);
+    transition: width var(--transition-normal);
+}
+.storage-bar-fill.sev-warn { background: var(--status-warning); }
+.storage-bar-fill.sev-crit { background: var(--status-error); }
+
+/* ===== Docker controls and the update-all bar ===== */
+.search-input-full {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: var(--border-radius-md, 8px);
+    border: var(--border-width) solid var(--border-color);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+}
+.search-input-full::placeholder { color: var(--color-text-muted); }
+
+.sort-select {
+    padding: 8px 10px;
+    min-height: 34px;
+    border-radius: var(--border-radius-md, 8px);
+    border: var(--border-width) solid var(--border-color);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
 }
 
-.disk-free {
-    font-weight: 500;
-    color: var(--text-primary);
-    opacity: 0.9;
+/* Fixed height whether or not it is showing, so appearing and disappearing
+   never pushes the container list up and down under the reader. */
+.unraid-update-all-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-height: 40px;
+    padding: 0 var(--space-3);
+    margin-bottom: var(--space-2);
+    border-radius: var(--border-radius-md, 8px);
+    border: var(--border-width) solid rgba(33, 150, 243, 0.35);
+    background: rgba(33, 150, 243, 0.10);
 }
-
-.disk-pct {
-    position: absolute;
-    top: -5px; /* Moved up per user request */
-    right: 0;
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--text-primary);
+.update-all-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
 }
-
-/* Spinner Animation Removed */
-.spinning-icon {
-    display: inline-block;
-    /* animation: spin-slow 3s linear infinite; REMOVED per request */
-    color: #4caf50; /* Green when active */
-    text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+.update-all-btn {
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: none;
+    background: var(--accent-unraid);
+    color: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: var(--font-weight-bold, 700);
+    cursor: pointer;
 }
+.update-all-btn:disabled { opacity: 0.5; cursor: default; }
 
-.sleeping-icon {
-    color: var(--text-secondary);
-    opacity: 0.3;
+body.fullscreen-mode .storage-summary-free { font-size: 32px; }
+body.fullscreen-mode .storage-row-name { font-size: var(--font-size-md); }
+
+/* Parity sits under the array bar and needs air between the two: the button
+   was reading as part of the progress track. */
+/* A control row is a device row that happens to carry a button: same box, so
+   the Parity and Array sections read as one list instead of a control bar
+   floating above one. The old rule was a card footer — margin, padding-top and
+   a border-top — which in Storage drew a stray rule under the section title. */
+.unraid-control-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 7px 10px;
+    margin-bottom: 5px;
+    border-radius: var(--border-radius-md, 8px);
+    background: rgba(255, 255, 255, 0.028);
+    border: var(--border-width) solid rgba(255, 255, 255, 0.05);
 }
+.uc-label {
+    flex-shrink: 0;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold, 600);
+    color: var(--color-text-primary);
+}
+.uc-state {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.unraid-control-row.has-errors .uc-state { color: var(--status-error); }
+.unraid-control-row.is-stopped .uc-state { color: var(--status-warning); }
+.uc-btn {
+    flex-shrink: 0;
+    min-height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: var(--border-width) solid var(--border-color);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: var(--font-weight-semibold, 600);
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+.uc-btn:hover {
+    color: var(--accent-unraid);
+    border-color: var(--accent-unraid);
+}
+.uc-btn.is-danger:hover {
+    color: var(--status-error);
+    border-color: var(--status-error);
+}
+.uc-btn:disabled { opacity: 0.45; cursor: default; }
+body.fullscreen-mode .uc-btn { min-height: 34px; font-size: 13px; }
 
-
-
+/* Attention rows carry one action each. It stays out of the way until the row
+   is hovered or focused, but the slot is always reserved so the text never
+   shifts sideways. */
+.unraid-attention-row .ua-action {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+.unraid-attention-row .ua-action {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+.unraid-attention-row:hover .ua-action,
+.unraid-attention-row:focus-within .ua-action {
+    opacity: 1;
+}

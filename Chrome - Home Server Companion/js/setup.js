@@ -2,20 +2,27 @@
 // This wizard only runs on first install OR when manually triggered.
 // Existing users with configured services will NOT see this automatically.
 
-// Security: Escape HTML to prevent XSS
+// Security: Escape HTML to prevent XSS.
+// Duplicated from js/utils.js because setup.js is loaded as a classic script
+// and cannot import ES modules — keep both copies identical.
+// Quotes are escaped too: every caller here interpolates into an attribute
+// value (`value="${escapeHtml(x)}"`), where an unescaped `"` breaks out.
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
-    const text = String(str);
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 const SERVICES = [
     { 
         id: 'dashboard', 
         name: 'Dashboard', 
-        icon: '📊', 
+        icon: '📊',
+        iconFile: 'icon48.png', 
         description: 'Overview of all services',
         hasConfig: false,
         defaultEnabled: true
@@ -23,7 +30,8 @@ const SERVICES = [
     { 
         id: 'unraid', 
         name: 'Unraid', 
-        icon: '🖥️', 
+        icon: '🖥️',
+        iconFile: 'unraid.png', 
         description: 'Unraid Server Monitoring',
         hasConfig: true,
         urlPlaceholder: 'tower.local',
@@ -33,7 +41,8 @@ const SERVICES = [
     { 
         id: 'sabnzbd', 
         name: 'SABnzbd', 
-        icon: '📥', 
+        icon: '📥',
+        iconFile: 'sabnzbd.png', 
         description: 'Usenet Download Client',
         hasConfig: true,
         urlPlaceholder: 'localhost:8080',
@@ -43,7 +52,8 @@ const SERVICES = [
     { 
         id: 'sonarr', 
         name: 'Sonarr', 
-        icon: '📺', 
+        icon: '📺',
+        iconFile: 'sonarr.png', 
         description: 'TV Series Management',
         hasConfig: true,
         urlPlaceholder: 'localhost:8989',
@@ -53,7 +63,8 @@ const SERVICES = [
     { 
         id: 'radarr', 
         name: 'Radarr', 
-        icon: '🎬', 
+        icon: '🎬',
+        iconFile: 'radarr.png', 
         description: 'Movie Management',
         hasConfig: true,
         urlPlaceholder: 'localhost:7878',
@@ -63,7 +74,8 @@ const SERVICES = [
     { 
         id: 'tautulli', 
         name: 'Tautulli', 
-        icon: '📈', 
+        icon: '📈',
+        iconFile: 'tautulli.png', 
         description: 'Plex Statistics & Monitoring',
         hasConfig: true,
         urlPlaceholder: 'localhost:8181',
@@ -73,7 +85,8 @@ const SERVICES = [
     { 
         id: 'plex', 
         name: 'Plex', 
-        icon: '▶️', 
+        icon: '▶️',
+        iconFile: 'Plex_icon.png', 
         description: 'Open media directly in Plex app (Windows)',
         hasConfig: true,
         urlPlaceholder: 'localhost:32400',
@@ -83,7 +96,8 @@ const SERVICES = [
     { 
         id: 'seerr', 
         name: 'Seerr', 
-        icon: '🎯', 
+        icon: '🎯',
+        iconFile: 'seerr.png', 
         description: 'Media Request Management',
         hasConfig: true,
         hasMultiAuth: true, // Special auth handling
@@ -94,7 +108,8 @@ const SERVICES = [
     { 
         id: 'prowlarr', 
         name: 'Prowlarr', 
-        icon: '🔍', 
+        icon: '🔍',
+        iconFile: 'prowlarr.png', 
         description: 'Indexer Manager',
         hasConfig: true,
         urlPlaceholder: 'localhost:9696',
@@ -105,6 +120,7 @@ const SERVICES = [
         id: 'wizarr',
         name: 'Wizarr',
         icon: '🧙',
+        iconFile: 'wizarr.png',
         description: 'User Invitations',
         hasConfig: true,
         urlPlaceholder: 'localhost:5690',
@@ -112,9 +128,21 @@ const SERVICES = [
         keyHelp: 'API Key from Wizarr Settings'
     },
     {
+        id: 'dockhand',
+        name: 'Dockhand',
+        icon: '🐳',
+        iconFile: 'dockhand.png',
+        description: 'Docker Management',
+        hasConfig: true,
+        urlPlaceholder: 'localhost:3000',
+        keyRequired: true,
+        keyHelp: 'API token from Dockhand → Settings → API Tokens (starts with dh_)'
+    },
+    {
         id: 'tracearr',
         name: 'Tracearr',
         icon: '📊',
+        iconFile: 'tracearr.png',
         description: 'Content Tracking & Analytics',
         hasConfig: true,
         urlPlaceholder: 'localhost:3085',
@@ -125,6 +153,7 @@ const SERVICES = [
         id: 'portainer',
         name: 'Portainer',
         icon: '🐳',
+        iconFile: 'portainer.png',
         description: 'Docker Container Management',
         hasConfig: true,
         urlPlaceholder: 'localhost:9000',
@@ -132,6 +161,17 @@ const SERVICES = [
         keyHelp: 'Access Token at: My Account → Access Tokens. Multiple instances can be added later in Settings.'
     }
 ];
+
+/**
+ * Markup for a service's icon: the shipped image when the entry names one,
+ * otherwise the emoji fallback.
+ * @param {object} service - Entry from SERVICES
+ * @returns {string} HTML for the icon
+ */
+function serviceIconMarkup(service) {
+    if (!service.iconFile) return service.icon;
+    return `<img src="icons/${escapeHtml(service.iconFile)}" alt="">`;
+}
 
 // State
 let currentStep = 1;
@@ -209,6 +249,15 @@ async function loadExistingConfig() {
                 }
             });
             
+            if (items.seerrAuthMethod) {
+                seerrAuthMethod = items.seerrAuthMethod;
+            }
+            if (items.seerrEmail && serviceConfigs['seerr']) {
+                // The email field rendered from `existing.email`, which nothing
+                // ever populated, so it came up blank on every re-run.
+                serviceConfigs['seerr'].email = items.seerrEmail;
+            }
+
             // Load existing Portainer instances
             if (items.portainerInstances && items.portainerInstances.length > 0) {
                 portainerInstances = items.portainerInstances.map(inst => ({
@@ -216,7 +265,13 @@ async function loadExistingConfig() {
                     name: inst.name || '',
                     url: inst.url ? inst.url.replace(/^https?:\/\//, '') : '',
                     key: inst.key || '',
-                    protocol: inst.url?.startsWith('https://') ? 'https://' : 'http://'
+                    protocol: inst.url?.startsWith('https://') ? 'https://' : 'http://',
+                    // Carried through untouched. The wizard has no UI for
+                    // either, and it used to write icon:'' and drop
+                    // hideInSidebar entirely — so simply re-running it reset
+                    // every custom icon and un-hid every hidden instance.
+                    icon: inst.icon || '',
+                    hideInSidebar: inst.hideInSidebar || false
                 }));
             }
             
@@ -261,7 +316,7 @@ function renderServicesGrid() {
              data-service="${service.id}">
             <div class="service-toggle"></div>
             <div class="service-card-header">
-                <div class="service-icon">${service.icon}</div>
+                <div class="service-icon">${serviceIconMarkup(service)}</div>
                 <h3>${service.name}</h3>
             </div>
             <p class="service-description">${service.description}</p>
@@ -320,7 +375,7 @@ function renderConfigStep() {
     
     form.innerHTML = `
         <div class="config-header">
-            <div class="config-service-icon">${service.icon}</div>
+            <div class="config-service-icon">${serviceIconMarkup(service)}</div>
             <div class="config-service-info">
                 <h1 style="font-size: 22px; margin-bottom: 4px;">${service.name}</h1>
                 <span class="config-progress">Service ${currentConfigIndex + 1} of ${configQueue.length}</span>
@@ -374,7 +429,7 @@ function renderPortainerConfigStep() {
     
     form.innerHTML = `
         <div class="config-header">
-            <div class="config-service-icon">${service.icon}</div>
+            <div class="config-service-icon">${serviceIconMarkup(service)}</div>
             <div class="config-service-info">
                 <h1 style="font-size: 22px; margin-bottom: 4px;">Portainer</h1>
                 <span class="config-progress">Instance ${currentPortainerInstanceIndex + 1} of ${totalInstances}</span>
@@ -488,6 +543,9 @@ function renderPortainerConfigStep() {
 }
 
 // Seerr Multi-Auth Configuration State
+// Overwritten from storage by loadExistingConfig. It used to stay at this
+// default on a re-run, so an API-key setup silently became a Plex one with no
+// token — after which Seerr and the unified search stopped working.
 let seerrAuthMethod = 'plex';
 
 function renderSeerrConfigStep() {
@@ -497,7 +555,7 @@ function renderSeerrConfigStep() {
 
     form.innerHTML = `
         <div class="config-header">
-            <div class="config-service-icon">${service.icon}</div>
+            <div class="config-service-icon">${serviceIconMarkup(service)}</div>
             <div class="config-service-info">
                 <h1 style="font-size: 22px; margin-bottom: 4px;">${service.name}</h1>
                 <span class="config-progress">Service ${currentConfigIndex + 1} of ${configQueue.length}</span>
@@ -519,7 +577,7 @@ function renderSeerrConfigStep() {
 
         <div class="form-group">
             <label>Authentication Method</label>
-            <select id="seerrAuthMethodSelect" style="width: 100%; padding: 12px; border-radius: 8px; background: var(--input-background); border: 1px solid var(--glass-border); color: var(--text-primary);">
+            <select id="seerrAuthMethodSelect" style="width: 100%; padding: 12px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--glass-border); color: var(--text-primary);">
                 <option value="apikey" ${seerrAuthMethod === 'apikey' ? 'selected' : ''}>API Key (Admin Access)</option>
                 <option value="local" ${seerrAuthMethod === 'local' ? 'selected' : ''}>Local Account (Email/Password)</option>
                 <option value="plex" ${seerrAuthMethod === 'plex' ? 'selected' : ''}>Plex Sign-In</option>
@@ -601,16 +659,6 @@ function renderSeerrConfigStep() {
 
 
 // Show save status feedback
-function showSaveStatus(message) {
-    const statusEl = document.getElementById('testStatus');
-    if (statusEl) {
-        statusEl.innerHTML = `<span style="color: #48bb78;">✓ ${message}</span>`;
-        setTimeout(() => {
-            statusEl.innerHTML = '';
-        }, 2000);
-    }
-}
-
 // Plex OAuth for Setup Wizard
 async function startWizardPlexOAuth() {
     const statusEl = document.getElementById('plexAuthStatus');
@@ -661,8 +709,12 @@ async function startWizardPlexOAuth() {
                             return;
                         }
                     }
-                } catch {}
-                
+                } catch (e) {
+                    // The message below covers this for the user; the reason
+                    // is only useful in the console.
+                    console.warn('Plex pin check failed:', e.message);
+                }
+
                 statusEl.innerHTML = '<span style="color: #fc8181;">Login failed or cancelled.</span>';
             }
         }, 2000);
@@ -706,6 +758,26 @@ async function testSeerrAuth() {
 
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const fullUrl = protocol + cleanUrl;
+
+    // The password and the Plex account token are reusable off this machine,
+    // so they are not put on the wire in the clear without the user knowingly
+    // accepting it. Loopback never reaches the network. Mirrors the guard in
+    // saveSeerrAuth() in js/options.js.
+    const isLoopback = /^(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost|\[::1\])(:\d+)?$/i.test(cleanUrl);
+    const isPlaintextTransport = protocol === 'http://' && !isLoopback;
+    if (isPlaintextTransport && (seerrAuthMethod === 'local' || seerrAuthMethod === 'plex')) {
+        const what = seerrAuthMethod === 'local' ? 'password' : 'Plex account token';
+        const ok = confirm(
+            `Your ${what} would be sent unencrypted over http:// to:\n\n${cleanUrl}\n\n` +
+            `Anyone on the same network can read it. Use https:// instead if your ` +
+            `server supports it.\n\nSend it anyway?`
+        );
+        if (!ok) {
+            statusEl.innerHTML = '<span style="color: #fc8181;">Cancelled — use https://</span>';
+            return;
+        }
+    }
+
     statusEl.innerHTML = '<span style="color: var(--accent-primary);">Testing...</span>';
 
     try {
@@ -954,9 +1026,14 @@ function saveCurrentConfig() {
     const urlInput = document.getElementById('configUrl')?.value?.trim() || '';
     const key = document.getElementById('configKey')?.value?.trim() || '';
     
-    // Allow skipping if no URL entered
+    // An empty URL means the user deconfigured this service on the step they
+    // are looking at. Returning early left the value loaded from storage in
+    // serviceConfigs, and completeSetup wrote it straight back — so the field
+    // could not be cleared. Marking it lets completeSetup write the empty
+    // strings that the rest of the app reads as "not configured".
     if (!urlInput) {
-        return true; // Skip this service
+        serviceConfigs[service.id] = { cleared: true };
+        return true;
     }
     
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
@@ -1001,7 +1078,7 @@ function renderSummary() {
         return `
             <div class="summary-item">
                 <div class="summary-item-left">
-                    <div class="summary-item-icon">${service.icon}</div>
+                    <div class="summary-item-icon">${serviceIconMarkup(service)}</div>
                     <span class="summary-item-name">${service.name}</span>
                 </div>
                 <span class="summary-status ${isConfigured || !service.hasConfig ? 'configured' : 'skipped'}">
@@ -1120,6 +1197,13 @@ async function completeSetup() {
     for (const [serviceId, config] of Object.entries(serviceConfigs)) {
         if (serviceId === 'portainer') continue; // Handled separately
 
+        if (config.cleared) {
+            dataToSave[`${serviceId}Url`] = '';
+            dataToSave[`${serviceId}Key`] = '';
+            dataToSave[`${serviceId}Enabled`] = false;
+            continue;
+        }
+
         // Save URL (from fullUrl or construct from protocol + url)
         if (config.fullUrl) {
             dataToSave[`${serviceId}Url`] = config.fullUrl;
@@ -1143,8 +1227,11 @@ async function completeSetup() {
             dataToSave['seerrAuthMethod'] = config.authMethod;
             
             if (config.authMethod === 'local') {
+                // Email only. The password signs in once and is not persisted;
+                // Seerr requests authenticate with the session cookie. Storing
+                // it would put a reusable secret into synced storage for
+                // nothing. Mirrors saveSeerrAuth() in js/options.js.
                 if (config.email) dataToSave['seerrEmail'] = config.email;
-                if (config.password) dataToSave['seerrPassword'] = config.password;
             } else if (config.authMethod === 'plex' && config.plexToken) {
                 dataToSave['seerrPlexToken'] = config.plexToken;
             }
@@ -1171,7 +1258,8 @@ async function completeSetup() {
                 name: inst.name || 'Portainer',
                 url: inst.protocol + inst.url,
                 key: inst.key || '',
-                icon: ''
+                icon: inst.icon || '',
+                hideInSidebar: inst.hideInSidebar || false
             }));
         
         if (validInstances.length > 0) {
@@ -1196,26 +1284,42 @@ async function completeSetup() {
     dataToSave.serviceOrder = enabledOrder;
     
     // Request host permissions for all configured URLs
+    // A URL that cannot be parsed here is dropped from the permission
+    // request, and the consequence only shows up much later: the service is
+    // saved, the extension has no host permission for it, and every call to it
+    // fails with a CORS error that names nothing the user did. The test button
+    // rejects an invalid URL, but nothing forces the user to press it, so this
+    // stays a real path. Setup still completes — the remaining services are
+    // worth saving — but the reason is recorded.
     const originsToRequest = [];
-    for (const config of Object.values(serviceConfigs)) {
+    const unparseable = [];
+    for (const [serviceId, config] of Object.entries(serviceConfigs)) {
         if (config.fullUrl) {
             try {
                 const urlObj = new URL(config.fullUrl);
                 originsToRequest.push(`${urlObj.origin}/*`);
-            } catch {}
+            } catch {
+                unparseable.push(`${serviceId} (${config.fullUrl})`);
+            }
         }
     }
     
     // Add Portainer instance URLs
-    portainerInstances.forEach(inst => {
+    portainerInstances.forEach((inst, i) => {
         if (inst.url) {
+            const fullUrl = inst.protocol + inst.url;
             try {
-                const fullUrl = inst.protocol + inst.url;
                 const urlObj = new URL(fullUrl);
                 originsToRequest.push(`${urlObj.origin}/*`);
-            } catch {}
+            } catch {
+                unparseable.push(`${inst.name || `Portainer #${i + 1}`} (${fullUrl})`);
+            }
         }
     });
+
+    if (unparseable.length > 0) {
+        console.warn('Setup: no host permission requested for', unparseable.join(', '));
+    }
     
     if (originsToRequest.length > 0) {
         await new Promise(resolve => {

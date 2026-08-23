@@ -13,6 +13,7 @@ import { checkAndShowChangelog, validateUrl } from "./utils.js";
 // V4.0 Core Modules
 import appState from './core/AppState.js';
 import badgeManager from './core/BadgeManager.js';
+import poller from './core/Poller.js';
 
 /**
  * Creates multiple sidebar entries for each Portainer instance.
@@ -68,13 +69,18 @@ function createPortainerSidebarEntries(items, sidebar, spacer) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // Check for updates first
-  await checkAndShowChangelog();
-
   // Fullscreen Mode Detection - check if opened as standalone window
   if (new URLSearchParams(window.location.search).get('fullscreen') === 'true') {
     document.body.classList.add('fullscreen-mode');
   }
+
+  // Deliberately not awaited. This promise settles only when the user
+  // dismisses the dialog, and the call used to be the first statement in this
+  // handler - so the sidebar, the service view, badge polling and the search
+  // index all sat behind a modal until it was clicked away. It also has to
+  // run after the fullscreen class is on the body, because that is what the
+  // modal is sized against.
+  checkAndShowChangelog();
 
   // Fullscreen Button Handler - opens extension as standalone dashboard tab
   document.getElementById('fullscreen-btn')?.addEventListener('click', () => {
@@ -105,10 +111,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     configs: {},
     activeService: "sabnzbd",
     expandedSessions: new Set(), // Track expanded Tautulli sessions
-    refreshInterval: null,
+    // Poll timers, keyed by service id. A single shared handle cannot work:
+    // the badge pre-load runs several init*() functions at once, and whoever
+    // ran last would cancel every other service's timer.
+    serviceIntervals: {},
     storageCardState: {}, // Add this for Unraid storage persistence
     badgeIntervals: {}, // Track background badge update intervals
   };
+
+  /**
+   * Stops every registered service poll timer. Used when the visible view
+   * changes, so background services stop hitting their APIs.
+   */
+  function stopAllServiceIntervals() {
+    // Legacy timers, for any view not yet moved to the scheduler.
+    Object.keys(state.serviceIntervals).forEach((name) => {
+      clearInterval(state.serviceIntervals[name]);
+      delete state.serviceIntervals[name];
+    });
+    // Only the view group: badge polling has to survive a view switch.
+    poller.stopGroup('view');
+  }
 
   const EXCLUDED_FROM_PERSISTENCE = ["tautulli"];
 
@@ -135,6 +158,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "prowlarr",
     "wizarr",
     "tracearr",
+    "dockhand",
     "portainer",
   ];
   if (state.configs.serviceOrder && Array.isArray(state.configs.serviceOrder)) {
@@ -308,9 +332,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           });
       }
 
-      // Start background badge updates
-      startBackgroundBadgeUpdates();
-
       // Initialize Search UI (Background Warmup)
       import("./ui/searchUI.js").then((module) => {
           module.initSearchUI(state);
@@ -340,10 +361,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Shared navigation handler
     const handleNavigation = (item) => {
         // Clear any auto-refresh intervals
-        if (state.refreshInterval) {
-          clearInterval(state.refreshInterval);
-          state.refreshInterval = null;
-        }
+        stopAllServiceIntervals();
         const target = item.dataset.target;
         
         // Special handling for Portainer instances - set the selected instance
@@ -437,6 +455,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- Global Ctrl+S Shortcut for Unified Search ---
     document.addEventListener("keydown", (e) => {
+        // Leave a field the user is typing in alone. Every branch below calls
+        // preventDefault, so Ctrl+A - select all - was dead in the search box,
+        // the Prowlarr query field, the Portainer filter and every other input
+        // in the popup, and opened the NZB search instead.
+        const target = e.target;
+        const tag = target && target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" ||
+            (target && target.isContentEditable)) {
+            return;
+        }
+
         // Ctrl+S to open Unified Search
         if (e.ctrlKey && e.key === "s") {
             e.preventDefault(); // Prevent browser save dialog
@@ -619,6 +648,16 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         }
 
+        // A new sub-tab starts at the top. The scroll offset belongs to the
+        // tab you left, so carrying it over drops you into the middle of a
+        // list you have not seen the start of. Which element actually scrolls
+        // differs between the popup and the fullscreen window, so reset every
+        // scrollable ancestor on the way up rather than guessing.
+        for (let el = targetView; el && el !== document.body; el = el.parentElement) {
+            if (el.scrollTop) el.scrollTop = 0;
+        }
+        if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+
         // PERSISTENCE: Sub-tabs
         if (!EXCLUDED_FROM_PERSISTENCE.includes(state.activeService)) {
              localStorage.setItem(
@@ -799,7 +838,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (service === "seerr") {
         const hasApiKey = state.configs.seerrKey;
         const hasPlexAuth = state.configs.seerrAuthMethod === 'plex' && state.configs.seerrPlexToken;
-        const hasLocalAuth = state.configs.seerrAuthMethod === 'local' && state.configs.seerrEmail && state.configs.seerrPassword;
+        // Email alone marks local auth as configured — the password is not
+        // stored, the session cookie carries the authentication. Matches the
+        // same check in js/ui/dashboard.js.
+        const hasLocalAuth = state.configs.seerrAuthMethod === 'local' && state.configs.seerrEmail;
         if (!url || (!hasApiKey && !hasPlexAuth && !hasLocalAuth)) {
           showError(`Please configure Seerr in settings.`);
           return;
@@ -845,6 +887,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         case "portainer":
           await initPortainer(url, key, state);
           break;
+        case "dockhand":
+          await import('./ui/dockhand.js').then(m => m.initDockhand(url, key, state));
+          break;
         case "tracearr":
           await import('./ui/tracearr.js').then(m => m.initTracearr(url, key, state));
           break;
@@ -873,10 +918,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     localStorage.setItem('lastActiveService', 'portainer');
 
     // Clear any auto-refresh intervals
-    if (state.refreshInterval) {
-      clearInterval(state.refreshInterval);
-      state.refreshInterval = null;
-    }
+    stopAllServiceIntervals();
 
     // Load portainer with the selected instance
     hideError();
