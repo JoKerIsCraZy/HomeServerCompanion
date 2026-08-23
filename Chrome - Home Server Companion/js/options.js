@@ -486,13 +486,30 @@ const tabs = document.querySelectorAll('.tab-btn');
 function updateNavStatus(items) {
     document.querySelectorAll('.nav-status').forEach(dot => {
         const id = dot.dataset.service;
-        // Portainer keeps its servers in an array; everything else has a URL.
-        const configured = id === 'portainer'
-            ? Array.isArray(items.portainerInstances)
-              && items.portainerInstances.some(i => i && i.url)
-            : Boolean(items[`${id}Url`]);
-        dot.classList.toggle('is-set', configured);
-        dot.title = configured ? 'Configured' : 'Not set up yet';
+
+        // Absent means on: that is how the rest of the app reads these keys.
+        const enabled = items[`${id}Enabled`] !== false;
+
+        let hasCredentials;
+        if (id === 'dashboard') {
+            // Nothing to configure. There is no dashboardUrl key anywhere in
+            // the extension — the dashboard aggregates the other services —
+            // so testing for one left its dot permanently hollow.
+            hasCredentials = true;
+        } else if (id === 'portainer') {
+            // Portainer keeps its servers in an array rather than a URL key.
+            hasCredentials = Array.isArray(items.portainerInstances)
+                && items.portainerInstances.some(i => i && i.url);
+        } else {
+            hasCredentials = Boolean(items[`${id}Url`]);
+        }
+
+        dot.classList.toggle('is-set', hasCredentials && enabled);
+        // A configured service that has been switched off is not the same as
+        // one that was never set up, and the dot alone cannot say which.
+        dot.title = !hasCredentials ? 'Not set up yet'
+            : !enabled ? 'Set up, but switched off'
+            : 'Ready';
     });
 }
 
