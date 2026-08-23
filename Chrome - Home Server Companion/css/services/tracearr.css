@@ -1,54 +1,308 @@
-/* css/services/tracearr.css */
-:root {
-    --accent-tracearr: #00bcd4;
+/* Tracearr — content tracking & stats
+ *
+ * Selectors target `#tracearr-view`, not `.tracearr-view`: the element carries
+ * an id, so the old class-based rules in this file never matched anything and
+ * every visual decision had drifted into inline styles in the renderer.
+ */
+
+#tracearr-view .card {
+    margin-bottom: var(--space-3, 12px);
 }
 
-.tracearr-view .card {
-    border-left: 3px solid var(--accent-tracearr);
-}
-
-/* Tracearr uses same card styles as Tautulli */
 .tracearr-item-wrapper {
+    margin-bottom: var(--space-2, 8px);
+}
+
+.tautulli-item-wrapper.tracearr-item-wrapper .media-title span:hover {
+    color: var(--accent-tracearr);
+}
+
+/* The view had no focus styling at all. */
+#tracearr-view :focus-visible {
+    outline: 2px solid var(--accent-tracearr);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* ===== Statistics header =====
+   Same shape as the SABnzbd header: one large live figure, one supporting
+   line, controls pinned right. */
+.trr-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.trr-hero-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.trr-hero {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+/* A quiet day is a state, not a zero, and it recedes accordingly. */
+.trr-hero.is-idle {
+    font-size: 28px;
+    color: var(--text-secondary);
+}
+.trr-subline {
+    font-size: 15px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.trr-updated {
+    flex-shrink: 0;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.trr-updated:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* ===== Plays-per-day baseline =====
+   The element that makes a count mean something: "16 plays" is not a
+   judgement until it sits next to a typical day. */
+.trr-trend {
+    margin-bottom: 18px;
+}
+.trr-trend-bars {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    height: 72px;
+    padding: 0 2px;
+}
+/* Each column is bar plus weekday letter, so the label tracks its own bar
+   instead of needing a second, separately spaced row. */
+.trr-trend-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 4px;
+}
+.trr-trend-bar {
+    border-radius: 2px 2px 0 0;
+    background: rgba(255, 255, 255, 0.16);
+    transition: background 0.15s ease;
+}
+.trr-trend-col.is-today .trr-trend-bar {
+    background: var(--accent-tracearr);
+}
+.trr-trend-day {
+    font-size: 10px;
+    line-height: 1;
+    text-align: center;
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+.trr-trend-col.is-today .trr-trend-day {
+    color: var(--accent-tracearr);
+    opacity: 1;
+    font-weight: 700;
+}
+.trr-trend-caption {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===== Violations =====
+   Rendered only when there is at least one. No card is spent announcing that
+   nothing happened; the absence of this banner is the all-clear. */
+.trr-violations {
+    margin-bottom: 18px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border-left: 3px solid var(--status-error, #ef4444);
+    background: rgba(239, 68, 68, 0.08);
+}
+.trr-violations-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+.trr-violations-row {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 2px 0;
+}
+
+/* ===== Top users =====
+   Rows, not cards: the old three-column card grid left roughly 53px for the
+   name, so anything longer than five characters ellipsised. */
+.trr-section {
+    margin-bottom: 18px;
+}
+.trr-section-title {
+    margin: 0 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+.trr-user-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0 20px;
+}
+.trr-user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 40px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.trr-user-rank {
+    width: 16px;
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+.trr-user-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.trr-user-meter {
+    width: 56px;
+    height: 4px;
+    flex-shrink: 0;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+.trr-user-meter-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent-tracearr);
+}
+.trr-user-count {
+    width: 54px;
+    flex-shrink: 0;
+    text-align: right;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===== Window totals =====
+   No urgency, so no claim on the primary type sizes. */
+.trr-footer {
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.75;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 520px) {
+    .trr-user-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== Fullscreen =====
+   Fullscreen widens `.view` to 1600px and scales the chrome around it, but it
+   scales by naming elements — anything it does not name keeps its popup size
+   and reads as tiny in the extra space. These rules give the statistics block
+   the same treatment the rest of the app already gets. */
+body.fullscreen-mode .trr-header {
+    margin-bottom: 28px;
+}
+body.fullscreen-mode .trr-hero {
+    font-size: 56px;
+}
+body.fullscreen-mode .trr-hero.is-idle {
+    font-size: 42px;
+}
+body.fullscreen-mode .trr-subline {
+    font-size: 19px;
+}
+body.fullscreen-mode .trr-updated {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+body.fullscreen-mode .trr-trend-bars {
+    height: 132px;
+    gap: 8px;
+}
+body.fullscreen-mode .trr-trend-day {
+    font-size: 13px;
+}
+body.fullscreen-mode .trr-trend-caption {
+    font-size: 14px;
+    margin-top: 10px;
+}
+body.fullscreen-mode .trr-trend,
+body.fullscreen-mode .trr-section,
+body.fullscreen-mode .trr-violations {
+    margin-bottom: 28px;
+}
+body.fullscreen-mode .trr-section-title {
+    font-size: 13px;
     margin-bottom: 12px;
 }
-
-/* Tracearr-specific fancy header */
-.tracearr-view .fancy-header {
-    font-size: 18px;
-    font-weight: 800;
-    color: var(--accent-tracearr);
-    margin: 10px 0 15px 0;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-bottom: 2px solid var(--accent-tracearr);
-    padding-bottom: 5px;
-    display: inline-block;
+body.fullscreen-mode .trr-violations-title {
+    font-size: 16px;
 }
-
-/* No streams message */
-.no-streams-msg {
-    color: var(--color-text-muted);
-    padding: var(--space-8);
-    text-align: center;
+body.fullscreen-mode .trr-violations-row {
+    font-size: 14px;
 }
-
-/* Tracearr backdrop cards (share Tautulli styles) */
-.tautulli-item-wrapper.tracearr-item-wrapper .media-title span:hover {
-    text-decoration: underline;
-    color: #00bcd4 !important; /* Tracearr Cyan */
+/* Three columns fit comfortably once the view is 1600px wide. */
+body.fullscreen-mode .trr-user-list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0 32px;
 }
-
-/* Stats in Tracearr view */
-.tracearr-stat-card {
-    background: var(--color-bg-secondary);
-    border-radius: var(--border-radius-lg);
-    padding: var(--space-4);
-    text-align: center;
+body.fullscreen-mode .trr-user-row {
+    height: 52px;
+    gap: 14px;
 }
-
-.tracearr-view .section-header {
-    padding: var(--space-4);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-primary);
+body.fullscreen-mode .trr-user-rank {
+    width: 22px;
+    font-size: 14px;
+}
+body.fullscreen-mode .trr-user-name {
+    font-size: 16px;
+}
+body.fullscreen-mode .trr-user-meter {
+    width: 90px;
+    height: 6px;
+}
+body.fullscreen-mode .trr-user-count {
+    width: 72px;
+    font-size: 15px;
+}
+body.fullscreen-mode .trr-footer {
+    font-size: 14px;
 }
