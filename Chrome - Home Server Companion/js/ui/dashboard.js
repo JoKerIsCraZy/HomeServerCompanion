@@ -1,10 +1,4 @@
-/**
- * Timer handles owned by this module. They are deliberately kept out of the
- * shared `state.refreshInterval` slot, which every service module also writes
- * to - sharing one slot means whoever starts last silently cancels the others.
- */
-let dashboardTimer = null;
-let dashboardClockTimer = null;
+import poller from "../core/Poller.js";
 
 export async function initDashboard(state) {
     const container = document.getElementById('dashboard-view');
@@ -62,28 +56,27 @@ export async function initDashboard(state) {
     container.appendChild(grid);
 
     // 3. Trigger Parallel Status Checks
-    renderServiceGrid(grid, state);
+    renderServiceGrid(grid, state).catch(() => { /* surfaced on the cards */ });
 
-    // 4. Auto Refresh Loop
+    // 4. Auto refresh, on the shared scheduler.
+    //
+    // This is the heaviest task in the extension: one tick fans out to every
+    // configured service. As a bare setInterval it had none of the four things
+    // that matters for - it kept running while the window was hidden, it
+    // retried an unreachable server at full speed forever, a slow round could
+    // be overtaken by the next one, and it had to police its own lifetime by
+    // watching for the .hidden class and clearing itself.
+    //
+    // The scheduler handles all four. Leaving the view tears the task down
+    // with the rest of the 'view' group, so the self-clearing check is gone.
     const intervalTime = parseInt(state.configs.refreshInterval) || 5000;
-    
-    // The dashboard owns its own timer handle. It must NOT use the shared
-    // state.refreshInterval slot: every service writes to that one, so clearing
-    // it here would kill whichever service is currently polling, and reading it
-    // back inside the callback would cancel a timer belonging to someone else.
-    if (dashboardTimer) clearInterval(dashboardTimer);
-
-    dashboardTimer = setInterval(() => {
-        // The view element is never removed from the DOM - switching services
-        // only toggles .hidden - so presence is not a liveness test.
+    poller.register('dashboard', async () => {
+        // Defensive: should some path ever register this without a matching
+        // teardown, do no work rather than fetch into a hidden view.
         const view = document.getElementById('dashboard-view');
-        if (view && !view.classList.contains('hidden')) {
-            renderServiceGrid(grid, state, true); // Pass 'true' for update mode
-        } else {
-            clearInterval(dashboardTimer);
-            dashboardTimer = null;
-        }
-    }, intervalTime);
+        if (!view || view.classList.contains('hidden')) return;
+        await renderServiceGrid(grid, state, true);
+    }, { interval: intervalTime, immediate: false });
 }
 
 // Imports from Service APIs
@@ -358,7 +351,12 @@ async function renderServiceGrid(container, state, isUpdate = false) {
         });
     }
 
-    // Run checks in parallel
+    // Run checks in parallel. The counters below track only calls that were
+    // actually made: a service with no URL or key never reaches the network,
+    // and its card says "Missing Config" rather than "Offline".
+    let attempted = 0;
+    let failed = 0;
+
     const checks = enabledServices.map(async (svc) => {
         const url = state.configs[`${svc.id}Url`];
         const key = state.configs[`${svc.id}Key`];
@@ -383,6 +381,7 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             }
         }
 
+        attempted++;
         try {
             // For Seerr, pass authMethod to the check function
             let result;
@@ -417,11 +416,22 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             }
             
         } catch (e) {
+            failed++;
             updateCard(svc.id, 'offline', 'ERR', 'Offline');
         }
     });
-    
+
     await Promise.allSettled(checks);
+
+    // Each check catches its own error so one dead service cannot take the
+    // whole grid down with it - which also meant this function never rejected,
+    // and the scheduler never had a reason to slow down. A laptop carried out
+    // of the house went on firing a full fan-out every five seconds, all of it
+    // failing. Nothing answering at all is a different case from one service
+    // being down, and it is worth reporting upward.
+    if (attempted > 0 && failed === attempted) {
+        throw new Error(`No service answered (${failed} of ${attempted})`);
+    }
 }
 
 function updateCard(id, status, metric, label) {
@@ -477,11 +487,11 @@ function startClock(state) {
         if (timeEl && dateEl) {
             // Time: HH:MM
             const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
-            timeEl.textContent = timeStr;
+            if (timeEl.textContent !== timeStr) timeEl.textContent = timeStr;
             
             // Date: Weekday, DD. Month YYYY
             const dateStr = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            dateEl.textContent = dateStr;
+            if (dateEl.textContent !== dateStr) dateEl.textContent = dateStr;
         }
 
         if (greetingEl) {
@@ -498,8 +508,11 @@ function startClock(state) {
     };
 
     update(); // Initial call
-    // Own handle, not the shared slot - this clock ticks every second and would
-    // otherwise overwrite (and thereby orphan) the active service's poll timer.
-    if (dashboardClockTimer) clearInterval(dashboardClockTimer);
-    dashboardClockTimer = setInterval(update, 1000);
+
+    // A second is finer than this clock needs - it shows hours and minutes -
+    // but a tick is one Date and two string comparisons, and the writes are
+    // guarded, so nothing reaches the DOM in the 59 seconds between changes.
+    // What actually mattered is that a bare interval kept ticking in a hidden
+    // window; on the scheduler it stops with everything else.
+    poller.register('dashboard-clock', update, { interval: 1000, immediate: false });
 }
