@@ -234,7 +234,7 @@ function deletePortainerInstance() {
         serviceOrder = serviceOrder.filter(s => s !== instanceOrderId);
 
         // Save both instances and order
-        chrome.storage.sync.set({ portainerInstances, serviceOrder }, () => {
+        saveSync({ portainerInstances, serviceOrder }, 'Portainer', () => {
             showStatus('Portainer', 'Instance deleted!', 'success');
 
             // Refresh the order list
@@ -303,7 +303,7 @@ function savePortainerInstance() {
             }
 
             // Save both instances and order
-            chrome.storage.sync.set({ portainerInstances, serviceOrder }, () => {
+            saveSync({ portainerInstances, serviceOrder }, 'Portainer', () => {
                 showStatus('Portainer', 'Instance saved!', 'success');
                 renderPortainerTabs();
 
@@ -332,7 +332,7 @@ function loadPortainerInstances() {
                 icon: ''
             }];
             // Save migrated data
-            chrome.storage.sync.set({ portainerInstances });
+            saveSync({ portainerInstances }, 'Portainer');
         } else {
             // Create default empty instance
             portainerInstances = [{
@@ -400,7 +400,25 @@ function setupPortainerIconUpload() {
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    const dataUrl = canvas.toDataURL('image/png', 0.8);
+                    // WebP, not PNG. toDataURL's quality argument only
+                    // applies to lossy formats, so the 0.8 that used to sit
+                    // beside 'image/png' did nothing and a 64px icon came out
+                    // at several KB of base64. The whole portainerInstances
+                    // array is one sync item with an 8KB ceiling, so two
+                    // instances with icons were enough to break the save —
+                    // silently, before saveSync existed. WebP keeps the
+                    // transparency PNG was chosen for and is a fraction of the
+                    // size; PNG remains the fallback if a build ever lacks it.
+                    let dataUrl = canvas.toDataURL('image/webp', 0.85);
+                    if (!dataUrl.startsWith('data:image/webp')) {
+                        dataUrl = canvas.toDataURL('image/png');
+                    }
+                    if (dataUrl.length > 6000) {
+                        showStatus('Portainer',
+                            'That icon is too detailed to sync. Try a simpler or smaller image.',
+                            'error');
+                        return;
+                    }
                     iconImg.src = dataUrl;
                     iconImg.style.display = 'block';
                     iconPlaceholder.style.display = 'none';
@@ -424,7 +442,37 @@ function setupPortainerIconUpload() {
 }
 // ==================== END PORTAINER MULTI-INSTANCE ====================
 
-// --- UI Navigation ---
+/**
+ * Writes to sync storage and reports a failure instead of assuming there was
+ * none.
+ *
+ * chrome.storage.sync allows 8192 bytes per item and 102400 in total. No write
+ * in this file checked chrome.runtime.lastError, so one that broke either
+ * limit still ran its success path: the user was told "Settings saved!" and
+ * the change was gone at the next reload. A Portainer instance list carrying
+ * uploaded icons is the realistic way to reach the per-item limit — the whole
+ * array is a single item.
+ *
+ * @param {Object} data - Keys to write
+ * @param {string} service - Section name for the status line; '' to stay quiet
+ * @param {Function} [onSuccess] - Runs only when the write actually landed
+ */
+function saveSync(data, service, onSuccess) {
+    chrome.storage.sync.set(data, () => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+            console.error('Sync write failed:', err.message);
+            if (service) {
+                showStatus(service, /quota/i.test(err.message || '')
+                    ? 'Too much data to sync — a smaller instance icon usually fixes this.'
+                    : `Could not save: ${err.message}`, 'error');
+            }
+            return;
+        }
+        if (onSuccess) onSuccess();
+    });
+}
+
 // --- UI Navigation ---
 const tabs = document.querySelectorAll('.tab-btn');
 const glider = document.getElementById('glider');
@@ -440,6 +488,9 @@ const moveGlider = (el) => {
     const top = elRect.top - subTabsRect.top - 6;
 
     glider.style.width = `${el.offsetWidth}px`;
+    // Height from the button, not the 36px the stylesheet guesses: the tabs
+    // are padded text, so their height follows the font.
+    glider.style.height = `${el.offsetHeight}px`;
     glider.style.transform = `translate(${left}px, ${top}px)`;
 };
 
@@ -455,6 +506,17 @@ const initGlider = () => {
 window.addEventListener('load', initGlider);
 // Also try immediately
 initGlider();
+
+// The strip wraps: thirteen tabs do not fit one row inside a container that is
+// at most 950px wide, and the container is fluid below that. Resizing the
+// window therefore re-flows the tabs onto different rows while the highlight
+// stays where it was, sitting over nothing. It was only ever positioned on
+// load and on click. A ResizeObserver on the strip catches the reflow itself,
+// which also covers a late font swap changing the tab widths.
+if (typeof ResizeObserver !== 'undefined') {
+    const strip = document.querySelector('.sub-tabs');
+    if (strip) new ResizeObserver(initGlider).observe(strip);
+}
 
 tabs.forEach(item => {
     item.addEventListener('click', () => {
@@ -501,7 +563,7 @@ const loadOptions = () => {
         // Defined by js/core/migrationRules.js, loaded before this script.
         const migration = globalThis.hscRunStorageMigrations(items);
         if (migration.changed) {
-            chrome.storage.sync.set(items, () => {
+            saveSync(items, '', () => {
                 if (migration.removedKeys.length > 0) {
                     chrome.storage.sync.remove(migration.removedKeys);
                 }
@@ -795,8 +857,7 @@ const saveService = (service) => {
     }
 
     const performSave = () => {
-        chrome.storage.sync.set(data, () => {
-             // Check results and notify user
+        saveSync(data, service, () => {
              showStatus(service, 'Settings saved!', 'success');
         });
     };
@@ -824,7 +885,7 @@ const saveService = (service) => {
                              enableIpLookupEl.checked = false;
                         }
                         // Still save to storage so they don't lose the text
-                        chrome.storage.sync.set(data);
+                        saveSync(data, service);
                     }
                 });
             }
@@ -1011,12 +1072,12 @@ document.addEventListener('DOMContentLoaded', () => {
              const startPage = document.getElementById('startPage').value;
              const badgeCheckInterval = parseInt(document.getElementById('badgeCheckInterval').value) || 5000;
 
-             chrome.storage.sync.set({
+             saveSync({
                  serviceOrder: window.currentOrder || currentOrder,
                  startPage: startPage,
                  // enablePersistence: true // We can keep this true internally or deprecate it. Let's rely on StartPage value.
                  badgeCheckInterval: badgeCheckInterval
-             }, () => {
+             }, 'General', () => {
                  showStatus('General', 'Settings saved!', 'success');
              });
         });
@@ -1086,7 +1147,7 @@ const savePlexSettings = () => {
             // denied permission was saved and reported as a clean success and
             // every later Plex call failed for a reason nothing explained.
             chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, (granted) => {
-                chrome.storage.sync.set(data, () => {
+                saveSync(data, 'Plex', () => {
                     if (granted) {
                         showStatus('Plex', 'Settings saved!', 'success');
                     } else {
@@ -1104,7 +1165,7 @@ const savePlexSettings = () => {
     }
 
     // Web mode - just save the mode
-    chrome.storage.sync.set(data, () => {
+    saveSync(data, 'Plex', () => {
         showStatus('Plex', 'Settings saved!', 'success');
     });
 };
@@ -1452,9 +1513,9 @@ async function startPlexOAuth() {
                             clearInterval(pollInterval);
 
                             // Save the Plex auth token
-                            chrome.storage.sync.set({
+                            saveSync({
                                 seerrPlexToken: checkData.authToken
-                            }, () => {
+                            }, '', () => {
                                 setPlexStatus(statusEl, '#48bb78', '✓ Plex account linked successfully!');
                             });
                             return;
@@ -1631,7 +1692,7 @@ async function saveSeerrAuth() {
     // the auth call that needs it.
 
     // Save to storage
-    chrome.storage.sync.set(data, () => {
+    saveSync(data, 'Seerr', () => {
         showStatus('Seerr', 'Settings saved!', 'success');
     });
 }
