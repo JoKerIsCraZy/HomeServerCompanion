@@ -18,13 +18,15 @@ body.dark-mode .seerr-header {
   animation: tabFadeIn 0.3s ease-out forwards;
 }
 
+/* Only the bits that differ from the shared pill. This used to restate the
+   whole thing and zero the margin, which was a local workaround for the same
+   leaked `margin: 15px 0` that is now gone from layout.css — and it left Seerr
+   as the one view whose tabs had no spacing at all. */
 #seerr-view .sub-tabs {
-  display: inline-flex;
   background: rgba(255, 255, 255, 0.05); /* Dark subtle container */
   padding: 5px;
   border-radius: 12px;
   gap: 5px;
-  margin: 0; /* REMOVED center alignment */
   position: relative; /* For glider absolute pos */
   z-index: 1;
 }

@@ -822,6 +822,19 @@
               </div>
               <div id="unraid-subline" class="unraid-subline">&nbsp;</div>
             </div>
+            <!-- Reachability and uptime. These were a card at the top of the
+                 System tab, which meant they vanished the moment you looked at
+                 Storage, Docker or VMs — the two facts you most want on screen
+                 the whole time. The header is on every sub-tab. The ids are
+                 unchanged, so the renderer needs no adjustment. -->
+            <div class="unraid-header-status">
+              <span class="ur-state">
+                <span class="ur-dot" id="unraid-state-dot"></span>
+                <span id="unraid-state-text">Checking…</span>
+              </span>
+              <div class="ur-uptime" id="unraid-uptime">--</div>
+              <div class="ur-uptime-sub" id="unraid-uptime-sub">Uptime</div>
+            </div>
           </div>
 
           <div class="sub-tabs">
@@ -843,17 +856,8 @@
                renderer only ever writes text and bar widths, so a late sensor
                reading cannot move anything that is already on screen. -->
           <div id="unraid-tab-system" class="sub-view">
-            <!-- Status: reachability, version, uptime -->
-            <div class="card ur-status">
-              <div class="ur-status-top">
-                <span class="ur-state">
-                  <span class="ur-dot" id="unraid-state-dot"></span>
-                  <span id="unraid-state-text">Checking…</span>
-                </span>
-              </div>
-              <div class="ur-uptime" id="unraid-uptime">--</div>
-              <div class="ur-uptime-sub" id="unraid-uptime-sub">Uptime</div>
-            </div>
+            <!-- Status and uptime live in the header now, where they stay
+                 visible on every sub-tab. -->
 
             <!-- Attention: a summary line that opens the full list -->
             <button

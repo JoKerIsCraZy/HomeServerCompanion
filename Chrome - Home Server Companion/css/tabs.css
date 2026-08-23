@@ -102,7 +102,13 @@
 /* Sub-tabs with Glider (Unraid, Seerr) */
 .sub-tabs {
     position: relative;
-    display: inline-flex;
+    /* flex + fit-content, not inline-flex. The pill still hugs its buttons,
+       but as a block-level box it no longer sits on a line box collecting that
+       line's leading above and below, and its margins collapse with the
+       heading above it like any other block. */
+    display: flex;
+    width: fit-content;
+    margin: var(--space-3) 0;
     background: rgba(255, 255, 255, 0.05);
     padding: 5px;
     border-radius: 12px;

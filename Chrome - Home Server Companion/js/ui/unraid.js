@@ -602,13 +602,16 @@ function renderUnraidHeader(data, array, sys) {
     if (sys.registration) parts.push(titleCase(sys.registration));
     const free = Number(array.free) || 0;
     if (free > 0) parts.push(`${formatBytes(free, 1)} free`);
-    const uptime = getUptime(sys.uptimeBoot);
-    if (uptime && uptime !== '--') parts.push(`Up ${uptime}`);
+    // No uptime here any more: it sits to the right of this line as the
+    // header's own figure, and printing it twice on one row read as a mistake.
     subline.textContent = parts.join(' · ') || 'Connected';
 }
 
 /**
- * Status card: reachability, version, and uptime as the headline figure.
+ * Reachability and uptime, in the header's right-hand slot.
+ *
+ * Addressed purely by id, and the header is in the DOM from first paint on
+ * every sub-tab, so this needs no knowledge of which tab is showing.
  * @param {Object} data
  * @param {Object} sys
  */
@@ -620,12 +623,14 @@ function renderUnraidStatusCard(data, sys) {
     if (dot) {
         dot.className = `ur-dot is-${reachable ? (started ? 'ok' : 'warn') : 'crit'}`;
     }
+    // One word where one word will do. The dot beside it already carries the
+    // severity, and "Server online" repeated a subject the whole view is
+    // about. The middle state stays distinct: the server answers but the
+    // array is down, which is neither online nor offline.
     setText('unraid-state-text', reachable
-        ? (started ? 'Server online' : 'Array not started')
-        : 'Unreachable');
+        ? (started ? 'Online' : 'Array stopped')
+        : 'Offline');
     setText('unraid-uptime', getUptimeLong(sys.uptimeBoot));
-    // Version and licence lead the header, which is on screen from every
-    // sub-tab; the card carried them a second time.
     setText('unraid-uptime-sub', 'Uptime');
 }
 

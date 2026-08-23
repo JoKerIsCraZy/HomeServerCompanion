@@ -37,7 +37,8 @@
     align-items: flex-start;
     gap: var(--space-4);
     min-height: 48px;
-    margin-bottom: var(--space-4);
+    /* No bottom margin: the sub-tab pill below carries the gap, and now that
+       it is block-level the two would not collapse into one another. */
 }
 .unraid-hero-stack {
     display: flex;
@@ -120,12 +121,14 @@
 .ur-dot.is-info { background: var(--status-info); }
 .ur-dot.is-idle { background: var(--color-text-muted); }
 
-/* --- Status card --- */
-.ur-status-top {
+/* --- Status, in the header's right-hand slot --- */
+.unraid-header-status {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+    flex-shrink: 0;
 }
 .ur-state {
     display: flex;
@@ -138,15 +141,18 @@
     color: var(--color-text-primary);
 }
 .ur-uptime {
-    margin-top: var(--space-3);
-    font-size: 30px;
+    margin-top: 0;
+    /* It was a 30px card headline. In the header it sits beside a 32px hero
+       and only has to be legible, so it drops to a size just above the label
+       under it (12px) — still the figure of the stack, no longer a heading. */
+    font-size: 15px;
     line-height: 1.1;
     font-weight: var(--font-weight-bold, 700);
     color: var(--color-text-primary);
     font-variant-numeric: tabular-nums;
 }
 .ur-uptime-sub {
-    margin-top: var(--space-1);
+    margin-top: 0;
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
 }
@@ -394,14 +400,28 @@
 }
 .unraid-list-controls .search-input-full { flex: 1; min-width: 0; }
 
-/* The plain row: one line, used as-is by the VM list. */
+/* The list is a stack of cards. In fullscreen the rule further down turns it
+   into a three-column grid with its own gap, which overrides both of these. */
+.unraid-row-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+/* One card per container or VM. These were flat rows separated by a hairline,
+   which was a density choice for lists that can run to dozens of entries — but
+   it left Docker and VMs looking like a different view from System and
+   Storage, which are built out of cards. Consistency wins; the cost is the gap
+   between cards. */
 .unraid-row {
     display: flex;
     align-items: center;
     gap: var(--space-3);
     min-height: 44px;
-    padding: var(--space-2) 0;
-    border-bottom: var(--border-width) solid var(--border-color);
+    padding: var(--space-2) var(--space-3);
+    background: var(--card-bg);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius);
 }
 
 /* The expandable row: a grid, so the panel can be animated open.
@@ -429,9 +449,14 @@
 }
 /* Only the Docker rows open a menu; VM rows keep their inline buttons. */
 .unraid-row[role="button"] { cursor: pointer; }
+.unraid-row[role="button"]:hover { border-color: rgba(255, 255, 255, 0.18); }
 .unraid-row[role="button"]:hover .unraid-row-head { opacity: 0.85; }
-.unraid-row.is-open { background: rgba(255, 255, 255, 0.04); }
-.unraid-row:last-child { border-bottom: none; }
+/* An open card lifts rather than darkens: against a card fill, a darker patch
+   reads as disabled. */
+.unraid-row.is-open {
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
 .unraid-row-icon {
     width: 24px;
     height: 24px;
@@ -645,7 +670,7 @@ body.fullscreen-mode .unraid-hero.is-pending,
 body.fullscreen-mode .unraid-hero.is-crit { font-size: 32px; }
 body.fullscreen-mode .unraid-subline { font-size: var(--font-size-md); }
 body.fullscreen-mode .ur-section-label { font-size: 13px; }
-body.fullscreen-mode .ur-uptime { font-size: 44px; }
+body.fullscreen-mode .ur-uptime { font-size: 22px; }
 body.fullscreen-mode .ur-metric-figure { font-size: 40px; }
 body.fullscreen-mode .ur-metric-pct { font-size: 22px; }
 body.fullscreen-mode .ur-service-count { font-size: 38px; }
