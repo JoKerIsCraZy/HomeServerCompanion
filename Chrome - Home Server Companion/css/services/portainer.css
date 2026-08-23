@@ -416,9 +416,8 @@
   color: var(--accent-portainer);
 }
 
-#portainer-view .refresh-btn.spinning svg {
-  animation: spin 1s linear infinite;
-}
+/* The shared .refresh-btn.spinning rule in components.css covers this
+   button; the scoped duplicate that used to sit here said the same thing. */
 
 /* Search/Filter */
 #portainer-view .filter-bar {

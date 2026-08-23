@@ -404,13 +404,10 @@ function renderSonarrQueue(records, state) {
     refreshBtn.onmouseout = () => { refreshBtn.style.background = "rgba(255,255,255,0.05)"; refreshBtn.style.color = "var(--text-secondary)"; };
     refreshBtn.onclick = refreshQueue;
     
-    // Check if style already added in Radarr; Sonarr might run alone too, so safe to check and add
-    const style = document.createElement('style');
-    style.textContent = `.refresh-btn.spinning svg { animation: spin 1s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
-    if (!document.querySelector('style[data-refresh-spin]')) {
-        style.dataset.refreshSpin = 'true';
-        document.head.appendChild(style);
-    }
+    // Spinner styling lives in css/components.css. This used to build the
+    // rule at render time because @keyframes spin was only ever defined in
+    // setup.css, which the popup does not load — and whichever of these two
+    // views happened to render first is what made Portainer's spinner work.
     
     toolbar.appendChild(linkBtn);
     toolbar.appendChild(refreshBtn);

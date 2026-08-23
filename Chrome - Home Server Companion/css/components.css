@@ -1090,3 +1090,25 @@ body.dark-mode .ip-map-tiles {
   font-size: 14px;
   font-weight: 500;
 }
+
+/* Refresh buttons.
+   `@keyframes spin` lived only in setup.css, which popup.html does not load,
+   so this animation resolved to nothing in the popup. Sonarr and Radarr each
+   injected an identical copy of this rule into document.head at render time
+   to compensate; Portainer relied on one of them having done so, which meant
+   its spinner turned only after a visit to one of those two views. */
+.refresh-btn.spinning svg {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .refresh-btn.spinning svg {
+        animation: none;
+        opacity: 0.5;
+    }
+}
