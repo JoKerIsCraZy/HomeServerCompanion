@@ -631,7 +631,13 @@ async function initProwlarrSearch(url, apiKey) {
                         resultsToSave = oldState.results;
                     }
                 }
-            } catch(e) {}
+            } catch (e) {
+                // A corrupt entry means the previous search cannot be
+                // restored, which is survivable — but leaving it in place
+                // would fail again on every load, so it goes.
+                console.warn('Prowlarr: discarding unreadable saved search:', e.message);
+                localStorage.removeItem(STORAGE_KEY_STATE);
+            }
         }
 
         const state = {
@@ -1044,7 +1050,13 @@ export function renderSearchResults(results, customContainer = null, configs = a
                         const cfg = JSON.parse(stored);
                         prowlarrUrl = cfg.url;
                         prowlarrKey = cfg.key;
-                    } catch(e) {}
+                    } catch (e) {
+                        // Falls through to chrome.storage below. The cached
+                        // copy is only a shortcut, so a corrupt one is
+                        // dropped rather than repaired.
+                        console.warn('Prowlarr: discarding unreadable cached config:', e.message);
+                        localStorage.removeItem('prowlarr_config');
+                    }
                     
                     // Fallback: try to get from chrome storage
                     if (!prowlarrUrl || !prowlarrKey) {
@@ -1136,7 +1148,11 @@ export async function populateProwlarrCategories(url, apiKey, categorySelect) {
         try {
             const parsed = JSON.parse(cached);
             if (Date.now() - parsed.timestamp < 86400000) categories = parsed.data;
-        } catch(e) {}
+        } catch (e) {
+            // Categories are refetched below when the cache cannot be read.
+            console.warn('Prowlarr: discarding unreadable category cache:', e.message);
+            localStorage.removeItem(CACHE_KEY);
+        }
     }
     
     

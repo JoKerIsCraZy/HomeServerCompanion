@@ -680,8 +680,12 @@ async function startWizardPlexOAuth() {
                             return;
                         }
                     }
-                } catch {}
-                
+                } catch (e) {
+                    // The message below covers this for the user; the reason
+                    // is only useful in the console.
+                    console.warn('Plex pin check failed:', e.message);
+                }
+
                 statusEl.innerHTML = '<span style="color: #fc8181;">Login failed or cancelled.</span>';
             }
         }, 2000);
@@ -1238,26 +1242,42 @@ async function completeSetup() {
     dataToSave.serviceOrder = enabledOrder;
     
     // Request host permissions for all configured URLs
+    // A URL that cannot be parsed here is dropped from the permission
+    // request, and the consequence only shows up much later: the service is
+    // saved, the extension has no host permission for it, and every call to it
+    // fails with a CORS error that names nothing the user did. The test button
+    // rejects an invalid URL, but nothing forces the user to press it, so this
+    // stays a real path. Setup still completes — the remaining services are
+    // worth saving — but the reason is recorded.
     const originsToRequest = [];
-    for (const config of Object.values(serviceConfigs)) {
+    const unparseable = [];
+    for (const [serviceId, config] of Object.entries(serviceConfigs)) {
         if (config.fullUrl) {
             try {
                 const urlObj = new URL(config.fullUrl);
                 originsToRequest.push(`${urlObj.origin}/*`);
-            } catch {}
+            } catch {
+                unparseable.push(`${serviceId} (${config.fullUrl})`);
+            }
         }
     }
     
     // Add Portainer instance URLs
-    portainerInstances.forEach(inst => {
+    portainerInstances.forEach((inst, i) => {
         if (inst.url) {
+            const fullUrl = inst.protocol + inst.url;
             try {
-                const fullUrl = inst.protocol + inst.url;
                 const urlObj = new URL(fullUrl);
                 originsToRequest.push(`${urlObj.origin}/*`);
-            } catch {}
+            } catch {
+                unparseable.push(`${inst.name || `Portainer #${i + 1}`} (${fullUrl})`);
+            }
         }
     });
+
+    if (unparseable.length > 0) {
+        console.warn('Setup: no host permission requested for', unparseable.join(', '));
+    }
     
     if (originsToRequest.length > 0) {
         await new Promise(resolve => {
