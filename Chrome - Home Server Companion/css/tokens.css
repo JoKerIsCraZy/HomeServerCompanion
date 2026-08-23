@@ -37,7 +37,11 @@
        the real orange sat hardcoded in four places in the stylesheet. */
     --accent-unraid: #f15a2c;
     --accent-prowlarr: #7e57c2;
-    --accent-wizarr: #00bcd4;
+    /* Wizarr's own red. This read #00bcd4 — byte-identical to
+       --accent-tracearr — while every rule in wizarr.css hardcoded #d03142,
+       so the token was both a duplicate and wrong, and nothing used it. */
+    --accent-wizarr: #d03142;
+    --accent-wizarr-dark: #aa2030;
     --accent-portainer: #13ae4e;
     --accent-tracearr: #00bcd4;
 

@@ -1689,6 +1689,9 @@
       </div>
     </div>
 
+    <!-- The migration rules, shared with js/core/migrations.js. Must load
+         before options.js, which calls them on startup. -->
+    <script src="js/core/migrationRules.js"></script>
     <script src="js/options.js"></script>
   </body>
 </html>

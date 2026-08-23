@@ -22,6 +22,7 @@ class BadgeManager {
      */
     startAll(activeService, configs) {
         this.activeService = activeService;
+        this._watchInterval();
 
         const badgeServices = [
             { id: 'sabnzbd', module: '../ui/sabnzbd.js', fn: 'updateSabnzbdBadge' },
@@ -48,6 +49,35 @@ class BadgeManager {
             setTimeout(() => {
                 this._startServiceBadge(svc, interval);
             }, delay);
+        });
+    }
+
+    /**
+     * Restarts polling when the configured interval changes.
+     *
+     * The interval was read once, when the popup started. In the popup that is
+     * invisible — it is reopened constantly — but the fullscreen window stays
+     * up for days, so a change made in Options never took hold there until the
+     * window was reloaded.
+     *
+     * Registered once for the lifetime of the page.
+     * @private
+     */
+    _watchInterval() {
+        if (this._intervalWatcher) return;
+        this._intervalWatcher = true;
+
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area !== 'sync' || !changes.badgeCheckInterval) return;
+            const { oldValue, newValue } = changes.badgeCheckInterval;
+            if (oldValue === newValue) return;
+
+            // Re-read the whole config rather than patching the interval into
+            // the old one: a service may have been enabled or reconfigured in
+            // the same visit to Options.
+            chrome.storage.sync.get(null, (configs) => {
+                this.startAll(this.activeService, configs);
+            });
         });
     }
 

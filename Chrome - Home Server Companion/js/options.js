@@ -1,67 +1,5 @@
 const services = ['dashboard', 'unraid', 'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'seerr', 'prowlarr', 'wizarr', 'portainer', 'tracearr'];
 
-/**
- * v4.0 storage migrations. Mirrors `js/core/migrations.js` for the module-based
- * popup context — kept inline here because options.js is loaded as a classic
- * script. Both implementations must stay in sync.
- *
- * - Moves `overseerr*` keys to `seerr*` (copy, then drop legacy keys).
- * - Renames `overseerr` -> `seerr` in `serviceOrder`.
- * - Inserts `tracearr` into `serviceOrder` after `tautulli` if missing.
- * - Drops the stored Seerr account password.
- */
-function runStorageMigrations(items) {
-    let changed = false;
-    const removedKeys = [];
-
-    const overseerrKeys = Object.keys(items).filter(k => k.startsWith('overseerr'));
-    if (overseerrKeys.length > 0) {
-        overseerrKeys.forEach(key => {
-            const seerrKey = key.replace(/^overseerr/, 'seerr');
-            const targetEmpty = !(seerrKey in items)
-                || items[seerrKey] === undefined
-                || items[seerrKey] === null
-                || items[seerrKey] === '';
-            if (targetEmpty) items[seerrKey] = items[key];
-            delete items[key];
-            removedKeys.push(key);
-        });
-        changed = true;
-    }
-
-    if (Array.isArray(items.serviceOrder)) {
-        const overseerrIdx = items.serviceOrder.indexOf('overseerr');
-        if (overseerrIdx !== -1) {
-            if (!items.serviceOrder.includes('seerr')) {
-                items.serviceOrder[overseerrIdx] = 'seerr';
-            } else {
-                items.serviceOrder.splice(overseerrIdx, 1);
-            }
-            changed = true;
-        }
-        if (!items.serviceOrder.includes('tracearr')) {
-            const tautulliIdx = items.serviceOrder.indexOf('tautulli');
-            if (tautulliIdx !== -1) {
-                items.serviceOrder.splice(tautulliIdx + 1, 0, 'tracearr');
-            } else {
-                items.serviceOrder.push('tracearr');
-            }
-            changed = true;
-        }
-    }
-
-    // ---- v4.1: drop the stored Seerr account password ----
-    // Cleartext in chrome.storage.sync, replicated off-device, and never
-    // replayed — Seerr requests authenticate with the session cookie.
-    if ('seerrPassword' in items) {
-        delete items.seerrPassword;
-        removedKeys.push('seerrPassword');
-        changed = true;
-    }
-
-    return { changed, removedKeys };
-}
-
 // ==================== CHANGELOG POPUP ====================
 /**
  * Changelog entries shown in the "Show What's New" modal and in the
@@ -560,7 +498,8 @@ document.addEventListener('keydown', (e) => {
 const loadOptions = () => {
     chrome.storage.sync.get(null, (items) => {
         // v4.0 storage migrations (idempotent — safe to re-run)
-        const migration = runStorageMigrations(items);
+        // Defined by js/core/migrationRules.js, loaded before this script.
+        const migration = globalThis.hscRunStorageMigrations(items);
         if (migration.changed) {
             chrome.storage.sync.set(items, () => {
                 if (migration.removedKeys.length > 0) {
