@@ -475,47 +475,25 @@ function saveSync(data, service, onSuccess) {
 
 // --- UI Navigation ---
 const tabs = document.querySelectorAll('.tab-btn');
-const glider = document.getElementById('glider');
 
-const moveGlider = (el) => {
-    if (!el || !glider) return;
-    const subTabs = el.parentElement;
-    const subTabsRect = subTabs.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-
-    // Calculate position relative to parent
-    const left = elRect.left - subTabsRect.left - 6; // 6px padding
-    const top = elRect.top - subTabsRect.top - 6;
-
-    glider.style.width = `${el.offsetWidth}px`;
-    // Height from the button, not the 36px the stylesheet guesses: the tabs
-    // are padded text, so their height follows the font.
-    glider.style.height = `${el.offsetHeight}px`;
-    glider.style.transform = `translate(${left}px, ${top}px)`;
-};
-
-// Initialize Glider
-const initGlider = () => {
-    const initialActive = document.querySelector('.tab-btn.active');
-    if (initialActive) {
-        moveGlider(initialActive);
-    }
-};
-
-// Wait for fonts/layout
-window.addEventListener('load', initGlider);
-// Also try immediately
-initGlider();
-
-// The strip wraps: thirteen tabs do not fit one row inside a container that is
-// at most 950px wide, and the container is fluid below that. Resizing the
-// window therefore re-flows the tabs onto different rows while the highlight
-// stays where it was, sitting over nothing. It was only ever positioned on
-// load and on click. A ResizeObserver on the strip catches the reflow itself,
-// which also covers a late font swap changing the tab widths.
-if (typeof ResizeObserver !== 'undefined') {
-    const strip = document.querySelector('.sub-tabs');
-    if (strip) new ResizeObserver(initGlider).observe(strip);
+/**
+ * Marks each service in the navigation as configured or not.
+ *
+ * The old tab strip said nothing about state, so finding out which of the
+ * eleven services were set up meant opening all eleven.
+ * @param {Object} items - A chrome.storage.sync snapshot
+ */
+function updateNavStatus(items) {
+    document.querySelectorAll('.nav-status').forEach(dot => {
+        const id = dot.dataset.service;
+        // Portainer keeps its servers in an array; everything else has a URL.
+        const configured = id === 'portainer'
+            ? Array.isArray(items.portainerInstances)
+              && items.portainerInstances.some(i => i && i.url)
+            : Boolean(items[`${id}Url`]);
+        dot.classList.toggle('is-set', configured);
+        dot.title = configured ? 'Configured' : 'Not set up yet';
+    });
 }
 
 tabs.forEach(item => {
@@ -523,8 +501,6 @@ tabs.forEach(item => {
         // Active Tab
         tabs.forEach(el => el.classList.remove('active'));
         item.classList.add('active');
-
-        moveGlider(item);
 
         // Active Section
         const target = item.dataset.target;
@@ -1045,6 +1021,12 @@ const testConnection = async (service) => {
 // --- Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
     loadOptions();
+    chrome.storage.sync.get(null, (items) => updateNavStatus(items || {}));
+    // A save anywhere can turn a service from unconfigured to configured.
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'sync') return;
+        chrome.storage.sync.get(null, (later) => updateNavStatus(later || {}));
+    });
     renderOrderList();
 
     // Portainer Multi-Instance Setup

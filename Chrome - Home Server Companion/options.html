@@ -106,55 +106,128 @@
         gap: 16px;
       }
 
-      .sub-tabs {
-        position: relative;
-        display: inline-flex;
-        background: #252525;
-        padding: 6px;
-        border-radius: 12px;
-        gap: 4px;
-        border: 1px solid var(--glass-border);
-        flex-wrap: wrap;
+      .settings-title {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
       }
 
-      .tab-glider {
-        position: absolute;
-        top: 6px;
-        left: 6px;
-        height: 36px;
-        background: var(--accent-gradient);
-        border-radius: 10px;
-        z-index: 0;
-        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        width: 0;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      /* ===== Navigation =====
+         A vertical list. This was a horizontal pill with a gradient highlight
+         sliding behind the active tab, and thirteen tabs have never fitted one
+         row inside a container capped at 950px — so it wrapped, and the
+         highlight had to jump rows, which is the one thing a sliding highlight
+         cannot do gracefully. A column cannot wrap, takes any number of
+         services, and has room for the icon and a state dot. */
+      .settings-layout {
+        display: grid;
+        grid-template-columns: 190px minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+      }
+
+      .settings-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        position: sticky;
+        top: 24px;
+      }
+
+      .nav-heading {
+        margin: 16px 0 6px 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--text-muted);
       }
 
       .tab-btn {
-        background: transparent !important;
-        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 8px 12px;
         border: none;
-        padding: 10px 16px;
-        border-radius: 12px;
-        cursor: pointer;
-        font-weight: 600;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: inherit;
         font-size: 13px;
-        position: relative;
-        z-index: 2;
-        pointer-events: auto;
-        transition: all var(--transition-smooth);
-        white-space: nowrap;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        /* The accent the active item borrows. Overridden per service below;
+           anything without one of its own falls back to the page accent. */
+        --nav-accent: var(--accent-primary);
+        transition: background var(--transition-fast),
+                    color var(--transition-fast);
       }
 
       .tab-btn:hover {
         color: var(--text-primary);
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.05);
       }
 
       .tab-btn.active {
-        color: white !important;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        color: var(--text-primary);
+        /* colour-mix keeps one accent per service driving both the fill and
+           the marker, instead of thirteen hand-picked translucent pairs. */
+        background: color-mix(in srgb, var(--nav-accent) 18%, transparent);
+        box-shadow: inset 3px 0 0 var(--nav-accent);
       }
+
+      .nav-icon {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        object-fit: contain;
+        border-radius: 4px;
+      }
+
+      /* General has no icon of its own and is not a service. The empty box
+         keeps its label on the same left edge as the rest. */
+      .nav-icon-blank {
+        display: inline-block;
+      }
+
+      .nav-label {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Hollow until the service has a URL. Saying which of eleven services
+         are set up is the whole reason this column has room for it. */
+      .nav-status {
+        width: 7px;
+        height: 7px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        border: 1px solid var(--text-muted);
+        background: transparent;
+      }
+
+      .nav-status.is-set {
+        border-color: var(--status-success);
+        background: var(--status-success);
+      }
+
+      .tab-btn[data-target="unraid"]    { --nav-accent: var(--accent-unraid); }
+      .tab-btn[data-target="sabnzbd"]   { --nav-accent: var(--accent-sab); }
+      .tab-btn[data-target="sonarr"]    { --nav-accent: var(--accent-sonarr); }
+      .tab-btn[data-target="radarr"]    { --nav-accent: var(--accent-radarr); }
+      .tab-btn[data-target="tautulli"]  { --nav-accent: var(--accent-tautulli); }
+      .tab-btn[data-target="plex"]      { --nav-accent: #e5a00d; }
+      .tab-btn[data-target="seerr"]     { --nav-accent: var(--accent-seerr); }
+      .tab-btn[data-target="prowlarr"]  { --nav-accent: var(--accent-prowlarr); }
+      .tab-btn[data-target="wizarr"]    { --nav-accent: var(--accent-wizarr); }
+      .tab-btn[data-target="portainer"] { --nav-accent: var(--accent-portainer); }
+      .tab-btn[data-target="tracearr"]  { --nav-accent: var(--accent-tracearr); }
 
       /* Header Links */
       .header-links {
@@ -666,14 +739,37 @@
           align-items: flex-start;
         }
 
-        .sub-tabs {
-          width: 100%;
-          justify-content: flex-start;
+        /* Too narrow for two columns: the nav goes back on top as a single
+           scrolling row, which is what a handful of visible items wants. */
+        .settings-layout {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 16px;
+        }
+
+        .settings-nav {
+          position: static;
+          flex-direction: row;
+          overflow-x: auto;
+          padding-bottom: 4px;
+        }
+
+        .settings-nav .nav-heading,
+        .settings-nav .nav-label {
+          display: none;
+        }
+
+        .settings-nav .nav-icon-blank {
+          width: 18px;
         }
 
         .tab-btn {
-          padding: 8px 12px;
+          width: auto;
+          padding: 8px;
           font-size: 12px;
+        }
+
+        .tab-btn.active {
+          box-shadow: inset 0 -3px 0 var(--nav-accent);
         }
 
         h2 {
@@ -781,25 +877,7 @@
       <div class="content">
         <!-- Header / Navigation -->
         <div class="tabs-header">
-          <div class="sub-tabs">
-            <div class="tab-glider" id="glider"></div>
-            <button class="tab-btn active" data-target="general">
-              General
-            </button>
-            <button class="tab-btn" data-target="dashboard">Dashboard</button>
-            <button class="tab-btn" data-target="unraid">Unraid</button>
-            <button class="tab-btn" data-target="sabnzbd">Sabnzbd</button>
-            <button class="tab-btn" data-target="sonarr">Sonarr</button>
-            <button class="tab-btn" data-target="radarr">Radarr</button>
-            <button class="tab-btn" data-target="tautulli">Tautulli</button>
-            <button class="tab-btn" data-target="plex">Plex</button>
-
-            <button class="tab-btn" data-target="seerr">Seerr</button>
-            <button class="tab-btn" data-target="prowlarr">Prowlarr</button>
-            <button class="tab-btn" data-target="wizarr">Wizarr</button>
-            <button class="tab-btn" data-target="portainer">Portainer</button>
-            <button class="tab-btn" data-target="tracearr">Tracearr</button>
-          </div>
+          <h1 class="settings-title">Settings</h1>
 
           <div class="header-links">
             <a
@@ -891,6 +969,78 @@
             </button>
           </div>
         </div>
+
+        <div class="settings-layout">
+          <nav class="settings-nav" aria-label="Settings sections">
+            <button class="tab-btn active" data-target="general">
+              <span class="nav-icon nav-icon-blank" aria-hidden="true"></span>
+              <span class="nav-label">General</span>
+            </button>
+
+            <div class="nav-heading">Services</div>
+            <button class="tab-btn" data-target="dashboard">
+              <img class="nav-icon" src="icons/icon48.png" alt="" loading="lazy" />
+              <span class="nav-label">Dashboard</span>
+              <span class="nav-status" data-service="dashboard" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="unraid">
+              <img class="nav-icon" src="icons/unraid.png" alt="" loading="lazy" />
+              <span class="nav-label">Unraid</span>
+              <span class="nav-status" data-service="unraid" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="sabnzbd">
+              <img class="nav-icon" src="icons/sabnzbd.png" alt="" loading="lazy" />
+              <span class="nav-label">SABnzbd</span>
+              <span class="nav-status" data-service="sabnzbd" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="sonarr">
+              <img class="nav-icon" src="icons/sonarr.png" alt="" loading="lazy" />
+              <span class="nav-label">Sonarr</span>
+              <span class="nav-status" data-service="sonarr" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="radarr">
+              <img class="nav-icon" src="icons/radarr.png" alt="" loading="lazy" />
+              <span class="nav-label">Radarr</span>
+              <span class="nav-status" data-service="radarr" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="tautulli">
+              <img class="nav-icon" src="icons/tautulli.png" alt="" loading="lazy" />
+              <span class="nav-label">Tautulli</span>
+              <span class="nav-status" data-service="tautulli" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="plex">
+              <img class="nav-icon" src="icons/Plex_icon.png" alt="" loading="lazy" />
+              <span class="nav-label">Plex</span>
+              <span class="nav-status" data-service="plex" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="seerr">
+              <img class="nav-icon" src="icons/seerr.png" alt="" loading="lazy" />
+              <span class="nav-label">Seerr</span>
+              <span class="nav-status" data-service="seerr" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="prowlarr">
+              <img class="nav-icon" src="icons/prowlarr.png" alt="" loading="lazy" />
+              <span class="nav-label">Prowlarr</span>
+              <span class="nav-status" data-service="prowlarr" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="wizarr">
+              <img class="nav-icon" src="icons/wizarr.png" alt="" loading="lazy" />
+              <span class="nav-label">Wizarr</span>
+              <span class="nav-status" data-service="wizarr" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="portainer">
+              <img class="nav-icon" src="icons/portainer.png" alt="" loading="lazy" />
+              <span class="nav-label">Portainer</span>
+              <span class="nav-status" data-service="portainer" aria-hidden="true"></span>
+            </button>
+            <button class="tab-btn" data-target="tracearr">
+              <img class="nav-icon" src="icons/tracearr.png" alt="" loading="lazy" />
+              <span class="nav-label">Tracearr</span>
+              <span class="nav-status" data-service="tracearr" aria-hidden="true"></span>
+            </button>
+          </nav>
+
+          <div class="settings-panels">
         <!-- General Section -->
         <div id="general" class="section active">
           <h2>General Settings</h2>
@@ -1699,6 +1849,8 @@
             </button>
           </div>
           <div id="statusTracearr" class="status"></div>
+        </div>
+          </div>
         </div>
       </div>
     </div>
