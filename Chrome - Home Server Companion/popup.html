@@ -391,102 +391,138 @@
                   </div>
                   <div id="sab-subline" class="sab-subline">Queue empty</div>
                 </div>
-                <div
-                  class="sab-controls"
-                  style="
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                  "
-                >
-                  <div
-                    class="sab-speed-control"
-                    style="
-                      display: flex;
-                      align-items: center;
-                      gap: 8px;
-                      margin-right: 15px;
-                    "
+                <div class="sab-controls">
+                  <button
+                    id="sab-sort-btn"
+                    type="button"
+                    class="sab-sort-btn"
+                    title="Sort queue"
+                    aria-label="Sort queue"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
                   >
-                    <span
-                      style="
-                        font-size: 11px;
-                        font-weight: bold;
-                        color: var(--text-secondary);
-                        white-space: nowrap;
-                      "
-                      >SPEED LIMIT</span
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
                     >
-                    <input
-                      type="range"
-                      id="sab-speed-slider"
-                      min="0"
-                      max="100"
-                      step="5"
-                      style="
-                        width: 80px;
-                        height: 4px;
-                        accent-color: var(--primary-color);
-                        cursor: pointer;
-                      "
-                    />
-                    <div style="display: flex; align-items: center; gap: 2px">
-                      <input
-                        type="number"
-                        id="sab-speed-input"
-                        min="0"
-                        max="100"
-                        style="
-                          width: 50px;
-                          background: rgba(255, 255, 255, 0.1);
-                          border: 1px solid rgba(255, 255, 255, 0.2);
-                          color: white;
-                          border-radius: 4px;
-                          padding: 4px;
-                          text-align: center;
-                          font-size: 12px;
-                          font-weight: bold;
-                          -moz-appearance: textfield;
-                        "
-                      />
-                      <span
-                        style="
-                          font-size: 12px;
-                          color: var(--text-secondary);
-                          font-weight: bold;
-                        "
-                        >%</span
-                      >
+                      <path d="M3 6h12M3 12h9M3 18h6" />
+                      <path d="M18 9l3-3 3 3" transform="translate(-3 0)" />
+                      <path d="M18 15l3 3 3-3" transform="translate(-3 6)" />
+                    </svg>
+                  </button>
+                  <div
+                    id="sab-sort-menu"
+                    class="dropdown-menu sab-sort-menu hidden"
+                    role="menu"
+                    aria-label="Sort queue"
+                  >
+                    <p class="sab-sort-note">Reorder the current queue</p>
+                    <div class="sab-sort-row">
+                      <span class="sab-sort-label">Name</span>
+                      <button type="button" class="sab-sort-go" role="menuitem" data-sort="name" data-dir="asc" title="Name: A to Z" aria-label="Sort by name, A to Z">&#8593;</button>
+                      <button type="button" class="sab-sort-go" role="menuitem" data-sort="name" data-dir="desc" title="Name: Z to A" aria-label="Sort by name, Z to A">&#8595;</button>
                     </div>
-                    <button
-                      id="sab-speed-set-btn"
-                      style="
-                        background: rgba(255, 255, 255, 0.1);
-                        border: 1px solid rgba(255, 255, 255, 0.05);
-                        color: var(--text-primary);
-                        border-radius: 20px;
-                        padding: 4px 12px;
-                        font-size: 11px;
-                        cursor: pointer;
-                        font-weight: bold;
-                        transition: all 0.2s;
-                        letter-spacing: 0.5px;
-                        min-width: 40px;
-                        text-align: center;
-                      "
-                    >
-                      SET
-                    </button>
+                    <div class="sab-sort-row">
+                      <span class="sab-sort-label">Size</span>
+                      <button type="button" class="sab-sort-go" role="menuitem" data-sort="size" data-dir="asc" title="Size: smallest first" aria-label="Sort by size, smallest first">&#8593;</button>
+                      <button type="button" class="sab-sort-go" role="menuitem" data-sort="size" data-dir="desc" title="Size: largest first" aria-label="Sort by size, largest first">&#8595;</button>
+                    </div>
+                    <div class="sab-sort-row">
+                      <span class="sab-sort-label">Age</span>
+                      <button type="button" class="sab-sort-go" role="menuitem" data-sort="avg_age" data-dir="asc" title="Age: newest first" aria-label="Sort by age, newest first">&#8593;</button>
+                      <button type="button" class="sab-sort-go" role="menuitem" data-sort="avg_age" data-dir="desc" title="Age: oldest first" aria-label="Sort by age, oldest first">&#8595;</button>
+                    </div>
+                    <div class="sab-sort-row">
+                      <span class="sab-sort-label">Progress</span>
+                      <button type="button" class="sab-sort-go" role="menuitem" data-sort="remaining" data-dir="asc" title="Progress: least done first" aria-label="Sort by progress, least done first">&#8593;</button>
+                      <button type="button" class="sab-sort-go" role="menuitem" data-sort="remaining" data-dir="desc" title="Progress: most done first" aria-label="Sort by progress, most done first">&#8595;</button>
+                    </div>
+                  </div>
+                  <button
+                    id="sab-limit-chip"
+                    type="button"
+                    class="sab-limit-chip"
+                    aria-haspopup="dialog"
+                    aria-expanded="false"
+                  >
+                    Unlimited
+                  </button>
+                  <div
+                    id="sab-limit-menu"
+                    class="dropdown-menu sab-limit-menu hidden"
+                    role="dialog"
+                    aria-label="Download speed limit"
+                  >
+                    <div class="sab-limit-presets">
+                      <button
+                        type="button"
+                        class="sab-limit-preset"
+                        data-value="25"
+                      >
+                        25%
+                      </button>
+                      <button
+                        type="button"
+                        class="sab-limit-preset"
+                        data-value="50"
+                      >
+                        50%
+                      </button>
+                      <button
+                        type="button"
+                        class="sab-limit-preset"
+                        data-value="75"
+                      >
+                        75%
+                      </button>
+                      <button
+                        type="button"
+                        class="sab-limit-preset"
+                        data-value="100"
+                      >
+                        Off
+                      </button>
+                    </div>
+                    <div class="menu-divider"></div>
+                    <div class="sab-limit-custom">
+                      <div class="sab-limit-custom-head">
+                        <label for="sab-limit-slider">Custom</label>
+                        <output
+                          id="sab-limit-readout"
+                          for="sab-limit-slider"
+                        ></output>
+                      </div>
+                      <input
+                        type="range"
+                        id="sab-limit-slider"
+                        class="sab-limit-slider"
+                        min="5"
+                        max="100"
+                        step="5"
+                        list="sab-limit-ticks"
+                      />
+                      <datalist id="sab-limit-ticks">
+                        <option value="25"></option>
+                        <option value="50"></option>
+                        <option value="75"></option>
+                      </datalist>
+                    </div>
                   </div>
                   <div class="split-btn-group">
-                    <button id="sab-pause-arrow" class="split-btn-arrow">
-                      ▼
-                    </button>
                     <button
                       id="sab-pause-main"
                       class="split-btn-main"
+                      type="button"
                       title="Pause/Resume"
+                      aria-label="Pause queue"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -499,17 +535,43 @@
                         <rect x="14" y="4" width="4" height="16" rx="1" />
                       </svg>
                     </button>
+                    <button
+                      id="sab-pause-arrow"
+                      class="split-btn-arrow"
+                      type="button"
+                      aria-label="Pause for a set time"
+                      aria-haspopup="menu"
+                      aria-expanded="false"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="3"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </button>
                   </div>
-                  <div id="sab-pause-menu" class="dropdown-menu hidden">
-                    <div class="menu-item" data-time="15">Pause 15 min</div>
-                    <div class="menu-item" data-time="30">Pause 30 min</div>
-                    <div class="menu-item" data-time="60">Pause 1 hour</div>
-                    <div class="menu-item" data-time="120">Pause 2 hours</div>
-                    <div class="menu-item" data-time="360">Pause 6 hours</div>
+                  <div
+                    id="sab-pause-menu"
+                    class="dropdown-menu hidden"
+                    role="menu"
+                    aria-label="Pause duration"
+                  >
+                    <button type="button" class="menu-item" role="menuitem" data-time="15">Pause 15 min</button>
+                    <button type="button" class="menu-item" role="menuitem" data-time="30">Pause 30 min</button>
+                    <button type="button" class="menu-item" role="menuitem" data-time="60">Pause 1 hour</button>
+                    <button type="button" class="menu-item" role="menuitem" data-time="120">Pause 2 hours</button>
+                    <button type="button" class="menu-item" role="menuitem" data-time="360">Pause 6 hours</button>
                     <div class="menu-divider"></div>
-                    <div class="menu-item" data-time="0">
-                      Pause indefinitely
-                    </div>
+                    <button type="button" class="menu-item" role="menuitem" data-time="0">Pause indefinitely</button>
                   </div>
                 </div>
               </div>
@@ -750,121 +812,191 @@
         </div>
 
         <div id="unraid-view" class="view hidden">
-          <div class="unraid-header-row">
-            <!-- Sub Tabs -->
-            <div class="sub-tabs">
-              <div class="tab-glider"></div>
-              <button
-                class="sub-tab-btn active"
-                data-target="unraid-tab-system"
-              >
-                System
-              </button>
-              <button class="sub-tab-btn" data-target="unraid-tab-storage">
-                Storage
-              </button>
-              <button class="sub-tab-btn" data-target="unraid-tab-docker">
-                Docker
-              </button>
-              <button class="sub-tab-btn" data-target="unraid-tab-vms">
-                VMs
-              </button>
-            </div>
-
-            <div class="status-card" id="unraid-status-card">
-              <div class="status-indicator">Checking...</div>
-              <div class="server-name">Unraid Server</div>
-              <div class="server-url" id="unraid-url-display"></div>
+          <!-- Header: one live figure plus a vitals strip. Both slots exist in
+               static markup with placeholder values, so the first paint already
+               has its final geometry and nothing shifts when data lands. -->
+          <div class="unraid-header">
+            <div class="unraid-hero-stack">
+              <div id="unraid-hero" class="unraid-hero is-pending" aria-live="polite">
+                Checking…
+              </div>
+              <div id="unraid-subline" class="unraid-subline">&nbsp;</div>
             </div>
           </div>
-          <!-- 1. System Tab -->
+
+          <div class="sub-tabs">
+            <div class="tab-glider"></div>
+            <button class="sub-tab-btn active" data-target="unraid-tab-system">
+              System
+            </button>
+            <button class="sub-tab-btn" data-target="unraid-tab-storage">
+              Storage
+            </button>
+            <button class="sub-tab-btn" data-target="unraid-tab-docker">
+              Docker
+            </button>
+            <button class="sub-tab-btn" data-target="unraid-tab-vms">VMs</button>
+          </div>
+
+          <!-- 1. System -->
+          <!-- Every slot below exists up front with a placeholder value. The
+               renderer only ever writes text and bar widths, so a late sensor
+               reading cannot move anything that is already on screen. -->
           <div id="unraid-tab-system" class="sub-view">
-            <!-- Populated dynamically by JS to match "Genau so" screenshot -->
-          </div>
+            <!-- Status: reachability, version, uptime -->
+            <div class="card ur-status">
+              <div class="ur-status-top">
+                <span class="ur-state">
+                  <span class="ur-dot" id="unraid-state-dot"></span>
+                  <span id="unraid-state-text">Checking…</span>
+                </span>
+              </div>
+              <div class="ur-uptime" id="unraid-uptime">--</div>
+              <div class="ur-uptime-sub" id="unraid-uptime-sub">Uptime</div>
+            </div>
 
-          <!-- 2. Storage Tab -->
-          <div id="unraid-tab-storage" class="sub-view hidden">
-            <div class="storage-card">
-              <div
-                class="storage-header"
-                id="storage-toggle"
-                style="
-                  cursor: pointer;
-                  display: flex;
-                  justify-content: space-between;
-                "
-              >
-                <div style="display: flex; align-items: center; gap: 10px">
-                  <div class="storage-icon"></div>
-                  <span>Array</span>
+            <!-- Attention: a summary line that opens the full list -->
+            <button
+              type="button"
+              class="ur-attention-banner hidden"
+              id="unraid-attention-banner"
+              aria-expanded="false"
+              aria-controls="unraid-attention"
+            >
+              <span class="ur-dot" id="unraid-attention-dot"></span>
+              <span class="ur-att-level" id="unraid-attention-level"></span>
+              <span class="ur-att-text" id="unraid-attention-text"></span>
+              <span class="ur-chevron" aria-hidden="true">›</span>
+            </button>
+            <div id="unraid-attention" class="ur-attention-list hidden"></div>
+
+            <h3 class="ur-section-label">Resources</h3>
+
+            <!-- CPU and RAM sit side by side and share a shape: name row,
+                 big figure, context line, then a 28px foot holding the curve
+                 on one and the bar on the other, so the two cards line up. -->
+            <div class="ur-metric-grid">
+              <div class="card ur-metric" id="unraid-cpu-card">
+                <div class="ur-metric-top">
+                  <span class="ur-metric-name">CPU</span>
+                  <span class="ur-temp" id="unraid-temp">
+                    <span class="ur-temp-glyph" aria-hidden="true">🌡</span>
+                    <span id="unraid-temp-value">--</span>
+                  </span>
                 </div>
-                <div class="dropdown-arrow" style="transition: transform 0.3s">
-                  ▼
+                <div class="ur-metric-figure" id="unraid-cpu-value">--</div>
+                <div class="ur-metric-sub" id="unraid-cpu-sub">&nbsp;</div>
+                <div class="ur-metric-sub" id="unraid-cpu-brand">&nbsp;</div>
+                <div class="ur-metric-foot">
+                  <svg
+                    class="ur-spark"
+                    id="unraid-cpu-spark"
+                    viewBox="0 0 100 28"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                  >
+                    <!-- The curve is drawn one sample wider than the box and
+                         the group slides left across each polling interval, so
+                         the newest reading walks in from the right rather than
+                         the whole line jumping once a second. -->
+                    <g id="unraid-cpu-spark-shift">
+                      <path id="unraid-cpu-spark-line" d="" />
+                    </g>
+                  </svg>
                 </div>
-              </div>
-              <div class="storage-usage-text" id="unraid-storage-text">
-                -- used of --
-              </div>
-              <div class="progress-track" style="margin-bottom: 10px">
-                <div
-                  class="progress-fill"
-                  id="unraid-storage-bar"
-                  style="width: 0%"
-                ></div>
               </div>
 
-              <!-- Hidden Details List -->
-              <div
-                id="storage-details-dropdown"
-                class="hidden"
-                style="
-                  margin-top: 15px;
-                  border-top: 1px solid rgba(255, 255, 255, 0.1);
-                  padding-top: 10px;
-                "
-              >
-                <!-- Populated by JS -->
+              <div class="card ur-metric" id="unraid-ram-card">
+                <div class="ur-metric-top">
+                  <span class="ur-metric-name" id="unraid-ram-name">RAM</span>
+                </div>
+                <div class="ur-metric-figure" id="unraid-ram-value">--</div>
+                <div class="ur-metric-sub" id="unraid-ram-sub">&nbsp;</div>
+                <div class="ur-metric-sub" id="unraid-ram-free">&nbsp;</div>
+                <div class="ur-metric-foot">
+                  <div class="ur-track">
+                    <div class="ur-fill" id="unraid-ram-fill"></div>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <div class="card ur-metric" id="unraid-array-card">
+              <div class="ur-metric-top">
+                <span class="ur-metric-name" id="unraid-array-name">Array</span>
+                <span class="ur-metric-pct" id="unraid-array-value">--</span>
+              </div>
+              <div class="ur-track">
+                <div class="ur-fill" id="unraid-array-fill"></div>
+              </div>
+              <div class="ur-metric-sub" id="unraid-array-sub">&nbsp;</div>
+            </div>
+
+            <h3 class="ur-section-label">Services</h3>
+
+            <div class="ur-service-grid">
+              <button
+                type="button"
+                class="card ur-service"
+                id="unraid-docker-card"
+                data-goto="unraid-tab-docker"
+              >
+                <span class="ur-service-name">Docker</span>
+                <span class="ur-service-figure">
+                  <span class="ur-service-count" id="unraid-docker-count">--</span>
+                  <span class="ur-service-total" id="unraid-docker-total"></span>
+                  <span class="ur-dot" id="unraid-docker-dot"></span>
+                </span>
+                <span class="ur-service-sub" id="unraid-docker-sub">&nbsp;</span>
+              </button>
+              <button
+                type="button"
+                class="card ur-service"
+                id="unraid-vm-card"
+                data-goto="unraid-tab-vms"
+              >
+                <span class="ur-service-name">VMs</span>
+                <span class="ur-service-figure">
+                  <span class="ur-service-count" id="unraid-vm-count">--</span>
+                  <span class="ur-service-total" id="unraid-vm-total"></span>
+                  <span class="ur-dot" id="unraid-vm-dot"></span>
+                </span>
+                <span class="ur-service-sub" id="unraid-vm-sub">&nbsp;</span>
+              </button>
             </div>
           </div>
 
-          <!-- 3. Docker Tab -->
+          <!-- 2. Storage -->
+          <div id="unraid-tab-storage" class="sub-view hidden"></div>
+
+          <!-- 3. Docker -->
           <div id="unraid-tab-docker" class="sub-view hidden">
-            <div class="unraid-section-wrapper">
-              <div class="unraid-list-header-stack" style="margin-bottom: 15px">
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 8px;
-                  "
-                >
-                  <h3 id="unraid-containers-header" style="margin-bottom: 0">
-                    Containers
-                  </h3>
-                  <select id="unraid-docker-sort" class="sort-select">
-                    <option value="status-asc">Status (Running)</option>
-                    <option value="status-desc">Status (Stopped)</option>
-                  </select>
-                </div>
-                <input
-                  type="text"
-                  id="unraid-docker-search"
-                  placeholder="Search..."
-                  class="search-input-full"
-                />
-              </div>
-              <div id="unraid-docker-list"></div>
+            <div class="unraid-list-controls">
+              <label class="visually-hidden" for="unraid-docker-search">
+                Search containers
+              </label>
+              <input
+                type="search"
+                id="unraid-docker-search"
+                placeholder="Search containers…"
+                class="search-input-full"
+              />
+              <label class="visually-hidden" for="unraid-docker-sort">
+                Sort containers
+              </label>
+              <select id="unraid-docker-sort" class="sort-select">
+                <option value="status-asc">Running first</option>
+                <option value="status-desc">Stopped first</option>
+                <option value="name-asc">Name A–Z</option>
+                <option value="update-first">Updates first</option>
+              </select>
             </div>
+            <div id="unraid-docker-list" class="unraid-row-list"></div>
           </div>
 
-          <!-- 4. VM Tab -->
+          <!-- 4. VMs -->
           <div id="unraid-tab-vms" class="sub-view hidden">
-            <div class="unraid-section-wrapper">
-              <h3 id="unraid-vms-header">Virtual Machines</h3>
-              <div id="unraid-vm-list"></div>
-            </div>
+            <div id="unraid-vm-list" class="unraid-row-list"></div>
           </div>
         </div>
         <div id="prowlarr-view" class="view">
