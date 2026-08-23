@@ -27,7 +27,7 @@ export async function initTracearr(url, key, state) {
         try {
             const streams = await Tracearr.getTracearrStreams(url, key);
             renderTracearrStreams(streams || [], url, key, state);
-            updateTracearrBadge(url, key, streams || []);
+            updateTracearrBadge(url, key, streams || []).catch(() => {}); // fire-and-forget: the view has its own error handling
         } catch (e) {
             console.error("Tracearr Auto-refresh error", e);
         }
@@ -702,8 +702,13 @@ export async function updateTracearrBadge(url, key, streams) {
     if (!streams) {
         try {
             streams = await Tracearr.getTracearrStreams(url, key);
-        } catch {
-            return; // Silently fail — don't hide badge on network error
+        } catch (e) {
+            // The badge keeps its last value, which is the right call — but
+            // returning quietly also told BadgeManager the update had
+            // succeeded, so the sidebar never showed the error and the
+            // scheduler never slowed down.
+            console.warn("Tracearr badge update failed:", e.message);
+            throw e;
         }
     }
 

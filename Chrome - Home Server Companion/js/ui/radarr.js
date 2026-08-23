@@ -1127,7 +1127,11 @@ async function updateRadarrBadge(url, key, existingQueue = null) {
         }
     } catch (e) {
         console.error("Radarr badge update error", e);
-        badge.classList.add('hidden');
+        // The badge keeps its last value — see the note in sonarr.js.
+        // Rethrown: BadgeManager turns this into the sidebar's error state,
+        // and the scheduler uses it to back off. Swallowing it left both
+        // dead.
+        throw e;
     }
 }
 

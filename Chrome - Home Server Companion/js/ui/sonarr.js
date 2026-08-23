@@ -1469,7 +1469,13 @@ async function updateSonarrBadge(url, key, existingQueue = null) {
         }
     } catch (e) {
         console.error("Sonarr badge update error", e);
-        badge.classList.add('hidden');
+        // The badge keeps its last value. A count that is a few seconds old
+        // says more than no count, and a blank badge reads as "nothing
+        // queued" rather than "could not ask".
+        // Rethrown: BadgeManager turns this into the sidebar's error state,
+        // and the scheduler uses it to back off. Swallowing it left both
+        // dead.
+        throw e;
     }
 }
 

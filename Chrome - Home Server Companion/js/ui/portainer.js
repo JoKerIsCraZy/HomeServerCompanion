@@ -506,6 +506,10 @@ export async function updatePortainerBadge_Dashboard(url, token) {
             metric: `${running} running`
         };
     } catch (error) {
-        return { status: 'offline', metric: '--' };
+        // The return value goes nowhere: BadgeManager is the only caller and
+        // ignores it. Reporting offline by returning meant the failure was
+        // invisible to both the sidebar and the scheduler.
+        console.warn("Portainer badge update failed:", error.message);
+        throw error;
     }
 }

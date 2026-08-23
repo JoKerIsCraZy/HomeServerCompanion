@@ -18,7 +18,7 @@ export async function initTautulli(url, key, state) {
         
         // Update badge directly from this data to ensure sync
         // Update badge directly using shared function
-        updateTautulliBadge(url, key, activity.sessions || []);
+        updateTautulliBadge(url, key, activity.sessions || []).catch(() => {}); // fire-and-forget: the view has its own error handling
       } catch (e) {
         console.error("Tautulli Auto-refresh error", e);
       }
@@ -343,5 +343,8 @@ export async function updateTautulliBadge(url, key, existingSessions = null) {
     }
   } catch (e) {
     console.error("Tautulli badge update error", e);
+    // Rethrown: BadgeManager turns this into the sidebar's error state, and
+    // the scheduler uses it to back off.
+    throw e;
   }
 }

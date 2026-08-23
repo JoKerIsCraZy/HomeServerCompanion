@@ -681,7 +681,7 @@ export async function initSabnzbd(url, key, state) {
             }
             
             // Badge
-            updateSabnzbdBadge(url, key, queue);
+            updateSabnzbdBadge(url, key, queue).catch(() => {}); // fire-and-forget: the view has its own error handling
 
             renderSabnzbdQueue(queue.slots || [], state, url, key);
 
@@ -1012,5 +1012,10 @@ export async function updateSabnzbdBadge(url, key, existingQueue = null) {
         badge.classList.add('hidden');
       }
     }
-  } catch(e) { }
+  } catch (e) {
+    console.warn("SABnzbd badge update failed:", e.message);
+    // Rethrown: BadgeManager turns this into the sidebar's error state, and
+    // the scheduler uses it to back off. Swallowing it left both dead.
+    throw e;
+  }
 }
