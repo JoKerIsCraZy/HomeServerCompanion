@@ -11,6 +11,12 @@ import poller from './Poller.js';
 class BadgeManager {
     constructor() {
         this.intervals = new Map();
+        // Pending stagger timers. stopAll() used to clear only the registered
+        // tasks, and the staggered starts are setTimeouts that have not fired
+        // yet - so a second startAll() within the first six seconds left the
+        // earlier round of timers running and every badge registered twice,
+        // each registration firing its first request immediately.
+        this.pendingStarts = [];
         this.activeService = null;
         this.defaultInterval = 5000;
     }
@@ -46,9 +52,9 @@ class BadgeManager {
 
             const delay = index * 1000; // 1 second stagger
 
-            setTimeout(() => {
+            this.pendingStarts.push(setTimeout(() => {
                 this._startServiceBadge(svc, interval);
-            }, delay);
+            }, delay));
         });
     }
 
@@ -126,6 +132,9 @@ class BadgeManager {
      * Stop all badge updates
      */
     stopAll() {
+        for (const timerId of this.pendingStarts) clearTimeout(timerId);
+        this.pendingStarts = [];
+
         for (const taskName of this.intervals.values()) {
             poller.unregister(taskName);
         }

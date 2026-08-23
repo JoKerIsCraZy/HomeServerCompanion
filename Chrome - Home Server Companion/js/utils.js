@@ -632,96 +632,110 @@ export async function showIpInfoModal(ip) {
 
 export async function checkAndShowChangelog() {
     const version = chrome.runtime.getManifest().version;
-    
+
     // Wrapper for local storage
     const getStorage = (key) => new Promise(resolve => chrome.storage.local.get(key, resolve));
     const result = await getStorage(['last_run_version']);
-    
-    if (result.last_run_version !== version) {
-        // Create changelog content safely using DOM API
-        const changelogItems = [
-            { title: 'Tracearr:', desc: 'New service for monitoring Plex streams with live progress bars, stream details, and a statistics dashboard.' },
-            { title: 'Seerr (formerly Overseerr):', desc: 'Rebranded with Multi-Auth support (API Key, Local Account, Plex Sign-In). Your existing settings migrate automatically on first launch.' },
-            { title: 'Unraid Temperatures:', desc: 'Live CPU, Motherboard, and Hottest Disk temperature cards on the Unraid dashboard (requires Unraid OS 7.3+ / API v4.30).' },
-            { title: 'Docker Template Icons:', desc: 'Unraid containers now show their template icons directly in the list — no more two-letter placeholders.' },
-            { title: 'Instant Load:', desc: 'Unraid tab renders from the last snapshot immediately while fetching fresh data in the background. No more blank screens.' },
-            { title: 'Responsive Design:', desc: 'Mobile and tablet optimized interface with touch-friendly navigation and a reusable component library.' },
-            { title: 'Security Hardening:', desc: 'Tighter Content Security Policy, DOM injection protection, and confirmation prompts before opening external links from Docker labels.' },
-            { title: 'Performance:', desc: 'Up to 3× faster dashboard refresh — smarter polling, staggered badge updates, and fewer API roundtrips.' },
-            { title: 'Bug Fixes:', desc: 'Fullscreen button now opens correctly, Seerr request statuses display accurately, Tracearr empty state clears when streams start.' }
-        ];
-        
-        // Create modal with DOM
-        const modal = document.createElement('div');
-        modal.className = 'custom-modal-backdrop';
 
-        const content = document.createElement('div');
-        content.className = 'custom-modal';
-        // Constrain to popup viewport — Chrome extension popups are small.
-        // Use flex column so the body can scroll while header/footer stay pinned.
-        content.style.maxHeight = '85vh';
-        content.style.display = 'flex';
-        content.style.flexDirection = 'column';
+    if (result.last_run_version === version) return;
 
-        const header = document.createElement('div');
-        header.className = 'custom-modal-header';
-        header.style.flexShrink = '0';
-        header.textContent = `What's New in v${version}`;
-
-        const body = document.createElement('div');
-        body.className = 'custom-modal-body';
-        body.style.textAlign = 'left';
-        body.style.padding = '14px 18px';
-        body.style.fontSize = '12.5px';
-        body.style.overflowY = 'auto';
-        body.style.flex = '1 1 auto';
-        body.style.minHeight = '0';
-
-        const ul = document.createElement('ul');
-        ul.style.cssText = 'padding-left: 18px; margin: 0; list-style-type: disc;';
-
-        changelogItems.forEach(item => {
-            const li = document.createElement('li');
-            li.style.marginBottom = '6px';
-            li.style.lineHeight = '1.4';
-            const b = document.createElement('b');
-            b.textContent = item.title;
-            li.appendChild(b);
-            li.appendChild(document.createTextNode(' ' + item.desc));
-            ul.appendChild(li);
-        });
-
-        body.appendChild(ul);
-        
-        const footer = document.createElement('div');
-        footer.className = 'custom-modal-footer';
-        footer.style.flexShrink = '0';
-
-        const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'modal-btn confirm';
-        confirmBtn.style.backgroundColor = '#2196f3';
-        confirmBtn.textContent = 'Awesome!';
-        footer.appendChild(confirmBtn);
-        
-        content.appendChild(header);
-        content.appendChild(body);
-        content.appendChild(footer);
-        modal.appendChild(content);
-        
-        document.body.appendChild(modal);
-        requestAnimationFrame(() => modal.classList.add('show'));
-        
-        await new Promise(resolve => {
-            const cleanup = () => {
-                modal.classList.remove('show');
-                setTimeout(() => modal.remove(), 200);
-                resolve();
-            };
-            confirmBtn.addEventListener('click', cleanup);
-            modal.addEventListener('click', (e) => { if (e.target === modal) cleanup(); });
-        });
-        
-        // Save new version so it doesn't show again
-        await new Promise(resolve => chrome.storage.local.set({ last_run_version: version }, resolve));
+    // A profile that has never recorded a version and has never finished the
+    // setup wizard is a fresh install, not an upgrade. It was being shown
+    // "What's New in v4.0.0" as its first ever screen, listing changes against
+    // a version it never ran. Record the version and say nothing.
+    if (!result.last_run_version) {
+        const sync = await new Promise(resolve =>
+            chrome.storage.sync.get(['setupCompleted'], resolve));
+        if (!sync.setupCompleted) {
+            await new Promise(resolve =>
+                chrome.storage.local.set({ last_run_version: version }, resolve));
+            return;
+        }
     }
+
+    // Create changelog content safely using DOM API
+    const changelogItems = [
+        { title: 'Tracearr:', desc: 'New service for monitoring Plex streams with live progress bars, stream details, and a statistics dashboard.' },
+        { title: 'Seerr (formerly Overseerr):', desc: 'Rebranded with Multi-Auth support (API Key, Local Account, Plex Sign-In). Your existing settings migrate automatically on first launch.' },
+        { title: 'Unraid Temperatures:', desc: 'Live CPU, Motherboard, and Hottest Disk temperature cards on the Unraid dashboard (requires Unraid OS 7.3+ / API v4.30).' },
+        { title: 'Docker Template Icons:', desc: 'Unraid containers now show their template icons directly in the list — no more two-letter placeholders.' },
+        { title: 'Instant Load:', desc: 'Unraid tab renders from the last snapshot immediately while fetching fresh data in the background. No more blank screens.' },
+        { title: 'Responsive Design:', desc: 'Mobile and tablet optimized interface with touch-friendly navigation and a reusable component library.' },
+        { title: 'Security Hardening:', desc: 'Tighter Content Security Policy, DOM injection protection, and confirmation prompts before opening external links from Docker labels.' },
+        { title: 'Performance:', desc: 'Up to 3× faster dashboard refresh — smarter polling, staggered badge updates, and fewer API roundtrips.' },
+        { title: 'Bug Fixes:', desc: 'Fullscreen button now opens correctly, Seerr request statuses display accurately, Tracearr empty state clears when streams start.' }
+    ];
+    
+    // Create modal with DOM
+    const modal = document.createElement('div');
+    modal.className = 'custom-modal-backdrop';
+
+    const content = document.createElement('div');
+    content.className = 'custom-modal';
+    // Constrain to popup viewport — Chrome extension popups are small.
+    // Use flex column so the body can scroll while header/footer stay pinned.
+    content.style.maxHeight = '85vh';
+    content.style.display = 'flex';
+    content.style.flexDirection = 'column';
+
+    const header = document.createElement('div');
+    header.className = 'custom-modal-header';
+    header.style.flexShrink = '0';
+    header.textContent = `What's New in v${version}`;
+
+    const body = document.createElement('div');
+    body.className = 'custom-modal-body';
+    body.style.textAlign = 'left';
+    body.style.padding = '14px 18px';
+    body.style.fontSize = '12.5px';
+    body.style.overflowY = 'auto';
+    body.style.flex = '1 1 auto';
+    body.style.minHeight = '0';
+
+    const ul = document.createElement('ul');
+    ul.style.cssText = 'padding-left: 18px; margin: 0; list-style-type: disc;';
+
+    changelogItems.forEach(item => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '6px';
+        li.style.lineHeight = '1.4';
+        const b = document.createElement('b');
+        b.textContent = item.title;
+        li.appendChild(b);
+        li.appendChild(document.createTextNode(' ' + item.desc));
+        ul.appendChild(li);
+    });
+
+    body.appendChild(ul);
+    
+    const footer = document.createElement('div');
+    footer.className = 'custom-modal-footer';
+    footer.style.flexShrink = '0';
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'modal-btn confirm';
+    confirmBtn.style.backgroundColor = '#2196f3';
+    confirmBtn.textContent = 'Awesome!';
+    footer.appendChild(confirmBtn);
+    
+    content.appendChild(header);
+    content.appendChild(body);
+    content.appendChild(footer);
+    modal.appendChild(content);
+    
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add('show'));
+    
+    await new Promise(resolve => {
+        const cleanup = () => {
+            modal.classList.remove('show');
+            setTimeout(() => modal.remove(), 200);
+            resolve();
+        };
+        confirmBtn.addEventListener('click', cleanup);
+        modal.addEventListener('click', (e) => { if (e.target === modal) cleanup(); });
+    });
+    
+    // Save new version so it doesn't show again
+    await new Promise(resolve => chrome.storage.local.set({ last_run_version: version }, resolve));
 }

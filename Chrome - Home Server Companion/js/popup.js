@@ -69,13 +69,18 @@ function createPortainerSidebarEntries(items, sidebar, spacer) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // Check for updates first
-  await checkAndShowChangelog();
-
   // Fullscreen Mode Detection - check if opened as standalone window
   if (new URLSearchParams(window.location.search).get('fullscreen') === 'true') {
     document.body.classList.add('fullscreen-mode');
   }
+
+  // Deliberately not awaited. This promise settles only when the user
+  // dismisses the dialog, and the call used to be the first statement in this
+  // handler - so the sidebar, the service view, badge polling and the search
+  // index all sat behind a modal until it was clicked away. It also has to
+  // run after the fullscreen class is on the body, because that is what the
+  // modal is sized against.
+  checkAndShowChangelog();
 
   // Fullscreen Button Handler - opens extension as standalone dashboard tab
   document.getElementById('fullscreen-btn')?.addEventListener('click', () => {
@@ -326,9 +331,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           });
       }
 
-      // Start background badge updates
-      startBackgroundBadgeUpdates();
-
       // Initialize Search UI (Background Warmup)
       import("./ui/searchUI.js").then((module) => {
           module.initSearchUI(state);
@@ -452,6 +454,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- Global Ctrl+S Shortcut for Unified Search ---
     document.addEventListener("keydown", (e) => {
+        // Leave a field the user is typing in alone. Every branch below calls
+        // preventDefault, so Ctrl+A - select all - was dead in the search box,
+        // the Prowlarr query field, the Portainer filter and every other input
+        // in the popup, and opened the NZB search instead.
+        const target = e.target;
+        const tag = target && target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" ||
+            (target && target.isContentEditable)) {
+            return;
+        }
+
         // Ctrl+S to open Unified Search
         if (e.ctrlKey && e.key === "s") {
             e.preventDefault(); // Prevent browser save dialog

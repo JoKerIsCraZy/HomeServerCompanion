@@ -332,7 +332,10 @@ async function renderServiceGrid(container, state, isUpdate = false) {
             cardHeader.appendChild(iconImg);
 
             const statusDot = document.createElement('div');
-            statusDot.className = 'status-dot casting-shadow';
+            // No .casting-shadow: nothing defines it, and updateCard() below
+            // reassigns className outright on the first status result, so it
+            // was gone within a frame of being set.
+            statusDot.className = 'status-dot';
             statusDot.id = 'status-' + svc.id;
             cardHeader.appendChild(statusDot);
 

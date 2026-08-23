@@ -494,7 +494,10 @@ async function performSearch(query, state) {
     } catch (e) {
         container.textContent = '';
         const errDiv = document.createElement('div');
-        errDiv.className = 'error-msg';
+        // .error-msg is defined in no stylesheet, so a failed search
+        // rendered as an unremarkable line of body text. .error-banner is
+        // the real one, used by every other view.
+        errDiv.className = 'error-banner';
         errDiv.textContent = 'Search failed: ' + e.message;
         container.appendChild(errDiv);
     }
@@ -536,7 +539,7 @@ function renderResults(results, container, state) {
         div.className = `search-result-item ${item.status.toLowerCase().replace(' ', '-')}`;
         
         // 1. Poster
-        if (item.poster && item.poster !== 'icons/placeholder.png') {
+        if (item.poster) {
             const img = document.createElement('img');
             img.src = item.poster;
             img.className = 'result-poster';
