@@ -304,26 +304,40 @@ export const controlDockhandContainer = async (url, apiKey, envId, id, action) =
 
 /**
  * Recreates a container on its newest image, keeping its configuration.
+ *
+ * The body is the container's create-options, not just a pair of flags — the
+ * endpoint's own description says so: "the body carries the container
+ * create-options (image, name, env, ports, volumes, …) alongside the two
+ * control flags". The schema declares no `required` list, which is misleading:
+ * sending nothing produced "Unexpected end of JSON input", and sending only
+ * the flags produced "Cannot read properties of undefined (reading
+ * 'includes')" — the server reading the image it was not given.
+ *
+ * One limit worth knowing: repulling fetches whatever the image reference
+ * points at now. For a container on `:latest` that is the new build. For one
+ * pinned to `:1.2.2` it is the same image again, and moving it to 1.2.3 means
+ * changing the reference, which this does not do on its own.
+ *
  * @param {string} url
  * @param {string} apiKey
  * @param {number|string} envId
  * @param {string} id - Container id or name
+ * @param {Object} [options]
+ * @param {string} [options.image] - Image reference to recreate on
+ * @param {string} [options.name] - Container name to keep
  * @returns {Promise<Object>} `{ success, id }`
  */
-export const updateDockhandContainer = async (url, apiKey, envId, id) => {
+export const updateDockhandContainer = async (url, apiKey, envId, id, { image, name } = {}) => {
     try {
         return await request(url, apiKey, `/api/containers/${encodeURIComponent(id)}/update`, {
             method: 'POST',
             query: { env: requireEnv(envId) },
-            // The body is required. This used to send none and put a `pull`
-            // query parameter that the endpoint does not have, so the server
-            // tried to read JSON from an empty request and answered
-            // "Unexpected end of JSON input".
-            //
-            // image and name are left out on purpose: omitting them keeps the
-            // container's current ones, which is what updating in place means.
-            // repullImage is the part that actually fetches the newer image.
-            body: { repullImage: true, startAfterUpdate: true }
+            body: {
+                ...(image ? { image } : {}),
+                ...(name ? { name } : {}),
+                repullImage: true,
+                startAfterUpdate: true
+            }
         });
     } catch (error) {
         console.error('Dockhand container update error:', error);

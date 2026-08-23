@@ -382,7 +382,13 @@ function buildRow(container, url, key) {
         if (!ok) return;
         flag.disabled = true;
         try {
-            await updateDockhandContainer(url, key, currentEnvId, container.id);
+            // The image and name go with it: the endpoint wants the
+            // container's create-options, and without the image the server
+            // fails on it.
+            await updateDockhandContainer(url, key, currentEnvId, container.id, {
+                image: container.image,
+                name: container.name
+            });
             showNotification(`${container.name} updated`, 'success');
             flag.classList.add('hidden');
             await refresh(url, key);
