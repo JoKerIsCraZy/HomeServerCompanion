@@ -630,16 +630,6 @@ function renderSeerrConfigStep() {
 
 
 // Show save status feedback
-function showSaveStatus(message) {
-    const statusEl = document.getElementById('testStatus');
-    if (statusEl) {
-        statusEl.innerHTML = `<span style="color: #48bb78;">✓ ${message}</span>`;
-        setTimeout(() => {
-            statusEl.innerHTML = '';
-        }, 2000);
-    }
-}
-
 // Plex OAuth for Setup Wizard
 async function startWizardPlexOAuth() {
     const statusEl = document.getElementById('plexAuthStatus');
