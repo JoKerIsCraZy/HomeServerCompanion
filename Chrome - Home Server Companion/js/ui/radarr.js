@@ -425,7 +425,7 @@ function renderRadarrQueue(records, state) {
 
         card.innerHTML = `
             <div class="queue-poster">
-                <img id="queue-poster-${safeItemId}" src="${escapeHtml(posterUrl)}" alt="" onerror="this.src='icons/icon48.png'">
+                <img id="queue-poster-${safeItemId}" src="${escapeHtml(posterUrl)}" alt="">
             </div>
             <div class="queue-content">
                 <div class="queue-header">
@@ -457,6 +457,20 @@ function renderRadarrQueue(records, state) {
                 <button class="queue-action-btn delete-btn" title="Remove from Queue">×</button>
             </div>
         `;
+
+        // Poster fallback. This was an inline onerror="" attribute, which the
+        // extension CSP (script-src 'self', no inline scripts) refuses to run:
+        // a poster the server could not serve left a broken-image glyph in the
+        // queue instead of the app icon. Sonarr's queue already does it this
+        // way; a listener is a script, not inline markup, so CSP allows it.
+        const posterImg = card.querySelector('#queue-poster-' + safeItemId);
+        if (posterImg) {
+            posterImg.addEventListener('error', () => {
+                if (!posterImg.src.endsWith('icons/icon48.png')) {
+                    posterImg.src = 'icons/icon48.png';
+                }
+            });
+        }
 
         if (!movie || !movie.title || movie.title === 'Unknown') {
             Radarr.parseTitle(state.configs.radarrUrl, state.configs.radarrKey, item.title)
@@ -1155,13 +1169,13 @@ async function loadRadarrMissing(url, key, state, forceRefresh = false) {
         try {
             const cache = await new Promise(resolve => chrome.storage.local.get(['radarrMissingCache'], resolve));
             if (cache.radarrMissingCache) {
-                const { timestamp, data } = cache.radarrMissingCache;
+                const { timestamp, data, total } = cache.radarrMissingCache;
                 const age = (Date.now() - timestamp) / 1000 / 60; // Minutes
-                
+
                 if (age < 15) {
                     // Use cache
-                    renderRadarrMissing(data, state);
-                    return; 
+                    renderRadarrMissing(data, state, total);
+                    return;
                 }
             }
         } catch(e) { console.warn("Cache read error", e); }
@@ -1176,15 +1190,19 @@ async function loadRadarrMissing(url, key, state, forceRefresh = false) {
     try {
         const data = await Radarr.getRadarrMissing(url, key);
         const records = data.records || [];
-        
+        // The request asks for one page. totalRecords is how many there really
+        // are, and the header has to say so rather than counting the page.
+        const total = typeof data.totalRecords === 'number' ? data.totalRecords : records.length;
+
         // Render
-        renderRadarrMissing(records, state);
+        renderRadarrMissing(records, state, total);
         
         // Save Cache
         chrome.storage.local.set({
             radarrMissingCache: {
                 timestamp: Date.now(),
-                data: records
+                data: records,
+                total
             }
         });
         
@@ -1197,18 +1215,27 @@ async function loadRadarrMissing(url, key, state, forceRefresh = false) {
     }
 }
 
-function renderRadarrMissing(records, state) {
+function renderRadarrMissing(records, state, total = null) {
     const container = document.getElementById("radarr-missing");
     if (!container) return;
     container.textContent = '';
     
+    // `isAvailable` is Radarr's own answer to "should this be searched yet",
+    // and it accounts for the per-movie Minimum Availability setting. The date
+    // arithmetic below it was a guess at the same question that ignored that
+    // setting entirely: it hid a movie whose minimum availability is
+    // "Announced" or "In Cinemas" but whose digital date is still in the
+    // future, even though Radarr is actively looking for it.
     const now = new Date();
-    const filtered = records.filter(m => {
+    const isAvailable = (m) => {
+        if (typeof m.isAvailable === 'boolean') return m.isAvailable;
+        // Older Radarr builds omit the field; fall back to the date test.
         if (m.status === 'released') return true;
         if (m.digitalRelease && new Date(m.digitalRelease) <= now) return true;
         if (m.physicalRelease && new Date(m.physicalRelease) <= now) return true;
         return false;
-    });
+    };
+    const filtered = records.filter(isAvailable);
 
     // Sort by Date Descending
     const getReleaseDate = (m) => {
@@ -1224,7 +1251,11 @@ function renderRadarrMissing(records, state) {
     toolbar.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;";
     
     const countBadge = document.createElement('div');
-    countBadge.textContent = `${filtered.length} Missing`;
+    // Say when the list is a page of a longer one. It used to print the page
+    // length as though it were the whole backlog.
+    countBadge.textContent = (typeof total === 'number' && total > filtered.length)
+        ? `${filtered.length} of ${total} Missing`
+        : `${filtered.length} Missing`;
     countBadge.style.cssText = "font-weight: bold; color: var(--text-secondary); font-size: 0.9em;";
     
     const refreshBtn = document.createElement('button');
@@ -1258,17 +1289,10 @@ function renderRadarrMissing(records, state) {
         searchAllBtn.style.opacity = '0.7';
         
         try {
-            await fetch(`${state.configs.radarrUrl}/api/v3/command`, {
-                 method: 'POST',
-                 headers: { 
-                    'X-Api-Key': state.configs.radarrKey,
-                    'Content-Type': 'application/json'
-                 },
-                 body: JSON.stringify({ name: 'MissingMoviesSearch' })
-            });
+            await Radarr.searchAllMissingMovies(state.configs.radarrUrl, state.configs.radarrKey);
             showNotification('Started search for all missing movies', 'success');
         } catch (e) {
-            showNotification('Error starting search', 'error');
+            showNotification(`Error starting search: ${e.message}`, 'error');
         }
         
         setTimeout(() => {
@@ -1391,21 +1415,14 @@ function renderRadarrMissing(records, state) {
              searchBtn.style.pointerEvents = "none";
              searchBtn.textContent = "⏳";
              try {
-                 await fetch(`${state.configs.radarrUrl}/api/v3/command`, {
-                     method: 'POST',
-                     headers: { 
-                        'X-Api-Key': state.configs.radarrKey,
-                        'Content-Type': 'application/json'
-                     },
-                     body: JSON.stringify({
-                         name: 'MoviesSearch',
-                         movieIds: [movie.id]
-                     })
-                 });
+                 // Through the service layer, which checks the status. The
+                 // bare fetch this replaces resolved for 401/404/500 alike,
+                 // so a rejected API key still reported "Search started ✓".
+                 await Radarr.searchMovies(state.configs.radarrUrl, state.configs.radarrKey, [movie.id]);
                  showNotification('Search started', 'success');
                  searchBtn.textContent = "✓";
              } catch(err) {
-                 showNotification('Search failed', 'error');
+                 showNotification(`Search failed: ${err.message}`, 'error');
                  searchBtn.textContent = "❌";
              }
         };

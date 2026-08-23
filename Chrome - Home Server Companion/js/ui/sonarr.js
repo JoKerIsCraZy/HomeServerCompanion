@@ -1491,11 +1491,11 @@ async function loadSonarrMissing(url, key, state, forceRefresh = false) {
         try {
             const cache = await new Promise(resolve => chrome.storage.local.get(['sonarrMissingCache'], resolve));
             if (cache.sonarrMissingCache) {
-                const { timestamp, data } = cache.sonarrMissingCache;
+                const { timestamp, data, total } = cache.sonarrMissingCache;
                 const age = (Date.now() - timestamp) / 1000 / 60; // Minutes
                 if (age < 15) {
-                    renderSonarrMissing(data, state);
-                    return; 
+                    renderSonarrMissing(data, state, total);
+                    return;
                 }
             }
         } catch(e) { console.warn("Cache read error", e); }
@@ -1510,14 +1510,18 @@ async function loadSonarrMissing(url, key, state, forceRefresh = false) {
     try {
         const data = await Sonarr.getSonarrMissing(url, key);
         const records = data.records || [];
-        
-        renderSonarrMissing(records, state);
-        
+        // The request asks for one page. totalRecords is how many there really
+        // are, and the header has to say so rather than counting the page.
+        const total = typeof data.totalRecords === 'number' ? data.totalRecords : records.length;
+
+        renderSonarrMissing(records, state, total);
+
         // Save Cache
         chrome.storage.local.set({
             sonarrMissingCache: {
                 timestamp: Date.now(),
-                data: records
+                data: records,
+                total
             }
         });
         
@@ -1534,7 +1538,7 @@ async function loadSonarrMissing(url, key, state, forceRefresh = false) {
  * Renders missing episodes as a Poster Grid (similar to Calendar/Recent)
  * Filters for Released episodes only.
  */
-function renderSonarrMissing(records, state) {
+function renderSonarrMissing(records, state, total = null) {
     const container = document.getElementById("sonarr-missing");
     if (!container) return;
     container.textContent = '';
@@ -1554,9 +1558,13 @@ function renderSonarrMissing(records, state) {
     toolbar.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;";
     
     const countBadge = document.createElement('div');
-    countBadge.textContent = `${filtered.length} Missing`;
+    // Say when the list is a page of a longer one. It used to print the page
+    // length as though it were the whole backlog.
+    countBadge.textContent = (typeof total === 'number' && total > filtered.length)
+        ? `${filtered.length} of ${total} Missing`
+        : `${filtered.length} Missing`;
     countBadge.style.cssText = "font-weight: bold; color: var(--text-secondary); font-size: 0.9em;";
-    
+
     const refreshBtn = document.createElement('button');
 
     // Create refresh SVG
@@ -1634,17 +1642,10 @@ function renderSonarrMissing(records, state) {
         searchAllBtn.style.opacity = '0.7';
         
         try {
-            await fetch(`${state.configs.sonarrUrl}/api/v3/command`, {
-                 method: 'POST',
-                 headers: { 
-                    'X-Api-Key': state.configs.sonarrKey,
-                    'Content-Type': 'application/json'
-                 },
-                 body: JSON.stringify({ name: 'MissingEpisodeSearch' })
-            });
+            await Sonarr.searchAllMissingEpisodes(state.configs.sonarrUrl, state.configs.sonarrKey);
             showNotification('Started search for all missing episodes', 'success');
         } catch (e) {
-            showNotification('Error starting search', 'error');
+            showNotification(`Error starting search: ${e.message}`, 'error');
         }
         
         setTimeout(() => {
@@ -1812,21 +1813,14 @@ function renderSonarrMissing(records, state) {
              searchBtn.style.pointerEvents = "none";
              searchBtn.textContent = "⏳";
              try {
-                 await fetch(`${state.configs.sonarrUrl}/api/v3/command`, {
-                     method: 'POST',
-                     headers: { 
-                        'X-Api-Key': state.configs.sonarrKey,
-                        'Content-Type': 'application/json'
-                     },
-                     body: JSON.stringify({
-                         name: 'EpisodeSearch',
-                         episodeIds: [item.id]
-                     })
-                 });
+                 // Through the service layer, which checks the status. The
+                 // bare fetch this replaces resolved for 401/404/500 alike,
+                 // so a rejected API key still reported "Search started ✓".
+                 await Sonarr.searchEpisodes(state.configs.sonarrUrl, state.configs.sonarrKey, [item.id]);
                  showNotification('Search started', 'success');
                  searchBtn.textContent = "✓";
              } catch(err) {
-                 showNotification('Search failed', 'error');
+                 showNotification(`Search failed: ${err.message}`, 'error');
                  searchBtn.textContent = "❌";
              }
         };
