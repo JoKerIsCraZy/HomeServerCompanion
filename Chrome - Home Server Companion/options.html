@@ -106,6 +106,32 @@
         gap: 16px;
       }
 
+      .docker-source-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 20px;
+        margin-top: 4px;
+      }
+
+      .docker-source {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .docker-source input {
+        width: auto;
+        margin: 0;
+      }
+
+      .docker-source img {
+        width: 16px;
+        height: 16px;
+        object-fit: contain;
+      }
+
       .settings-title {
         margin: 0;
         font-size: 22px;
@@ -1105,6 +1131,31 @@
             </select>
             <div class="help-text">
               Choose which service to open by default.
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Docker search sources</label>
+            <div class="docker-source-list">
+              <label class="docker-source">
+                <input type="checkbox" id="dockerSearchUnraid" checked />
+                <img src="icons/unraid.png" alt="" aria-hidden="true" />
+                Unraid
+              </label>
+              <label class="docker-source">
+                <input type="checkbox" id="dockerSearchPortainer" checked />
+                <img src="icons/portainer.png" alt="" aria-hidden="true" />
+                Portainer
+              </label>
+              <label class="docker-source">
+                <input type="checkbox" id="dockerSearchDockhand" checked />
+                <img src="icons/dockhand.png" alt="" aria-hidden="true" />
+                Dockhand
+              </label>
+            </div>
+            <div class="help-text">
+              Which services the <code>d:</code> prefix searches. All three can
+              manage the same Docker host, and then one container comes back
+              once per source — untick the ones you do not want in the results.
             </div>
           </div>
           <div class="form-group">

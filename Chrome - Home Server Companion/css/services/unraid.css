@@ -400,6 +400,21 @@
 }
 .unraid-list-controls .search-input-full { flex: 1; min-width: 0; }
 
+/* An icon button in this row is as tall as the fields next to it. .icon-btn is
+   a 32px square on its own and .sort-select has min-height: 34px, and two
+   pixels apart on one line reads as a mistake.
+   The height stretches to the row. The width does not: `width: auto` plus
+   aspect-ratio left it flexible, and the search input beside it is `flex: 1`,
+   so the button was squeezed down to its glyph. A fixed basis that cannot
+   shrink is the whole trick. */
+.unraid-list-controls .icon-btn,
+.unraid-list-controls .refresh-btn {
+    align-self: stretch;
+    height: auto;
+    flex: 0 0 34px;
+    width: 34px;
+}
+
 /* The list is a stack of cards. In fullscreen the rule further down turns it
    into a three-column grid with its own gap, which overrides both of these. */
 .unraid-row-list {

@@ -41,9 +41,11 @@ const LOG_TAIL_LINES = 200;
  * @param {string} [options.method='GET']
  * @param {Object} [options.query] - Query parameters; undefined values dropped
  * @param {Object} [options.body] - JSON body for a write
- * @returns {Promise<any>} Parsed JSON, or null for an empty body
+ * @param {boolean} [options.raw] - Skip JSON parsing. Some endpoints report
+ *   progress over Server-Sent Events, and their body is not JSON at all.
+ * @returns {Promise<any>} Parsed JSON, or null for an empty or unparseable body
  */
-const request = async (url, apiKey, path, { method = 'GET', query, body } = {}) => {
+const request = async (url, apiKey, path, { method = 'GET', query, body, raw = false } = {}) => {
     const base = normalizeUrl(url);
     const search = new URLSearchParams();
     for (const [k, v] of Object.entries(query || {})) {
@@ -93,7 +95,14 @@ const request = async (url, apiKey, path, { method = 'GET', query, body } = {}) 
     if (response.status === 204) return null;
     const text = await response.text();
     if (!text) return null;
-    return JSON.parse(text);
+    if (raw) return text;
+    try {
+        return JSON.parse(text);
+    } catch {
+        // An endpoint that streams progress answers with an event stream, not
+        // JSON. The request itself succeeded, which is all the caller needs.
+        return null;
+    }
 };
 
 /**
@@ -305,7 +314,16 @@ export const updateDockhandContainer = async (url, apiKey, envId, id) => {
     try {
         return await request(url, apiKey, `/api/containers/${encodeURIComponent(id)}/update`, {
             method: 'POST',
-            query: { env: requireEnv(envId), pull: 'true' }
+            query: { env: requireEnv(envId) },
+            // The body is required. This used to send none and put a `pull`
+            // query parameter that the endpoint does not have, so the server
+            // tried to read JSON from an empty request and answered
+            // "Unexpected end of JSON input".
+            //
+            // image and name are left out on purpose: omitting them keeps the
+            // container's current ones, which is what updating in place means.
+            // repullImage is the part that actually fetches the newer image.
+            body: { repullImage: true, startAfterUpdate: true }
         });
     } catch (error) {
         console.error('Dockhand container update error:', error);
@@ -357,6 +375,37 @@ export const getDockhandStacks = async (url, apiKey, envId) => {
         return [];
     } catch (error) {
         console.error('Dockhand stacks error:', error);
+        throw error;
+    }
+};
+
+/**
+ * Starts, stops or restarts a compose stack.
+ *
+ * Stacks are addressed by name, not by id. All three are asynchronous on the
+ * server — start and stop return immediately and do the work behind the
+ * scenes, restart reports progress over Server-Sent Events — so a resolved
+ * promise means "accepted", not "finished".
+ * @param {string} url
+ * @param {string} apiKey
+ * @param {number|string} envId
+ * @param {string} name - Stack name
+ * @param {'start'|'stop'|'restart'} action
+ * @returns {Promise<any>}
+ */
+export const controlDockhandStack = async (url, apiKey, envId, name, action) => {
+    if (!['start', 'stop', 'restart'].includes(action)) {
+        throw new Error(`Unsupported stack action: ${action}`);
+    }
+    if (!name) throw new Error('Dockhand: the stack has no name to act on');
+    try {
+        return await request(url, apiKey, `/api/stacks/${encodeURIComponent(name)}/${action}`, {
+            method: 'POST',
+            query: { env: requireEnv(envId) },
+            raw: action === 'restart'
+        });
+    } catch (error) {
+        console.error(`Dockhand stack ${action} error:`, error);
         throw error;
     }
 };

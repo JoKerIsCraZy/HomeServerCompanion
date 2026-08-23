@@ -30,7 +30,8 @@ import {
     controlDockhandContainer,
     updateDockhandContainer,
     getDockhandLogs,
-    getDockhandStacks
+    getDockhandStacks,
+    controlDockhandStack
 } from "../../services/dockhand.js";
 import { formatSize } from "../../services/utils.js";
 import { showNotification, showConfirmModal } from "../utils.js";
@@ -101,7 +102,7 @@ async function refresh(url, key) {
 
     if (activeTab() === 'dockhand-tab-stacks') {
         const stacks = await getDockhandStacks(url, key, currentEnvId);
-        renderStacks(stacks);
+        renderStacks(stacks, url, key);
         return;
     }
 
@@ -486,10 +487,13 @@ function applyFilter() {
 }
 
 /**
- * Lists the compose stacks of the environment.
+ * Lists the compose stacks of the environment, with the same hover actions the
+ * container cards carry.
  * @param {Array} stacks
+ * @param {string} url
+ * @param {string} key
  */
-function renderStacks(stacks) {
+function renderStacks(stacks, url, key) {
     const list = document.getElementById('dockhand-stack-list');
     if (!list) return;
     list.replaceChildren();
@@ -539,7 +543,41 @@ function renderStacks(stacks) {
         text.textContent = stack.status || stack.state || (up ? 'Running' : 'Stopped');
         state.append(dot, text);
 
-        row.append(icon, main, state);
+        const stackName = stack.name;
+        const actions = document.createElement('div');
+        actions.className = 'unraid-row-actions';
+        const restartBtn = makeAction('\u27f3', `Restart the ${stackName} stack`);
+        const startBtn = makeAction('\u25b6', `Start the ${stackName} stack`);
+        const stopBtn = makeAction('\u25a0', `Stop the ${stackName} stack`);
+        startBtn.classList.toggle('hidden', up);
+        stopBtn.classList.toggle('hidden', !up);
+        restartBtn.classList.toggle('hidden', !up);
+        actions.append(restartBtn, startBtn, stopBtn);
+
+        // Every stack action is asynchronous on the server: the response means
+        // accepted, not done. Compose needs a moment, so the list is re-read
+        // after a beat — reading it at once would show the state the stack is
+        // leaving and look like nothing happened.
+        const act = async (btn, action, message) => {
+            btn.disabled = true;
+            try {
+                await controlDockhandStack(url, key, currentEnvId, stackName, action);
+                showNotification(message, 'success');
+                setTimeout(() => {
+                    refresh(url, key).catch(e => showError(e.message));
+                }, 1500);
+            } catch (e) {
+                showNotification(`${stackName}: ${e.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        startBtn.addEventListener('click', () => act(startBtn, 'start', `${stackName} starting`));
+        stopBtn.addEventListener('click', () => act(stopBtn, 'stop', `${stackName} stopping`));
+        restartBtn.addEventListener('click', () => act(restartBtn, 'restart', `${stackName} restarting`));
+
+        row.append(icon, main, actions, state);
         list.appendChild(row);
     }
 }

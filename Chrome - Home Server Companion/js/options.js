@@ -601,6 +601,18 @@ const loadOptions = () => {
             badgeIntervalEl.value = interval.toString();
         }
 
+        // Which sources the unified Docker search queries. An absent key means
+        // all of them: that is what it did before the setting existed, and an
+        // upgrade must not quietly narrow the results.
+        const chosenSources = Array.isArray(items.dockerSearchSources)
+            ? items.dockerSearchSources
+            : null;
+        for (const id of ['unraid', 'portainer', 'dockhand']) {
+            const box = document.getElementById(
+                `dockerSearch${id.charAt(0).toUpperCase()}${id.slice(1)}`);
+            if (box) box.checked = chosenSources === null || chosenSources.includes(id);
+        }
+
         services.forEach(service => {
             const urlEl = document.getElementById(`${service}Url`);
             const keyEl = document.getElementById(`${service}Key`);
@@ -1077,9 +1089,16 @@ document.addEventListener('DOMContentLoaded', () => {
              // const currentOrder = getCurrentOrder(); // Use window.currentOrder
              const currentOrder = window.currentOrder;
              const startPage = document.getElementById('startPage').value;
+             // Stored as the list of sources that take part. An absent key
+             // means all of them, which is what the search did before this
+             // setting existed.
+             const dockerSearchSources = ['unraid', 'portainer', 'dockhand']
+                 .filter(id => document.getElementById(
+                     `dockerSearch${id.charAt(0).toUpperCase()}${id.slice(1)}`)?.checked);
              const badgeCheckInterval = parseInt(document.getElementById('badgeCheckInterval').value) || 5000;
 
              saveSync({
+                 dockerSearchSources,
                  serviceOrder: window.currentOrder || currentOrder,
                  startPage: startPage,
                  // enablePersistence: true // We can keep this true internally or deprecate it. Let's rely on StartPage value.

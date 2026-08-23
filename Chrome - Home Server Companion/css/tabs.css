@@ -160,6 +160,18 @@
     color: #fff;
 }
 
+/* Dockhand - Blue.
+   Not optional decoration: .tab-glider carries no background of its own, so a
+   view without one of these rules has an invisible highlight and no way to see
+   which sub-tab is active. */
+#dockhand-view .sub-tabs .tab-glider {
+    background: linear-gradient(135deg, #4a94f5, #2f80ed);
+    box-shadow: 0 2px 5px rgba(47, 128, 237, 0.3);
+}
+#dockhand-view .sub-tab-btn.active {
+    color: #fff;
+}
+
 /* Seerr - Purple */
 #seerr-view .sub-tabs .tab-glider {
     background: linear-gradient(135deg, #ab47bc, #9c27b0);

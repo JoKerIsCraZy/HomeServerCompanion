@@ -493,7 +493,8 @@ body.fullscreen-mode #unraid-view .sub-tab-btn {
   border-radius: 12px !important;
 }
 
-body.fullscreen-mode #unraid-view .tab-glider {
+body.fullscreen-mode #unraid-view .tab-glider,
+body.fullscreen-mode #dockhand-view .tab-glider {
   top: 8px !important;
   left: 8px !important;
   height: calc(100% - 16px) !important;
