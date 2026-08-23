@@ -1,6 +1,22 @@
+/* css/fullscreen.css */
 /**
- * Fullscreen Dashboard Mode Styles
- * Transforms the popup into a full website experience
+ * Fullscreen layout — the bulk of it, but NOT the last word.
+ *
+ * css/fullscreen-v4.css loads after this file *and* after responsive.css, and
+ * overrides eight selectors defined here:
+ *
+ *     body.fullscreen-mode          .app-container   .content-area
+ *     #main-header                  .sidebar         .view
+ *     #fullscreen-btn               .card
+ *
+ * If a change here has no effect, that is why. Look there first.
+ *
+ * The two files were not merged, and deliberately so. Folding v4 into this one
+ * would move its rules ahead of responsive.css, which also defines
+ * .app-container, .content-area, .sidebar, .dashboard-grid and .widget under
+ * body.fullscreen-mode — so responsive.css would start winning where v4 wins
+ * today, and the fullscreen layout would change. A tidier file list is not
+ * worth that.
  */
 
 /* ============================================

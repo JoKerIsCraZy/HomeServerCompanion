@@ -1,5 +1,17 @@
 /* css/fullscreen-v4.css */
 /**
+ * The last word on fullscreen layout.
+ *
+ * Loaded after both css/fullscreen.css and css/responsive.css, which is what
+ * makes the rules here win. That ordering is load-bearing: eight of these
+ * selectors are also in fullscreen.css, and five are also in responsive.css.
+ * Moving this file earlier in popup.html, or merging it into either of them,
+ * hands those selectors to a different definition.
+ *
+ * The "v4" in the name is the release it arrived in, not a schema version.
+ */
+
+/**
  * Fullscreen Mode Styles
  * Enhanced layout for standalone window
  */
