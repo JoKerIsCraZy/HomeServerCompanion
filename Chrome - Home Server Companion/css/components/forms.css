@@ -1,10 +1,26 @@
 /* css/components/forms.css */
 /**
- * Form Component Library
- * Inputs, selects, checkboxes, toggles
+ * Only the rules something actually applies.
+ *
+ * This file was written as a BEM component library — .btn--primary,
+ * .card__header, .progress-bar__fill. The application never adopted that
+ * vocabulary: it names the same things .btn-primary, .progress-bar-fill, and
+ * styles the rest per service. So roughly nine tenths of these files matched
+ * no element in any view, and had done since they were added.
+ *
+ * They were not harmless. A second, unused definition of a component is a trap
+ * for whoever writes the next one: components.css carried its own .sub-tab-btn
+ * pill alongside the sliding one in tabs.css, and the leftover border and glow
+ * from it fired on every sub-tab click while the real pill was still moving.
+ *
+ * The files stay rather than being merged away. They load after components.css
+ * and therefore win the cascade for .form-group, .input and .label; folding them
+ * into it would hand that back to an older definition and change how the
+ * application looks. Deleting a rule nobody applies changes nothing.
  */
 
 /* === Base Input === */
+
 .input {
     display: block;
     width: 100%;
@@ -35,9 +51,8 @@
 .input:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
+}/* === Input Group === */
 
-/* === Input Group === */
 .input-group {
     display: flex;
     border: var(--border-width) solid var(--border-color);
@@ -48,141 +63,23 @@
 .input-group .input {
     border: none;
     border-radius: 0;
-}
+}/* === Form Label === */
 
-.input-group__prepend,
-.input-group__append {
-    padding: var(--space-3) var(--space-4);
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    border-right: var(--border-width) solid var(--border-color);
-}
-
-.input-group__append {
-    border-right: none;
-    border-left: var(--border-width) solid var(--border-color);
-}
-
-/* === Select === */
-.select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23b0b8c4' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right var(--space-3) center;
-    padding-right: var(--space-8);
-}
-
-/* === Checkbox === */
-.checkbox {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    cursor: pointer;
-}
-
-.checkbox input[type="checkbox"] {
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border: var(--border-width) solid var(--border-color);
-    border-radius: var(--border-radius-sm);
-    background: var(--color-bg-elevated);
-    cursor: pointer;
-    position: relative;
-    transition: all var(--transition-fast);
-}
-
-.checkbox input[type="checkbox"]:checked {
-    background: var(--accent-sonarr);
-    border-color: var(--accent-sonarr);
-}
-
-.checkbox input[type="checkbox"]:checked::after {
-    content: '✓';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-/* === Toggle Switch === */
-.toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-3);
-    cursor: pointer;
-}
-
-.toggle input[type="checkbox"] {
-    appearance: none;
-    width: 44px;
-    height: 24px;
-    background: var(--color-bg-tertiary);
-    border-radius: 12px;
-    position: relative;
-    cursor: pointer;
-    transition: background var(--transition-normal);
-}
-
-.toggle input[type="checkbox"]::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 20px;
-    height: 20px;
-    background: white;
-    border-radius: 50%;
-    transition: transform var(--transition-normal);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.toggle input[type="checkbox"]:checked {
-    background: var(--accent-sonarr);
-}
-
-.toggle input[type="checkbox"]:checked::after {
-    transform: translateX(20px);
-}
-
-/* === Form Label === */
 .label {
     display: block;
     margin-bottom: var(--space-2);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary);
-}
+}/* === Form Group === */
 
-/* === Form Group === */
 .form-group {
     margin-bottom: var(--space-4);
-}
+}/* === Help Text === */
 
-/* === Help Text === */
 .help-text {
     display: block;
     margin-top: var(--space-2);
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
-}
-
-/* === Error State === */
-.input--error {
-    border-color: var(--status-error);
-}
-
-.input--error:focus {
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
-}
-
-.error-text {
-    display: block;
-    margin-top: var(--space-2);
-    font-size: var(--font-size-xs);
-    color: var(--status-error);
 }

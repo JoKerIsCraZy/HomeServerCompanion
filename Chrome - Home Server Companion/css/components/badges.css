@@ -1,10 +1,26 @@
 /* css/components/badges.css */
 /**
- * Badge Component Library
- * Status indicators and notifications
+ * Only the rules something actually applies.
+ *
+ * This file was written as a BEM component library — .btn--primary,
+ * .card__header, .progress-bar__fill. The application never adopted that
+ * vocabulary: it names the same things .btn-primary, .progress-bar-fill, and
+ * styles the rest per service. So roughly nine tenths of these files matched
+ * no element in any view, and had done since they were added.
+ *
+ * They were not harmless. A second, unused definition of a component is a trap
+ * for whoever writes the next one: components.css carried its own .sub-tab-btn
+ * pill alongside the sliding one in tabs.css, and the leftover border and glow
+ * from it fired on every sub-tab click while the real pill was still moving.
+ *
+ * The files stay rather than being merged away. They load after components.css
+ * and therefore win the cascade for .badge and .nav-badge; folding them
+ * into it would hand that back to an older definition and change how the
+ * application looks. Deleting a rule nobody applies changes nothing.
  */
 
 /* === Base Badge === */
+
 .badge {
     display: inline-flex;
     align-items: center;
@@ -15,70 +31,8 @@
     line-height: 1;
     border-radius: 999px;
     white-space: nowrap;
-}
+}/* === Navigation Badge === */
 
-/* === Badge Variants === */
-
-.badge--primary {
-    background: var(--accent-sonarr);
-    color: white;
-}
-
-.badge--success {
-    background: var(--status-success);
-    color: white;
-}
-
-.badge--warning {
-    background: var(--status-warning);
-    color: white;
-}
-
-.badge--error {
-    background: var(--status-error);
-    color: white;
-}
-
-.badge--info {
-    background: var(--status-info);
-    color: white;
-}
-
-.badge--neutral {
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-secondary);
-}
-
-/* === Dot Badge (small indicator) === */
-.badge--dot {
-    width: 8px;
-    height: 8px;
-    padding: 0;
-    border-radius: 50%;
-}
-
-.badge--dot.badge--success {
-    background: var(--status-success);
-    box-shadow: 0 0 6px var(--status-success);
-}
-
-.badge--dot.badge--error {
-    background: var(--status-error);
-    box-shadow: 0 0 6px var(--status-error);
-}
-
-/* === Count Badge === */
-.badge--count {
-    min-width: 18px;
-    height: 18px;
-    padding: 0 var(--space-1);
-}
-
-.badge--count[data-count="0"] {
-    display: none;
-}
-
-/* === Navigation Badge === */
 .nav-badge {
     position: absolute;
     top: -4px;
@@ -99,20 +53,4 @@
 
 .nav-badge.hidden {
     display: none;
-}
-
-/* === Pulse Animation === */
-.badge--pulse {
-    animation: badge-pulse 2s infinite;
-}
-
-@keyframes badge-pulse {
-    0%, 100% {
-        opacity: 1;
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-    }
-    50% {
-        opacity: 0.8;
-        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
-    }
 }
