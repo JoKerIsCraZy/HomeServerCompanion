@@ -1079,13 +1079,22 @@ const savePlexSettings = () => {
             data.plexUrl = fullUrl;
             data.plexToken = plexToken;
 
-            // Request permission for Plex server
+            // Request permission for the Plex server. The settings are saved
+            // either way - the user may grant it later from the extension's
+            // own permissions page - but a denial has to be said out loud.
+            // This was `if (granted || true)`, which is simply true, so a
+            // denied permission was saved and reported as a clean success and
+            // every later Plex call failed for a reason nothing explained.
             chrome.permissions.request({ origins: [`${urlObj.origin}/*`] }, (granted) => {
-                if (granted || true) { // Save even if permission denied
-                    chrome.storage.sync.set(data, () => {
+                chrome.storage.sync.set(data, () => {
+                    if (granted) {
                         showStatus('Plex', 'Settings saved!', 'success');
-                    });
-                }
+                    } else {
+                        showStatus('Plex',
+                            'Saved, but access to this server was not granted - Plex features will not work until you allow it.',
+                            'error');
+                    }
+                });
             });
             return;
         } catch (e) {

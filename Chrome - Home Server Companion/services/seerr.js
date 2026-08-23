@@ -325,8 +325,19 @@ export async function request(url, apiKey, payload, authMethod = 'apikey') {
     });
 
     if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || `Status ${response.status}`);
+        // Guarded. An error body is not always JSON - a reverse proxy answers
+        // 502 in HTML, a rejected key can answer 401 with nothing at all - and
+        // response.json() throws on those. That SyntaxError then replaced the
+        // real failure, so the user was told "Unexpected token '<'" instead of
+        // the status that would have explained it.
+        let detail = '';
+        try {
+            const errData = await response.json();
+            detail = errData?.message || '';
+        } catch {
+            // Body was not JSON; the status is all we have, and it is enough.
+        }
+        throw new Error(detail || `Status ${response.status}`);
     }
     return await response.json();
 }
