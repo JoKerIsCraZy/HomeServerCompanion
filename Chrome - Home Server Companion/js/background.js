@@ -68,6 +68,35 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 const PORTAINER_RULE_ID_BASE = 1;
 const PORTAINER_MAX_RULES = 20;
 
+/** Services whose base URL is stored as `<id>Url`, Portainer aside. */
+const OTHER_SERVICE_IDS = [
+    'sabnzbd', 'sonarr', 'radarr', 'tautulli', 'seerr',
+    'unraid', 'prowlarr', 'wizarr', 'tracearr', 'plex'
+];
+
+/**
+ * Origins belonging to services that are not Portainer.
+ *
+ * Used to refuse a rule that would reach one of them. Rewriting Origin turns
+ * a privileged extension fetch into a CORS-checked request, so a rule that
+ * matches another service's traffic does not degrade it - it stops it dead.
+ * @param {Object} items - A `chrome.storage.sync` snapshot.
+ * @returns {Set<string>}
+ */
+function collectOtherServiceOrigins(items) {
+    const origins = new Set();
+    for (const id of OTHER_SERVICE_IDS) {
+        const url = items[`${id}Url`];
+        if (!url) continue;
+        try {
+            origins.add(new URL(url).origin);
+        } catch {
+            // A malformed stored URL cannot collide with anything.
+        }
+    }
+    return origins;
+}
+
 /**
  * Collects the configured Portainer origins, newest storage layout first.
  * @param {Object} items - A `chrome.storage.sync` snapshot.
@@ -87,6 +116,7 @@ function collectPortainerOrigins(items) {
         raw.push(items.portainerUrl);
     }
 
+    const shared = collectOtherServiceOrigins(items);
     const origins = [];
     for (const candidate of raw) {
         let origin;
@@ -94,6 +124,17 @@ function collectPortainerOrigins(items) {
             origin = new URL(candidate).origin;
         } catch {
             console.warn("Skipping unparseable Portainer URL:", candidate);
+            continue;
+        }
+        // Another service answers on this origin. Sonarr, Radarr, Prowlarr and
+        // Tautulli all serve under /api/ as well, so even the path-scoped rule
+        // below could catch their traffic on a path-routed reverse proxy. No
+        // rule is safe on a shared origin, so none is written.
+        if (shared.has(origin)) {
+            console.warn(
+                `Not setting Portainer headers for ${origin}: another configured ` +
+                `service uses the same origin, and the rule would break it.`
+            );
             continue;
         }
         if (!origins.includes(origin)) origins.push(origin);
@@ -124,12 +165,17 @@ async function updatePortainerRules() {
             ]
         },
         condition: {
-            // `|` anchors to the start of the URL, so this matches the
-            // instance's own origin and nothing else. The previous
-            // `*://host/*` form relied on a substring match that a URL
-            // carrying the host elsewhere — in a query string, say — could
-            // also satisfy.
-            urlFilter: `|${origin}/`,
+            // `|` anchors to the start of the URL. The path matters as much as
+            // the origin: every Portainer call in services/portainer.js goes
+            // through one helper, `${baseUrl}/api${endpoint}`, so /api/ is
+            // exactly the traffic that needs the rewritten header.
+            //
+            // Anchoring on the origin alone matched every path on the host,
+            // which broke an Unraid server reachable at the same domain — its
+            // /graphql requests had their Origin rewritten, and that is enough
+            // to push an extension fetch out of the privileged path and into a
+            // CORS check the server has no reason to satisfy.
+            urlFilter: `|${origin}/api/`,
             resourceTypes: ["xmlhttprequest"]
         }
     }));
