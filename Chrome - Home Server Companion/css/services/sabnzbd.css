@@ -101,9 +101,32 @@
 .sab-queue-item:hover {
     background: rgba(255, 255, 255, 0.03);
 }
-/* Keyboard users get the row action without needing a pointer */
-.sab-queue-item:focus-within .delete-btn {
-    visibility: visible !important;
+/* The row action is revealed with opacity, not visibility: a
+   `visibility: hidden` button cannot take focus, so the keyboard rule below
+   could never match and deletion was pointer-only. */
+#sabnzbd-view .delete-btn {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    border-radius: 6px;
+}
+/* Reorder arrows sit quieter than the destructive action next to them. */
+#sabnzbd-view .sab-row-action {
+    font-size: 13px;
+}
+#sabnzbd-view .sab-row-action:hover:not(:disabled) {
+    color: var(--accent-sab);
+}
+#sabnzbd-view .sab-row-action:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+#sabnzbd-view .sab-queue-item:hover .delete-btn,
+#sabnzbd-view .sab-queue-item:focus-within .delete-btn,
+#sabnzbd-view .sab-history-item:hover .delete-btn,
+#sabnzbd-view .sab-history-item:focus-within .delete-btn {
+    opacity: 1;
+    pointer-events: auto;
 }
 .sab-item-header {
     display: flex;
@@ -171,7 +194,190 @@
 .sab-history-item.processing .sab-item-title { color: #ff9800; }
 .sab-history-item.completed .sab-item-title { color: #4caf50; }
 
-/* SABnzbd Speed Set Button Hover */
-#sab-speed-set-btn:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
+
+/* ===== Speed limit: chip + preset popover =====
+   Replaces a five-element inline cluster (label, slider, number box, unit,
+   SET) that took ~317px of a ~604px header and needed two actions to commit.
+   The chip is both the readout and the trigger. */
+.sab-limit-chip {
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.sab-limit-chip:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+/* Only a limit actually in force gets colour, so "am I throttled?" is
+   answerable at a glance from either tab. */
+.sab-limit-chip.is-active {
+    color: var(--accent-sab);
+    border-color: rgba(245, 130, 31, 0.45);
+    background: rgba(245, 130, 31, 0.12);
+}
+.sab-limit-chip.is-pending {
+    opacity: 0.6;
+}
+
+/* Sort trigger. An icon button with no state of its own: sorting is a one-off
+   action, so there is no "current column" for it to display. */
+.sab-sort-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.sab-sort-btn:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+.sab-sort-menu {
+    min-width: 190px;
+    padding: 6px;
+}
+/* Sorting is a one-time reorder, not a view mode. Saying so up front stops
+   the menu reading like a state the queue keeps. */
+.sab-sort-note {
+    margin: 2px 6px 6px;
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+.sab-sort-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+}
+.sab-sort-label {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+.sab-sort-go {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.sab-sort-go:hover {
+    color: var(--accent-sab);
+    border-color: rgba(245, 130, 31, 0.45);
+}
+
+.sab-limit-menu {
+    width: 208px;
+    padding: 8px;
+}
+.sab-limit-presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+.sab-limit-preset {
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.sab-limit-preset:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+.sab-limit-preset.is-current {
+    background: var(--accent-sab);
+    border-color: var(--accent-sab);
+    color: #111;
+}
+.sab-limit-custom {
+    padding: 6px 2px 2px;
+}
+.sab-limit-custom-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.sab-limit-custom-head label {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+/* The live value of the drag. Tabular figures so it does not jitter while the
+   thumb moves, and the same wording the chip uses. */
+#sab-limit-readout {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+.sab-limit-slider {
+    display: block;
+    width: 100%;
+    height: 4px;
+    margin: 0;
+    accent-color: var(--accent-sab);
+    cursor: pointer;
+}
+
+/* The header must not reflow every poll tick: the controls keep their width
+   and the subline truncates instead of wrapping to a second line. */
+#sabnzbd-view .sab-controls {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+#sabnzbd-view .sab-subline {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Stale: polling has stopped answering, so the data on screen is history.
+   Without this a dead backend looks exactly like a healthy one. */
+#sabnzbd-view.is-stale #sab-queue,
+#sabnzbd-view.is-stale .sab-controls {
+    opacity: 0.55;
+    pointer-events: none;
+}
+#sabnzbd-view.is-stale #sab-hero {
+    color: var(--text-secondary);
+}
+
+/* The view had no focus styling at all. */
+#sabnzbd-view :focus-visible {
+    outline: 2px solid var(--accent-sab);
+    outline-offset: 2px;
+    border-radius: 4px;
 }

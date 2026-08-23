@@ -100,6 +100,69 @@ export const deleteHistoryItem = async (url, apiKey, nzo_id) => {
     }
 };
 
+/**
+ * Moves a queue item to an absolute position. SABnzbd's `switch` mode takes the
+ * item and its target index and shifts everything else around it, so callers
+ * only need the destination, not a pairwise swap.
+ * @param {string} url - SABnzbd URL
+ * @param {string} apiKey - API Key
+ * @param {string} nzo_id - Item to move
+ * @param {number} position - Zero-based target index in the queue
+ * @returns {Promise<Object|undefined>} Parsed response, or undefined on failure
+ */
+export const moveQueueItem = async (url, apiKey, nzo_id, position) => {
+    try {
+        const target = Math.max(0, Math.floor(position));
+        const response = await fetch(`${url}/api?mode=switch&value=${encodeURIComponent(nzo_id)}&value2=${target}&apikey=${apiKey}&output=json`, NO_CACHE);
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("SABnzbd Move Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Sorts the whole queue server-side, the same operation SABnzbd's own web UI
+ * offers. This rewrites the actual queue order rather than just the view, so
+ * the result survives a reload and applies to the download order itself.
+ * @param {string} url - SABnzbd URL
+ * @param {string} apiKey - API Key
+ * @param {'name'|'size'|'avg_age'} field - Column to sort on
+ * @param {'asc'|'desc'} direction - Sort direction
+ * @returns {Promise<Object>} Parsed response
+ */
+export const sortQueue = async (url, apiKey, field, direction) => {
+    try {
+        const response = await fetch(`${url}/api?mode=queue&name=sort&sort=${encodeURIComponent(field)}&dir=${encodeURIComponent(direction)}&apikey=${apiKey}&output=json`, NO_CACHE);
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("SABnzbd Sort Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Sets an item's priority. Unlike a move this survives new additions, so a
+ * forced item stays ahead of whatever arrives later.
+ * @param {string} url - SABnzbd URL
+ * @param {string} apiKey - API Key
+ * @param {string} nzo_id - Item to reprioritise
+ * @param {number} priority - -1 low, 0 normal, 1 high, 2 force
+ * @returns {Promise<Object|undefined>} Parsed response, or undefined on failure
+ */
+export const setQueueItemPriority = async (url, apiKey, nzo_id, priority) => {
+    try {
+        const response = await fetch(`${url}/api?mode=queue&name=priority&value=${encodeURIComponent(nzo_id)}&value2=${priority}&apikey=${apiKey}&output=json`, NO_CACHE);
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("SABnzbd Priority Error:", error);
+        throw error;
+    }
+};
+
 export const setSpeedLimit = async (url, apiKey, limit) => {
     try {
         const response = await fetch(`${url}/api?mode=config&name=speedlimit&value=${limit}&apikey=${apiKey}&output=json`, NO_CACHE);

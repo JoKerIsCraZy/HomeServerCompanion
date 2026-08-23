@@ -1,5 +1,6 @@
 import * as Sabnzbd from "../../services/sabnzbd.js";
 import { showNotification, showConfirmModal } from "../utils.js";
+import poller from "../core/Poller.js";
 
 /** How often the history list is refetched, in ms. The queue polls every 1s. */
 const HISTORY_POLL_MS = 5000;
@@ -106,6 +107,23 @@ function sabItemMeta(item, percent) {
     return parts.join(" · ");
 }
 
+/**
+ * Builds one compact row-action button. It borrows `.delete-btn` so the row
+ * keeps a single visual language and one hover/focus reveal rule.
+ * @param {string} glyph - Character shown in the button
+ * @param {string} label - Accessible name and tooltip
+ * @returns {HTMLButtonElement}
+ */
+function makeRowAction(glyph, label) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'delete-btn sab-row-action';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+    btn.textContent = glyph;
+    return btn;
+}
+
 // Render Queue Cards (Smart Update)
 function renderSabnzbdQueue(queue, state, url, key) {
   const container = document.getElementById("sab-queue");
@@ -197,11 +215,23 @@ function renderSabnzbdQueue(queue, state, url, key) {
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
         delBtn.title = 'Remove from Queue';
-        delBtn.style.cssText = 'background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:16px; visibility:hidden; padding:0; line-height:1; min-width: 14px;'; // Added min-width to ensure clickability
+        delBtn.style.cssText = 'background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:16px; padding:2px 6px; line-height:1; min-width: 24px; min-height: 24px;'; // Added min-width to ensure clickability
         delBtn.textContent = '\u00D7'; // Multiplication sign (x)
 
-        statusDiv.appendChild(metaText);
+        // Reordering: SABnzbd works the queue top-down, so moving an item is
+        // the most common action on it after removing one.
+        const topBtn = makeRowAction('⇈', 'Move to top');
+        const upBtn = makeRowAction('↑', 'Move up');
+        const downBtn = makeRowAction('↓', 'Move down');
+
+        // Actions first, status last: the figure that changes every second
+        // stays pinned to the right edge, so it does not shift sideways as the
+        // buttons fade in on hover.
+        statusDiv.appendChild(topBtn);
+        statusDiv.appendChild(upBtn);
+        statusDiv.appendChild(downBtn);
         statusDiv.appendChild(delBtn);
+        statusDiv.appendChild(metaText);
         header.appendChild(titleDiv);
         header.appendChild(statusDiv);
 
@@ -217,9 +247,30 @@ function renderSabnzbdQueue(queue, state, url, key) {
         div.appendChild(header);
         div.appendChild(track);
 
-        // Hover effect to show delete button
-        div.onmouseenter = () => { div.querySelector('.delete-btn').style.visibility = 'visible'; };
-        div.onmouseleave = () => { div.querySelector('.delete-btn').style.visibility = 'hidden'; };
+
+      // Reorder actions. The position is read from the DOM at click time, not
+      // captured when the row is built: the 1s poll keeps rewriting the queue
+      // underneath, so a captured index goes stale immediately.
+      const moveTo = async (resolveTarget, btn) => {
+          const rows = [...container.querySelectorAll('.sab-queue-item')];
+          const current = rows.indexOf(div);
+          if (current === -1) return;
+          const target = resolveTarget(current);
+          if (target === current || target < 0 || target >= rows.length) return;
+
+          btn.disabled = true;
+          try {
+              await Sabnzbd.moveQueueItem(url, key, item.nzo_id, target);
+          } catch (err) {
+              showNotification('Could not reorder the queue', 'error');
+          } finally {
+              btn.disabled = false;
+          }
+      };
+
+      topBtn.onclick = (e) => { e.stopPropagation(); moveTo(() => 0, topBtn); };
+      upBtn.onclick = (e) => { e.stopPropagation(); moveTo((i) => i - 1, upBtn); };
+      downBtn.onclick = (e) => { e.stopPropagation(); moveTo((i) => i + 1, downBtn); };
 
       // Delete Action
       // delBtn is already available in this scope
@@ -320,11 +371,12 @@ function renderSabnzbdHistory(history, state, url, key) {
       const delBtn = document.createElement('button');
       delBtn.className = 'delete-btn';
       delBtn.title = 'Remove from History';
-      delBtn.style.cssText = 'background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:16px; visibility:hidden; padding:0; line-height:1; min-width: 14px;';
+      delBtn.style.cssText = 'background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:16px; padding:2px 6px; line-height:1; min-width: 24px; min-height: 24px;';
       delBtn.textContent = '\u00D7';
       
-      statusDiv.appendChild(statusText);
+      // Same order as the queue rows: action left, status pinned right.
       statusDiv.appendChild(delBtn);
+      statusDiv.appendChild(statusText);
       header.appendChild(titleDiv);
       header.appendChild(statusDiv);
       
@@ -340,9 +392,6 @@ function renderSabnzbdHistory(history, state, url, key) {
       div.appendChild(header);
       div.appendChild(details);
 
-      // Hover effect to show delete button
-      div.onmouseenter = () => { delBtn.style.visibility = 'visible'; };
-      div.onmouseleave = () => { delBtn.style.visibility = 'hidden'; };
 
       // Delete Action
       // delBtn is already defined above
@@ -440,6 +489,99 @@ function initSabTabs() {
 }
 
 /**
+ * Full-rate cache in bytes/s, derived from any observed (percent, absolute)
+ * pair. It lets an optimistic label carry its MB/s suffix, so applying a limit
+ * changes the chip once instead of twice.
+ * @type {number|null}
+ */
+let sabFullRateBytes = null;
+
+/**
+ * Reads SABnzbd's `speedlimit` field, which arrives as "", "0", "50", "80%"
+ * or an absolute rate. Server 0 (and empty) mean "no throttle".
+ * @param {string|number|undefined} raw
+ * @returns {number|null} Percentage 0-100, or null when it is not a percentage
+ */
+function parseSpeedLimit(raw) {
+    const text = String(raw ?? "").trim();
+    if (!text || text === "0") return 0;
+    const num = parseFloat(text.replace("%", "").trim());
+    if (!Number.isFinite(num)) return null;
+    return Math.min(Math.max(Math.round(num), 0), 100);
+}
+
+/**
+ * Words, not a bare number: 0 and 100 both mean "not throttled", and a naked
+ * "0%" next to a full-speed download is the contradiction this replaces.
+ * @param {number|null} percent
+ * @param {string|number|undefined} absolute - SAB's speedlimit_abs, in BYTES/s
+ * @returns {string}
+ */
+function formatLimitLabel(percent, absolute) {
+    if (percent === null) return "Limited";
+    // Server 0 and 100% are the same outcome - no throttle in force - so they
+    // share one label and one slider position instead of sitting at opposite
+    // ends of the scale meaning the same thing.
+    if (percent === 0 || percent >= 100) return "No limit";
+    // speedlimit_abs is bytes/s; formatSabSpeed takes KB/s.
+    const absBytes = parseFloat(absolute);
+    const suffix = Number.isFinite(absBytes) && absBytes > 0
+        ? ` · ${formatSabSpeed(absBytes / 1024)}`
+        : "";
+    return `${percent}%${suffix}`;
+}
+
+/**
+ * Paints the limit chip and marks the matching preset. A limit that is actually
+ * in force gets colour, so "am I throttled?" is answerable from any tab.
+ * @param {number|null} percent
+ * @param {string|number|undefined} absolute
+ */
+function renderLimitChip(percent, absolute) {
+    const absBytes = parseFloat(absolute);
+    if (percent !== null && percent > 0 && Number.isFinite(absBytes) && absBytes > 0) {
+        sabFullRateBytes = absBytes / (percent / 100);
+    }
+
+    const chip = document.getElementById("sab-limit-chip");
+    if (!chip || chip.dataset.pending === "true") return;
+
+    chip.textContent = formatLimitLabel(percent, absolute);
+    const throttled = percent !== null && percent > 0 && percent < 100;
+    chip.classList.toggle("is-active", throttled);
+    chip.dataset.value = percent === null ? "" : String(percent);
+
+    const effective = percent === 0 ? 100 : percent;
+    document.querySelectorAll(".sab-limit-preset").forEach((btn) => {
+        const isCurrent = Number(btn.dataset.value) === effective;
+        btn.classList.toggle("is-current", isCurrent);
+        btn.setAttribute("aria-pressed", isCurrent ? "true" : "false");
+    });
+
+    // Never yank the slider out from under a drag: `sliderDirty` is set on
+    // interaction and cleared once the value has been written and confirmed.
+    const slider = document.getElementById("sab-limit-slider");
+    if (slider && slider.dataset.dirty !== "true") {
+        // 0 (unlimited) has no position of its own any more; it is the top.
+        const shown = percent === null || percent === 0 ? 100 : percent;
+        slider.value = String(shown);
+        renderLimitReadout(shown);
+    }
+}
+
+/**
+ * Writes the slider's live value into its readout, in the same words the chip
+ * uses so the popover and the header never disagree.
+ * @param {number} percent
+ */
+function renderLimitReadout(percent) {
+    const readout = document.getElementById("sab-limit-readout");
+    if (!readout) return;
+    const abs = sabFullRateBytes !== null ? sabFullRateBytes * (percent / 100) : null;
+    readout.textContent = formatLimitLabel(percent, abs);
+}
+
+/**
  * Initializes the SABnzbd service view.
  * - Sets up tabs and persistence.
  * - Starts the polling loop for queue/history data.
@@ -459,6 +601,27 @@ export async function initSabnzbd(url, key, state) {
     let updateInFlight = false;
     let lastHistoryData = null;
     let lastHistoryFetch = 0;
+    let consecutiveFailures = 0;
+    let lastOkAt = null;
+
+    /**
+     * Marks the view as showing data that is no longer being refreshed.
+     * @param {boolean} isStale
+     */
+    const setStale = (isStale) => {
+        const view = document.getElementById("sabnzbd-view");
+        if (!view || view.classList.contains("is-stale") === isStale) return;
+        view.classList.toggle("is-stale", isStale);
+        const hero = document.getElementById("sab-hero");
+        const subline = document.getElementById("sab-subline");
+        if (isStale && hero && subline) {
+            hero.textContent = "Unreachable";
+            const seen = lastOkAt
+                ? lastOkAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                : "never";
+            subline.textContent = `No response from SABnzbd · last update ${seen}`;
+        }
+    };
 
     const update = async () => {
         if (updateInFlight) return;
@@ -470,33 +633,9 @@ export async function initSabnzbd(url, key, state) {
             const kb = parseFloat(queue.kbpersec) || 0;
             renderSabHeader(queue, kb);
 
-            // Update Speed Limit Dropdown
-            // Sync Speed Limit Slider/Input
-            const speedSlider = document.getElementById("sab-speed-slider");
-            const speedInput = document.getElementById("sab-speed-input");
-            
-            if (speedSlider && speedInput) {
-                const isActive = (document.activeElement === speedSlider || document.activeElement === speedInput);
-                if (!isActive) {
-                    let currentLimit = (queue.speedlimit || "").trim(); // e.g. "50", "80%", "5 M", "65"
-                    let val = "100"; // Default to 100% (No Limit)
-                    
-                    if (!currentLimit || currentLimit === "0") {
-                        val = "100";
-                    } else if (currentLimit.includes("%")) {
-                        // Extract number from "80%"
-                        val = currentLimit.replace("%", "").trim();
-                    } else if (!isNaN(currentLimit)) {
-                        // Plain number, assume it matches slider scale (percentage or raw value if SAB returns strict ints)
-                        val = currentLimit;
-                    }
-                    
-                    if (!isNaN(val)) {
-                        speedSlider.value = val;
-                        speedInput.value = val;
-                    }
-                }
-            }
+            // Speed limit: the chip is the readout, so it renders the value the
+            // server actually holds, never a staged edit.
+            renderLimitChip(parseSpeedLimit(queue.speedlimit), queue.speedlimit_abs);
 
             // Paused State Update (Icon only)
             const mainBtn = document.getElementById("sab-pause-main");
@@ -604,8 +743,22 @@ export async function initSabnzbd(url, key, state) {
                 }
             }
 
+            // A tick that got all the way here is a healthy one.
+            if (consecutiveFailures !== 0) {
+                consecutiveFailures = 0;
+                lastOkAt = new Date();
+                setStale(false);
+            } else {
+                lastOkAt = new Date();
+            }
+
         } catch(e) {
+            // Without this the last good render stays on screen forever and a
+            // dead backend is pixel-identical to a healthy one - the worst
+            // failure mode for a view people act on.
             console.error(e);
+            consecutiveFailures++;
+            if (consecutiveFailures >= 2) setStale(true);
         } finally {
             updateInFlight = false;
         }
@@ -616,9 +769,11 @@ export async function initSabnzbd(url, key, state) {
     const arrowBtn = document.getElementById("sab-pause-arrow");
     const menu = document.getElementById("sab-pause-menu");
     // Slider Controls
-    const speedSlider = document.getElementById("sab-speed-slider");
-    const speedInput = document.getElementById("sab-speed-input");
-    const speedSetBtn = document.getElementById("sab-speed-set-btn");
+    const limitChip = document.getElementById("sab-limit-chip");
+    const limitMenu = document.getElementById("sab-limit-menu");
+    const limitSlider = document.getElementById("sab-limit-slider");
+    const sortBtn = document.getElementById("sab-sort-btn");
+    const sortMenu = document.getElementById("sab-sort-menu");
 
     if (mainBtn && arrowBtn && menu && !mainBtn.dataset.bound) {
         
@@ -635,6 +790,12 @@ export async function initSabnzbd(url, key, state) {
         arrowBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             menu.classList.toggle("hidden");
+            arrowBtn.setAttribute("aria-expanded",
+                menu.classList.contains("hidden") ? "false" : "true");
+            if (limitMenu) {
+                limitMenu.classList.add("hidden");
+                limitChip.setAttribute("aria-expanded", "false");
+            }
         });
 
         // 3. Menu Items
@@ -651,47 +812,181 @@ export async function initSabnzbd(url, key, state) {
             });
         });
 
-        // 4. Speed Limit Slider Logic
-        if (speedSlider && speedInput && speedSetBtn) {
-            // Slider -> Input
-            speedSlider.addEventListener("input", () => {
-                speedInput.value = speedSlider.value;
-            });
-            
-            // Input -> Slider
-            speedInput.addEventListener("input", () => {
-                let val = parseInt(speedInput.value);
-                if (val > 100) val = 100;
-                if (val < 0) val = 0;
-                // Don't force value on input while typing, but update slider
-                if (!isNaN(val)) speedSlider.value = val;
-            });
-            
-            // Set Button
-            speedSetBtn.addEventListener("click", async (e) => {
+        // 4. Speed Limit
+        if (limitChip && limitMenu) {
+            const closeLimitMenu = (refocus) => {
+                limitMenu.classList.add("hidden");
+                limitChip.setAttribute("aria-expanded", "false");
+                if (refocus) limitChip.focus();
+            };
+
+            /**
+             * Writes a limit and confirms it against the next poll rather than
+             * claiming success up front - setSpeedLimit swallows failures, so
+             * an unconditional toast could report a write that never landed.
+             * @param {number} percent
+             */
+            const applyLimit = async (percent) => {
+                const value = Math.min(Math.max(Math.round(percent), 0), 100);
+                closeLimitMenu(true);
+
+                limitChip.dataset.pending = "true";
+                limitChip.setAttribute("aria-busy", "true");
+                limitChip.classList.add("is-pending");
+                // Text and colour flip together. Setting only the text left the
+                // chip briefly showing the new value in the old state's colour.
+                const optimisticAbs = sabFullRateBytes !== null
+                    ? sabFullRateBytes * (value / 100)
+                    : null;
+                limitChip.textContent = formatLimitLabel(value, optimisticAbs);
+                limitChip.classList.toggle("is-active", value > 0 && value < 100);
+                limitChip.dataset.value = String(value);
+
+                try {
+                    // 100% and 0 mean the same to SABnzbd; write the canonical
+                    // one so a later read cannot report the other.
+                    await Sabnzbd.setSpeedLimit(url, key, value >= 100 ? "0" : `${value}%`);
+                } catch (err) {
+                    console.error("Failed to set speed limit:", err);
+                }
+
+                setTimeout(async () => {
+                    limitChip.dataset.pending = "false";
+                    limitChip.removeAttribute("aria-busy");
+                    limitChip.classList.remove("is-pending");
+                    await update();
+                    // The chip now shows whatever the server reports. Only speak
+                    // up when that disagrees with what was asked for.
+                    const reported = Number(limitChip.dataset.value);
+                    const settled = reported === 0 ? 100 : reported;
+                    if (settled !== value) {
+                        showNotification("SABnzbd kept its own limit — showing the server value", "error");
+                    }
+                }, 400);
+            };
+
+            limitChip.addEventListener("click", (e) => {
                 e.stopPropagation();
-                // Send value as percentage string
-                const val = speedInput.value;
-                await Sabnzbd.setSpeedLimit(url, key, `${val}%`);
-                showNotification(`Speed Limit set to ${val}%`, 'success');
-                setTimeout(update, 500);
+                const opening = limitMenu.classList.contains("hidden");
+                menu.classList.add("hidden");
+                arrowBtn.setAttribute("aria-expanded", "false");
+                limitMenu.classList.toggle("hidden", !opening);
+                limitChip.setAttribute("aria-expanded", opening ? "true" : "false");
+                if (opening && limitSlider) {
+                    limitSlider.dataset.dirty = "false";
+                    limitSlider.focus();
+                }
+            });
+
+            limitMenu.querySelectorAll(".sab-limit-preset").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    applyLimit(Number(btn.dataset.value));
+                });
+            });
+
+            if (limitSlider) {
+                // `input` fires continuously while dragging: update the readout
+                // only, no network. `change` fires once on release and on
+                // arrow-key settle, and that is the commit - which removes the
+                // staged-versus-applied ambiguity a separate Apply button had.
+                limitSlider.addEventListener("pointerdown", () => {
+                    limitSlider.dataset.dirty = "true";
+                });
+                limitSlider.addEventListener("keydown", () => {
+                    limitSlider.dataset.dirty = "true";
+                });
+                limitSlider.addEventListener("input", () => {
+                    limitSlider.dataset.dirty = "true";
+                    renderLimitReadout(Number(limitSlider.value));
+                });
+                limitSlider.addEventListener("change", () => {
+                    limitSlider.dataset.dirty = "false";
+                    applyLimit(Number(limitSlider.value));
+                });
+            }
+
+            limitMenu.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    e.stopPropagation();
+                    closeLimitMenu(true);
+                }
             });
         }
 
-        // 5. Outside Click
+        // 4b. Queue sorting. SABnzbd sorts server-side, so this rewrites the
+        // real download order, not just the view.
+        if (sortBtn && sortMenu) {
+            sortBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const opening = sortMenu.classList.contains("hidden");
+                menu.classList.add("hidden");
+                arrowBtn.setAttribute("aria-expanded", "false");
+                if (limitMenu) {
+                    limitMenu.classList.add("hidden");
+                    limitChip.setAttribute("aria-expanded", "false");
+                }
+                sortMenu.classList.toggle("hidden", !opening);
+                sortBtn.setAttribute("aria-expanded", opening ? "true" : "false");
+            });
+
+            // Each entry is a one-shot action, not a view mode: the sort is
+            // applied to the queue once and anything added afterwards lands
+            // unsorted. Nothing is remembered, because there is no ongoing
+            // state to remember - a highlighted "current column" would claim
+            // an order the queue stops having on the next addition.
+            sortMenu.addEventListener("click", async (e) => {
+                const btn = e.target.closest(".sab-sort-go");
+                if (!btn) return;
+                e.stopPropagation();
+
+                sortMenu.classList.add("hidden");
+                sortBtn.setAttribute("aria-expanded", "false");
+                sortBtn.disabled = true;
+                try {
+                    await Sabnzbd.sortQueue(url, key, btn.dataset.sort, btn.dataset.dir);
+                    await update();
+                } catch (err) {
+                    showNotification("Could not sort the queue", "error");
+                } finally {
+                    sortBtn.disabled = false;
+                }
+            });
+
+            sortMenu.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    e.stopPropagation();
+                    sortMenu.classList.add("hidden");
+                    sortBtn.setAttribute("aria-expanded", "false");
+                    sortBtn.focus();
+                }
+            });
+        }
+
+        // 5. Outside Click / Escape
         document.body.addEventListener("click", (e) => {
             if (!menu.classList.contains("hidden") && !menu.contains(e.target) && !arrowBtn.contains(e.target)) {
                  menu.classList.add("hidden");
+                 arrowBtn.setAttribute("aria-expanded", "false");
+            }
+            if (limitMenu && !limitMenu.classList.contains("hidden")
+                && !limitMenu.contains(e.target) && !limitChip.contains(e.target)) {
+                limitMenu.classList.add("hidden");
+                limitChip.setAttribute("aria-expanded", "false");
+            }
+            if (sortMenu && !sortMenu.classList.contains("hidden")
+                && !sortMenu.contains(e.target) && !sortBtn.contains(e.target)) {
+                sortMenu.classList.add("hidden");
+                sortBtn.setAttribute("aria-expanded", "false");
             }
         });
 
         mainBtn.dataset.bound = "true"; 
     }
 
-    update();
-    state.serviceIntervals = state.serviceIntervals || {};
-    if (state.serviceIntervals.sabnzbd) clearInterval(state.serviceIntervals.sabnzbd);
-    state.serviceIntervals.sabnzbd = setInterval(update, 1000);
+    // Same 1s cadence as before while the page is visible; the scheduler adds
+    // the pause-when-hidden, error backoff and overlap guard.
+    poller.register('sabnzbd', update, { interval: 1000 });
 }
 
 // Background Badge Update
