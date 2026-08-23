@@ -38,7 +38,10 @@ class AppState {
             errors: {},
 
             // Runtime state
-            refreshInterval: null,
+            // `refreshInterval` used to live here as the shared timer handle
+            // every service module wrote to — the arrangement where whoever
+            // started last silently cancelled the others. The scheduler in
+            // js/core/Poller.js owns timers now, and nothing read this slot.
             lastUpdate: null
         };
 

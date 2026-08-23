@@ -238,6 +238,15 @@ async function loadExistingConfig() {
                 }
             });
             
+            if (items.seerrAuthMethod) {
+                seerrAuthMethod = items.seerrAuthMethod;
+            }
+            if (items.seerrEmail && serviceConfigs['seerr']) {
+                // The email field rendered from `existing.email`, which nothing
+                // ever populated, so it came up blank on every re-run.
+                serviceConfigs['seerr'].email = items.seerrEmail;
+            }
+
             // Load existing Portainer instances
             if (items.portainerInstances && items.portainerInstances.length > 0) {
                 portainerInstances = items.portainerInstances.map(inst => ({
@@ -245,7 +254,13 @@ async function loadExistingConfig() {
                     name: inst.name || '',
                     url: inst.url ? inst.url.replace(/^https?:\/\//, '') : '',
                     key: inst.key || '',
-                    protocol: inst.url?.startsWith('https://') ? 'https://' : 'http://'
+                    protocol: inst.url?.startsWith('https://') ? 'https://' : 'http://',
+                    // Carried through untouched. The wizard has no UI for
+                    // either, and it used to write icon:'' and drop
+                    // hideInSidebar entirely — so simply re-running it reset
+                    // every custom icon and un-hid every hidden instance.
+                    icon: inst.icon || '',
+                    hideInSidebar: inst.hideInSidebar || false
                 }));
             }
             
@@ -517,6 +532,9 @@ function renderPortainerConfigStep() {
 }
 
 // Seerr Multi-Auth Configuration State
+// Overwritten from storage by loadExistingConfig. It used to stay at this
+// default on a re-run, so an API-key setup silently became a Plex one with no
+// token — after which Seerr and the unified search stopped working.
 let seerrAuthMethod = 'plex';
 
 function renderSeerrConfigStep() {
@@ -548,7 +566,7 @@ function renderSeerrConfigStep() {
 
         <div class="form-group">
             <label>Authentication Method</label>
-            <select id="seerrAuthMethodSelect" style="width: 100%; padding: 12px; border-radius: 8px; background: var(--input-background); border: 1px solid var(--glass-border); color: var(--text-primary);">
+            <select id="seerrAuthMethodSelect" style="width: 100%; padding: 12px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--glass-border); color: var(--text-primary);">
                 <option value="apikey" ${seerrAuthMethod === 'apikey' ? 'selected' : ''}>API Key (Admin Access)</option>
                 <option value="local" ${seerrAuthMethod === 'local' ? 'selected' : ''}>Local Account (Email/Password)</option>
                 <option value="plex" ${seerrAuthMethod === 'plex' ? 'selected' : ''}>Plex Sign-In</option>
@@ -997,9 +1015,14 @@ function saveCurrentConfig() {
     const urlInput = document.getElementById('configUrl')?.value?.trim() || '';
     const key = document.getElementById('configKey')?.value?.trim() || '';
     
-    // Allow skipping if no URL entered
+    // An empty URL means the user deconfigured this service on the step they
+    // are looking at. Returning early left the value loaded from storage in
+    // serviceConfigs, and completeSetup wrote it straight back — so the field
+    // could not be cleared. Marking it lets completeSetup write the empty
+    // strings that the rest of the app reads as "not configured".
     if (!urlInput) {
-        return true; // Skip this service
+        serviceConfigs[service.id] = { cleared: true };
+        return true;
     }
     
     const cleanUrl = urlInput.replace(/^https?:\/\//, '').replace(/\/$/, '');
@@ -1163,6 +1186,13 @@ async function completeSetup() {
     for (const [serviceId, config] of Object.entries(serviceConfigs)) {
         if (serviceId === 'portainer') continue; // Handled separately
 
+        if (config.cleared) {
+            dataToSave[`${serviceId}Url`] = '';
+            dataToSave[`${serviceId}Key`] = '';
+            dataToSave[`${serviceId}Enabled`] = false;
+            continue;
+        }
+
         // Save URL (from fullUrl or construct from protocol + url)
         if (config.fullUrl) {
             dataToSave[`${serviceId}Url`] = config.fullUrl;
@@ -1217,7 +1247,8 @@ async function completeSetup() {
                 name: inst.name || 'Portainer',
                 url: inst.protocol + inst.url,
                 key: inst.key || '',
-                icon: ''
+                icon: inst.icon || '',
+                hideInSidebar: inst.hideInSidebar || false
             }));
         
         if (validInstances.length > 0) {

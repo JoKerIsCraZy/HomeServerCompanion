@@ -528,7 +528,7 @@ const renderStats = (stats, indexers = []) => {
             ths.forEach((th, idx) => {
                 th.textContent = headers[idx]; // Reset text
                 if (idx === sortCol) {
-                    th.textContent += sortAsc ? " â–²" : " â–¼";
+                    th.textContent += sortAsc ? " ▲" : " ▼";
                 }
             });
         };

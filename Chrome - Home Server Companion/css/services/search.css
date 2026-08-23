@@ -24,7 +24,11 @@
 .search-modal {
   width: 90%;
   max-width: 600px;
-  background: var(--bg-primary); /* Uses base.css variable */
+  /* --bg-primary does not exist. base.css defines --card-bg, tokens.css
+     defines --color-bg-*. The invalid var unset the declaration, so the whole
+     search panel was transparent over the dark overlay: only its border and
+     shadow were visible and the results sat on top of the page behind. */
+  background: var(--color-bg-secondary);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
@@ -316,7 +320,11 @@
   filter: grayscale(0.5);
 }
 
-.status-badge {
+/* Scoped. Unscoped, this beat the shared .status-badge in components.css
+   everywhere — media cards, SABnzbd history, Seerr, Docker — handing them
+   search's padding and weight while the dark-mode rule kept components'
+   background, a hybrid neither rule intended. */
+#unified-search-results .status-badge {
   font-size: 11px;
   padding: 4px 8px;
   border-radius: 4px;
@@ -325,13 +333,13 @@
   font-weight: 600;
 }
 
-.status-badge.available {
+#unified-search-results .status-badge.available {
   background: rgba(76, 175, 80, 0.2);
   color: #81c784;
   border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
-.status-badge.pending {
+#unified-search-results .status-badge.pending {
   background: rgba(255, 193, 7, 0.2);
   color: #ffd54f;
   border: 1px solid rgba(255, 193, 7, 0.3);

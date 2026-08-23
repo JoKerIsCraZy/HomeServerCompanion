@@ -702,7 +702,7 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         movieLabel.style.cssText = 'font-weight: bold; color: var(--text-primary); margin-bottom: 5px; font-size: 0.9em;';
         const movieValue = document.createElement('div');
         movieValue.textContent = item.title || fileOption.movie?.title || 'Unknown';
-        movieValue.style.cssText = 'color: var(--text-secondary); padding: 8px; background: var(--bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);';
+        movieValue.style.cssText = 'color: var(--text-secondary); padding: 8px; background: var(--color-bg-secondary); border-radius: 4px; border: 1px solid var(--border-color);';
         movieNameDiv.appendChild(movieLabel);
         movieNameDiv.appendChild(movieValue);
         dialog.appendChild(movieNameDiv);
@@ -861,7 +861,7 @@ async function showManualImportDialog(item, state, itemEl, refreshQueue) {
         
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = 'Cancel';
-        cancelBtn.style.cssText = 'padding: 8px 16px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
+        cancelBtn.style.cssText = 'padding: 8px 16px; background: var(--color-bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
         cancelBtn.onclick = () => {
             dialog.remove();
             backdrop.remove();

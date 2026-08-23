@@ -121,9 +121,13 @@ body.fullscreen-mode .content-area {
     max-width: none;
 }
 
-/* Larger cards in fullscreen */
+/* Larger cards in fullscreen.
+   The column count used to carry !important, which beat both
+   css/fullscreen.css and css/fullscreen-v4.css regardless of load order and
+   locked the dashboard to four columns at every width — including inside the
+   narrow breakpoints further down this very file. The grid is left to
+   fullscreen-v4.css, which reflows with auto-fit. */
 body.fullscreen-mode .dashboard-grid {
-    grid-template-columns: repeat(4, 1fr) !important;
     gap: var(--space-6);
 }
 

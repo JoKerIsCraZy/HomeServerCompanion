@@ -282,18 +282,30 @@ async function handleCreateInvite(e) {
         
         const result = await Wizarr.createInvitation(currentUrl, currentKey, options);
         
-        // Copy new invite link to clipboard
+        // The invitation exists on the server from here on. Copying is a
+        // convenience on top of that, and it fails routinely in a popup —
+        // clipboard.writeText rejects whenever the document is not focused.
+        // Sharing the outer try meant that rejection was reported as
+        // "Error: Document is not focused", the modal stayed open, and the
+        // list never refreshed, so people created the invitation twice.
+        let copied = false;
         if (result.invitation && result.invitation.code) {
             const inviteUrl = Wizarr.getInviteUrl(currentUrl, result.invitation.code);
-            await navigator.clipboard.writeText(inviteUrl);
+            try {
+                await navigator.clipboard.writeText(inviteUrl);
+                copied = true;
+            } catch (copyError) {
+                console.warn('Invitation created but not copied:', copyError.message);
+            }
         }
-        
-        // Close modal and refresh list
+
         closeModal();
         await loadInvitations();
-        
-        // Show success notification with copied hint
-        showNotification('Invitation created & copied!', 'success');
+
+        showNotification(
+            copied ? 'Invitation created & copied!' : 'Invitation created',
+            'success'
+        );
         
     } catch (error) {
         console.error('Failed to create invite:', error);
@@ -337,7 +349,11 @@ async function loadInvitations() {
             return inv.status === 'used' || 
                    inv.used === true || 
                    (inv.used_by && inv.used_by.length > 0) ||
-                   inv.used_at !== null;
+                   inv.used_at != null;   // != , not !== : an absent used_at is
+                                          // undefined, and `undefined !== null`
+                                          // is true — which marked every
+                                          // invitation as used and left the
+                                          // active count at zero.
         };
         
         // Sort by id descending (newest first)
@@ -392,7 +408,7 @@ async function loadInvitations() {
                 statusSpan.textContent = 'Expired';
             } else if (invite.unlimited) {
                 statusSpan.className = 'wizarr-status-badge unlimited';
-                statusSpan.textContent = 'âˆž';
+                statusSpan.textContent = '∞';
             } else {
                 statusSpan.className = 'wizarr-status-badge active';
                 statusSpan.textContent = 'Active';
@@ -444,17 +460,26 @@ async function loadInvitations() {
 
 async function copyInviteLink(code, element) {
     const inviteUrl = Wizarr.getInviteUrl(currentUrl, code);
-    const originalHtml = element.innerHTML;
+    // Remembered on the element, not in a local: a second click inside the
+    // 1500ms window used to capture the "Copied!" label as the original and
+    // restore that instead, leaving the button stuck on it permanently.
+    if (element.dataset.originalHtml === undefined) {
+        element.dataset.originalHtml = element.innerHTML;
+    }
+    const originalHtml = element.dataset.originalHtml;
+    clearTimeout(Number(element.dataset.copyTimer) || 0);
 
     try {
         await navigator.clipboard.writeText(inviteUrl);
         element.classList.add('wizarr-copied');
         element.innerHTML = '✓ Copied!';
 
-        setTimeout(() => {
+        element.dataset.copyTimer = String(setTimeout(() => {
             element.classList.remove('wizarr-copied');
             element.innerHTML = originalHtml;
-        }, 1500);
+            delete element.dataset.originalHtml;
+            delete element.dataset.copyTimer;
+        }, 1500));
     } catch (error) {
         console.error('Failed to copy:', error);
     }

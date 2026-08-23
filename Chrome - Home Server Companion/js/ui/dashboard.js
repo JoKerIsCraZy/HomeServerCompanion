@@ -1,5 +1,8 @@
 import poller from "../core/Poller.js";
 
+/** How often the grid re-checks every configured service. */
+const DASHBOARD_REFRESH_MS = 5000;
+
 export async function initDashboard(state) {
     const container = document.getElementById('dashboard-view');
     // Clear existing content (or reuse if we implement diffing later)
@@ -69,7 +72,11 @@ export async function initDashboard(state) {
     //
     // The scheduler handles all four. Leaving the view tears the task down
     // with the rest of the 'view' group, so the self-clearing check is gone.
-    const intervalTime = parseInt(state.configs.refreshInterval) || 5000;
+    // Five seconds, matching the service views. There is no setting behind
+    // this: `configs.refreshInterval` was read here for a key nothing ever
+    // wrote and no options field ever offered, so the fallback was the only
+    // value it could ever have.
+    const intervalTime = DASHBOARD_REFRESH_MS;
     poller.register('dashboard', async () => {
         // Defensive: should some path ever register this without a matching
         // teardown, do no work rather than fetch into a hidden view.

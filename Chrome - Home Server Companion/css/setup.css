@@ -804,7 +804,10 @@ select {
 
 /* ===== Select/Dropdown Styling ===== */
 select {
-    background-color: var(--card-background) !important;
+    /* --card-background never existed; this file defines --card-bg. The
+     invalid var unset the fill while the white color survived, so the
+     native option list rendered white-on-light. */
+  background-color: var(--card-bg) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--glass-border);
     border-radius: 8px;

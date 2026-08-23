@@ -178,7 +178,7 @@ async function loadInstance(instanceId, state) {
 /**
  * Renders the container list.
  */
-function renderContainers(containers, url, token, state, endpointId = 1) {
+function renderContainers(containers, url, token, state, endpointId = 1, instanceId = null) {
     const container = document.getElementById("portainer-containers");
     if (!container) return;
     
@@ -206,7 +206,13 @@ function renderContainers(containers, url, token, state, endpointId = 1) {
         return aName.localeCompare(bName);
     });
     
-    // Clear and render
+    // Clear and render.
+    //
+    // This is the same element the instance selector is inserted into, so
+    // clearing it destroys the selector — which happened on the first paint,
+    // before anyone could see it, and again on every keystroke in the filter.
+    // Multi-instance users could only ever reach instance one. It is put back
+    // at the end of this function.
     container.innerHTML = '';
     
     // Toolbar
@@ -230,18 +236,36 @@ function renderContainers(containers, url, token, state, endpointId = 1) {
         refreshBtn.classList.add('spinning');
         try {
             const newContainers = await Portainer.getContainers(url, token, endpointId);
-            renderContainers(newContainers, url, token, state, endpointId);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                containers: newContainers,
-                stacks: JSON.parse(localStorage.getItem(CACHE_KEY) || '{}').stacks || []
-            }));
+            renderContainers(newContainers, url, token, state, endpointId, instanceId);
+            // Keyed by instance. This used to write to the bare CACHE_KEY,
+            // which nothing reads — loadInstance uses `${CACHE_KEY}_${id}` —
+            // so the refresh never updated the cache it was meant to, and the
+            // `stacks` it read back from that empty key was always [].
+            if (instanceId) {
+                const cacheKey = `${CACHE_KEY}_${instanceId}`;
+                let previous = {};
+                try {
+                    previous = JSON.parse(localStorage.getItem(cacheKey) || '{}');
+                } catch { /* a corrupt entry is simply replaced below */ }
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    timestamp: Date.now(),
+                    endpointId,
+                    containers: newContainers,
+                    stacks: previous.stacks || []
+                }));
+            }
+        } catch (e) {
+            // Without this the rejection was unhandled: the spinner stopped,
+            // the stale list stayed, and nothing said the refresh had failed.
+            console.error('Portainer refresh failed:', e);
+            showNotification(`Portainer: ${e.message}`, 'error');
         } finally {
             refreshBtn.classList.remove('spinning');
         }
     };
     
     toolbar.appendChild(linkBtn);
+    // (the selector is restored at the end of this function)
     toolbar.appendChild(refreshBtn);
     container.appendChild(toolbar);
     
@@ -254,7 +278,7 @@ function renderContainers(containers, url, token, state, endpointId = 1) {
     searchInput.placeholder = 'Search containers...';
     searchInput.value = filterValue;
     searchInput.addEventListener('input', () => {
-        renderContainers(containers, url, token, state, endpointId);
+        renderContainers(containers, url, token, state, endpointId, instanceId);
     });
     filterBar.appendChild(searchInput);
     container.appendChild(filterBar);
@@ -262,7 +286,10 @@ function renderContainers(containers, url, token, state, endpointId = 1) {
     // Restore focus to search input if it was active
     requestAnimationFrame(() => {
         const newSearchInput = document.getElementById('portainer-search');
-        if (newSearchInput && filterValue) {
+        // No `&& filterValue`: that guard skipped exactly the keystroke that
+        // empties the field, and since the input is rebuilt by the render
+        // above, the cursor was thrown out of the search box.
+        if (newSearchInput) {
             newSearchInput.focus();
             newSearchInput.setSelectionRange(filterValue.length, filterValue.length);
         }
@@ -325,7 +352,7 @@ function renderContainers(containers, url, token, state, endpointId = 1) {
                     await Portainer.controlContainer(url, token, endpointId, c.Id, 'start');
                     showNotification(`Container "${name}" started`, 'success');
                     const newContainers = await Portainer.getContainers(url, token, endpointId);
-                    renderContainers(newContainers, url, token, state, endpointId);
+                    renderContainers(newContainers, url, token, state, endpointId, instanceId);
                 } catch (err) {
                     showNotification(`Failed to start: ${err.message}`, 'error');
                     if (statusDot) statusDot.className = 'status-dot stopped';
@@ -347,7 +374,7 @@ function renderContainers(containers, url, token, state, endpointId = 1) {
                     await Portainer.controlContainer(url, token, endpointId, c.Id, 'stop');
                     showNotification(`Container "${name}" stopped`, 'success');
                     const newContainers = await Portainer.getContainers(url, token, endpointId);
-                    renderContainers(newContainers, url, token, state, endpointId);
+                    renderContainers(newContainers, url, token, state, endpointId, instanceId);
                 } catch (err) {
                     showNotification(`Failed to stop: ${err.message}`, 'error');
                     if (statusDot) statusDot.className = 'status-dot running';
@@ -369,7 +396,7 @@ function renderContainers(containers, url, token, state, endpointId = 1) {
                     await Portainer.controlContainer(url, token, endpointId, c.Id, 'restart');
                     showNotification(`Container "${name}" restarted`, 'success');
                     const newContainers = await Portainer.getContainers(url, token, endpointId);
-                    renderContainers(newContainers, url, token, state, endpointId);
+                    renderContainers(newContainers, url, token, state, endpointId, instanceId);
                 } catch (err) {
                     showNotification(`Failed to restart: ${err.message}`, 'error');
                     if (statusDot) statusDot.className = 'status-dot running';
@@ -385,6 +412,12 @@ function renderContainers(containers, url, token, state, endpointId = 1) {
     });
     
     container.appendChild(list);
+
+    // Put the instance selector back. It lives inside this same element, so
+    // the clear at the top of this function destroys it — which happened on
+    // the very first paint and again on every keystroke in the filter, so a
+    // multi-instance user could never reach instance two.
+    renderInstanceSelector(state);
 }
 
 /**

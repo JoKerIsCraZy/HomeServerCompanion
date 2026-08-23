@@ -35,7 +35,7 @@
   padding: 8px 12px;
   border-radius: 6px;
   border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  background: var(--color-bg-secondary);
   color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
@@ -44,7 +44,7 @@
 
 .wizarr-server-dropdown:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-wizarr);
 }
 
 .wizarr-add-btn {

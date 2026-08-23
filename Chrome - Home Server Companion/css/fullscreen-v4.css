@@ -70,9 +70,11 @@ body.fullscreen-mode .widget {
 }
 
 /* Enhanced cards in fullscreen */
-body.fullscreen-mode .card {
-    min-height: 200px;
-}
+/* No min-height here. `.card` is the shared surface: Unraid's compact
+   CPU/RAM/Array metric cards, every Prowlarr search result row, the "no
+   streams" notice. Forcing 200px turned a 40px result row into a block and
+   inflated the metric cards it was never aimed at. Cards that want a floor
+   set it themselves. */
 
 /* Hide fullscreen button in fullscreen mode */
 body.fullscreen-mode #fullscreen-btn {

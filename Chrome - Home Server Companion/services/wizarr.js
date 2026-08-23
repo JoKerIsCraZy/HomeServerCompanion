@@ -154,6 +154,10 @@ export const createInvitation = async (url, apiKey, options) => {
 
     const payload = {
         server_ids: [serverId],
+        // The code was computed above and then never put in the payload, so a
+        // code typed by the user was validated, discarded, and replaced by
+        // whatever the server generated — while the UI reported success.
+        code,
         expires_in_days: options.expiresInDays || 0,
         duration: options.durationDays ? `${options.durationDays} days` : "unlimited",
         unlimited: options.unlimited || false,

@@ -1,4 +1,4 @@
-# ===================================================
+﻿# ===================================================
 # Chrome Extension ZIP Builder
 # ===================================================
 # Erstellt eine ZIP-Datei für Chrome Web Store Upload
@@ -48,6 +48,12 @@ $itemsToInclude = @(
     "manifest.json",
     "popup.html",
     "options.html",
+    # setup.html was missing from this list. background.js opens it on install,
+    # so every user from the store landed on a File-not-found tab as their very
+    # first experience, and the Setup Wizard link in Options was dead. The
+    # existence check below only ever looked at what was already listed, so
+    # nothing caught it. See the page sweep further down.
+    "setup.html",
     "icons",
     "js",
     "css",
@@ -56,6 +62,25 @@ $itemsToInclude = @(
 
 # Optional: README.md mit einpacken (auskommentiert, da Chrome Web Store es nicht braucht)
 # $itemsToInclude += "README.md"
+
+# Every page in the extension root has to be in the list above. The check
+# further down proves that what is listed exists; this proves that what exists
+# is listed, which is the direction that actually bit us.
+$unpackagedPages = @()
+foreach ($page in (Get-ChildItem -Path $extensionPath -Filter "*.html" -File)) {
+    if ($itemsToInclude -notcontains $page.Name) {
+        $unpackagedPages += $page.Name
+    }
+}
+if ($unpackagedPages.Count -gt 0) {
+    Write-Host ""
+    Write-Host "ABBRUCH: Diese Seiten liegen im Ordner, fehlen aber im Paket:" -ForegroundColor Red
+    foreach ($page in $unpackagedPages) {
+        Write-Host "  - $page" -ForegroundColor Red
+    }
+    Write-Host "Bitte in `$itemsToInclude eintragen." -ForegroundColor Yellow
+    exit 1
+}
 
 # Pruefen ob alle Dateien existieren
 $missingItems = @()
