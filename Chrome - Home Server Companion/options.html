@@ -150,6 +150,7 @@
         gap: 10px;
         width: 100%;
         padding: 8px 12px;
+        position: relative;
         border: none;
         border-radius: 8px;
         background: transparent;
@@ -175,8 +176,27 @@
         color: var(--text-primary);
         /* colour-mix keeps one accent per service driving both the fill and
            the marker, instead of thirteen hand-picked translucent pairs. */
-        background: color-mix(in srgb, var(--nav-accent) 18%, transparent);
-        box-shadow: inset 3px 0 0 var(--nav-accent);
+        background: color-mix(in srgb, var(--nav-accent) 16%, transparent);
+      }
+
+      /* The marker is its own bar, not an inset box-shadow.
+         An inset shadow is clipped to the border radius, so `inset 3px 0 0`
+         on an 8px-rounded button did not stop at the left edge: at each
+         rounded corner the offset shadow and the element's own curve run on
+         different arcs, and the sliver between them showed as a coloured
+         speck in the corner — four of them per active item, in the service's
+         colour, which is what made switching quickly look like it was
+         scattering dots. A positioned bar cannot reach the corners at all. */
+      .tab-btn.active::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 18px;
+        border-radius: 0 2px 2px 0;
+        background: var(--nav-accent);
       }
 
       .nav-icon {
@@ -768,8 +788,16 @@
           font-size: 12px;
         }
 
-        .tab-btn.active {
-          box-shadow: inset 0 -3px 0 var(--nav-accent);
+        /* Bar along the bottom instead of down the side, and still inset
+           from the corners for the same reason. */
+        .tab-btn.active::before {
+          left: 50%;
+          top: auto;
+          bottom: 0;
+          transform: translateX(-50%);
+          width: 18px;
+          height: 3px;
+          border-radius: 2px 2px 0 0;
         }
 
         h2 {
