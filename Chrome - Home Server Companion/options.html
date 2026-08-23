@@ -139,6 +139,32 @@
         letter-spacing: -0.01em;
       }
 
+      /* Title and version are one unit, so .tabs-header keeps exactly two flex
+         children and its space-between still puts the links hard right. */
+      .settings-heading {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .settings-version {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--glass-border);
+        /* Empty until the script fills it: no pill floating beside the title
+           if the manifest cannot be read for any reason. */
+        display: none;
+      }
+
+      .settings-version:not(:empty) {
+        display: inline-block;
+      }
+
       /* ===== Navigation =====
          A vertical list. This was a horizontal pill with a gradient highlight
          sliding behind the active tab, and thirteen tabs have never fitted one
@@ -932,7 +958,18 @@
       <div class="content">
         <!-- Header / Navigation -->
         <div class="tabs-header">
-          <h1 class="settings-title">Settings</h1>
+          <div class="settings-heading">
+            <h1 class="settings-title">Settings</h1>
+            <!-- Filled from the manifest at load. Reading it here rather than
+                 writing a number into the markup means it cannot go stale, and
+                 it answers "which build am I actually running" - which the
+                 changelog modal alone does not, since it only appears once. -->
+            <span
+              class="settings-version"
+              id="settingsVersion"
+              title="Installed version"
+            ></span>
+          </div>
 
           <div class="header-links">
             <a

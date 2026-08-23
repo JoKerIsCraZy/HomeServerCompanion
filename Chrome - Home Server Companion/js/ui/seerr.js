@@ -2,6 +2,48 @@ import * as Seerr from "../../services/seerr.js";
 import { showNotification, showConfirmModal, validateUrl } from "../utils.js";
 
 /**
+ * Hydrated request lists, so switching between the filters and back does not
+ * blank the view while the network catches up.
+ *
+ * In memory, not localStorage. A Seerr request carries its full requestedBy
+ * user object - email address included - and the previous cache wrote that to
+ * disk in cleartext, where it stayed forever: there was no expiry and nothing
+ * cleared it on sign-out. On a shared server that is every requester's email.
+ *
+ * The popup is destroyed when it closes, so this only survives within one
+ * session. That is the same deal every other view in this extension makes, and
+ * it costs one "Loading..." on first open rather than a permanent copy of
+ * other people's addresses in the profile directory.
+ *
+ * @type {Map<string, Array<Object>>}
+ */
+const requestCache = new Map();
+
+/** Keys written by the localStorage cache this replaced. */
+const LEGACY_CACHE_PREFIX = 'seerr_hydrated_';
+
+/**
+ * Deletes what the old cache already wrote.
+ *
+ * Removing the write does nothing for a profile that has been running the
+ * extension for months - the addresses are already on disk. This clears them
+ * on the next load and is a no-op afterwards.
+ */
+function purgeLegacyRequestCache() {
+    try {
+        const stale = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(LEGACY_CACHE_PREFIX)) stale.push(key);
+        }
+        stale.forEach(key => localStorage.removeItem(key));
+    } catch (e) {
+        // A blocked or full localStorage must not stop the view from loading.
+        console.warn('Seerr: could not clear the legacy request cache:', e);
+    }
+}
+
+/**
  * Initializes the Seerr service view.
  * - Handles Trending, Requests, and Search tabs.
  * - Sets up filtering and auto-reload logic.
@@ -11,6 +53,8 @@ import { showNotification, showConfirmModal, validateUrl } from "../utils.js";
  */
 export async function initSeerr(url, key, state) {
     const authMethod = state.configs.seerrAuthMethod || 'apikey';
+
+    purgeLegacyRequestCache();
 
     // For Plex/Local auth, key may be empty - that's OK
     if (!url) {
@@ -405,16 +449,11 @@ export async function doSearch(url, key, query, authMethod = 'apikey') {
 
 async function loadRequests(url, key, filter, authMethod = 'apikey') {
     const container = document.getElementById('seerr-requests');
-    // If trending, use a different cache/logic
-    const cacheKey = `seerr_hydrated_${filter}`;
 
     // 1. Try Cache (Hydrated Data)
-    const cached = localStorage.getItem(cacheKey);
+    const cached = requestCache.get(filter);
     if (cached) {
-        try {
-           const hydratedData = JSON.parse(cached);
-           renderHydratedRequests(hydratedData, url, key, authMethod);
-        } catch(e) { console.error("Cache parse error", e); }
+        renderHydratedRequests(cached, url, key, authMethod);
     } else {
         if (container) {
             container.textContent = '';
@@ -434,7 +473,7 @@ async function loadRequests(url, key, filter, authMethod = 'apikey') {
        const hydratedRequests = await hydrateRequests(requests, url, key, authMethod);
 
        // 4. Save Cache & Render
-       localStorage.setItem(cacheKey, JSON.stringify(hydratedRequests));
+       requestCache.set(filter, hydratedRequests);
        renderHydratedRequests(hydratedRequests, url, key, authMethod);
 
    } catch (e) {
