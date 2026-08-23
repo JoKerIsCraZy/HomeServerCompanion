@@ -481,11 +481,26 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    /* Fixed, because the word swaps between "Running" and "Stopped" and the
-       actions sitting to its left must not shift when it does. */
-    width: 62px;
+    /* No fixed width. It used to be 62px so that a label swapping between
+       "Running" and "Stopped" could not shift the actions to its left - but
+       the actions are transparent until their own row is hovered, so there is
+       never a column of them to keep aligned, and the only row that shows any
+       is the one under the pointer. All the fixed width did was leave slack:
+       against the card edge while the label sat left, and against the actions
+       once it sat right. Sized to its content there is none on either side.
+       Long outliers like "Pmsuspended" fit now too, instead of ellipsising. */
     font-size: 11px;
     color: var(--color-text-secondary);
+}
+/* One line, always. A label longer than the column used to wrap to two or
+   three, and since a card takes its height from its tallest child that made
+   every card a different height - which in the fullscreen grid reads as three
+   columns that do not line up. Anything too long now ellipsises; the callers
+   put the full text in the title. */
+.unraid-row-state-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .unraid-row-dot {
     width: 7px;
@@ -613,8 +628,10 @@ body.fullscreen-mode .unraid-row-list {
        A zero floor makes the thirds equal and lets the text ellipsise. */
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-2) var(--space-3);
-    /* Without this an expanded card stretches the two beside it to match. */
-    align-items: start;
+    /* Deliberately not align-items: start. That guarded the expandable Docker
+       card, which went when the actions moved onto the card itself, and all it
+       does now is let three cards in one row end at three different heights.
+       The default stretch squares them off. */
 }
 /* Tiles, not banded rows: a bottom border under every cell of a grid reads as
    an underline rather than a separator. */

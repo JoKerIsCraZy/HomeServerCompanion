@@ -25,6 +25,18 @@
     max-width: 180px;
 }
 
+/* A container that is up but failing its healthcheck is still is-running, so
+   its dot would otherwise be as green as a healthy one. The id keeps this
+   ahead of .unraid-row.is-running without an !important. */
+#dockhand-view .unraid-row-state.is-warn,
+#dockhand-view .unraid-row.is-running .unraid-row-state.is-warn {
+    color: var(--status-warning);
+}
+#dockhand-view .unraid-row-state.is-warn .unraid-row-dot,
+#dockhand-view .unraid-row.is-running .unraid-row-state.is-warn .unraid-row-dot {
+    background: var(--status-warning);
+}
+
 /* Dockhand names the version an update would move to, so the badge is wider
    than Unraid's bare "Update" and has to be allowed to be. */
 #dockhand-view .unraid-update-flag {

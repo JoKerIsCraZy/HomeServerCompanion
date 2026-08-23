@@ -233,6 +233,63 @@ function renderSummary(containers, updates) {
  */
 const isRunning = (container) => /^running$/i.test(String(container.state || ''));
 
+/** The units Docker spells out in a status line, and the letter each becomes. */
+const UPTIME_UNITS = [
+    [/^seconds?$/i, 's'], [/^minutes?$/i, 'm'], [/^hours?$/i, 'h'],
+    [/^days?$/i, 'd'], [/^weeks?$/i, 'w'], [/^months?$/i, 'mo'], [/^years?$/i, 'y']
+];
+
+/**
+ * "Up 35 hours (healthy)" to "35h".
+ *
+ * Returns '' for anything that is not one of the shapes Docker produces, so
+ * the caller falls back to a plain word rather than printing a guess.
+ * @param {string} raw
+ * @returns {string}
+ */
+const shortenUptime = (raw) => {
+    // Docker's two prose forms, which carry no digit to pick up.
+    const about = raw.match(/^up\s+about\s+an?\s+(\w+)/i);
+    if (about) {
+        const unit = UPTIME_UNITS.find(([re]) => re.test(about[1]));
+        return unit ? `~1${unit[1]}` : '';
+    }
+    if (/^up\s+less than/i.test(raw)) return '<1s';
+
+    const match = raw.match(/^up\s+(\d+)\s+(\w+)/i);
+    if (!match) return '';
+    const unit = UPTIME_UNITS.find(([re]) => re.test(match[2]));
+    return unit ? `${match[1]}${unit[1]}` : '';
+};
+
+/**
+ * The state column's contents: a short label, a tone for the dot, and the
+ * original string for the tooltip.
+ *
+ * Docker's status is prose and the column is 78px, so the raw string wrapped
+ * to three lines and left every card a different height. It carries two facts,
+ * and only one of them is ever news: "(healthy)" on forty cards is noise,
+ * "(unhealthy)" on one is the whole point. So health takes the label when it
+ * is bad, and uptime keeps it the rest of the time.
+ * @param {Object} container
+ * @returns {{label: string, tone: 'ok'|'warn'|'off', title: string}}
+ */
+const formatStatus = (container) => {
+    const raw = String(container.status || '').trim();
+    const running = isRunning(container);
+    const title = raw || (running ? 'Running' : 'Stopped');
+
+    // Named rather than only coloured: a dot alone is not an accessible
+    // signal, and these four are the states worth interrupting the uptime for.
+    if (/\(unhealthy\)/i.test(raw)) return { label: 'Unhealthy', tone: 'warn', title };
+    if (/health:\s*starting/i.test(raw)) return { label: 'Starting', tone: 'warn', title };
+    if (/^restarting/i.test(raw)) return { label: 'Restarting', tone: 'warn', title };
+    if (/^paused/i.test(raw)) return { label: 'Paused', tone: 'warn', title };
+    if (!running) return { label: 'Stopped', tone: 'off', title };
+
+    return { label: shortenUptime(raw) || 'Running', tone: 'ok', title };
+};
+
 /**
  * Reconciles the container cards.
  *
@@ -439,11 +496,13 @@ function updateRow(row, container, stats, updates) {
         meta.title = container.image || '';
     }
 
+    const stateEl = row.querySelector('.unraid-row-state');
     const stateText = row.querySelector('.unraid-row-state-text');
-    // Dockhand's `status` is Docker's human string ("Up 3 days"), which says
-    // more than "Running" when there is room for it.
-    const label = container.status || (running ? 'Running' : 'Stopped');
-    if (stateText.textContent !== label) stateText.textContent = label;
+    const status = formatStatus(container);
+    if (stateText.textContent !== status.label) stateText.textContent = status.label;
+    // The full string stays reachable rather than being thrown away.
+    if (stateEl.title !== status.title) stateEl.title = status.title;
+    stateEl.classList.toggle('is-warn', status.tone === 'warn');
 
     const update = updates.get(String(container.id));
     const flag = row.querySelector('.unraid-update-flag');
@@ -544,9 +603,14 @@ function renderStacks(stacks, url, key) {
         dot.setAttribute('aria-hidden', 'true');
         const text = document.createElement('span');
         text.className = 'unraid-row-state-text';
-        const up = /running|active|up|deployed/i.test(String(stack.status || stack.state || ''));
+        const rawState = String(stack.status || stack.state || '');
+        const up = /running|active|up|deployed/i.test(rawState);
         row.classList.toggle('is-running', up);
-        text.textContent = stack.status || stack.state || (up ? 'Running' : 'Stopped');
+        // A word, with whatever the server actually said behind the tooltip:
+        // /api/stacks has no documented schema, so the raw value could be
+        // anything from "running" to "running(3)" and must not size the column.
+        text.textContent = up ? 'Running' : 'Stopped';
+        state.title = rawState || (up ? 'Running' : 'Stopped');
         state.append(dot, text);
 
         const stackName = stack.name;
