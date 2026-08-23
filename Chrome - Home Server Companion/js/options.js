@@ -1048,7 +1048,24 @@ const testConnection = async (service) => {
 };
 
 // --- Event Listeners ---
+/**
+ * Puts the running version beside the page title.
+ *
+ * Read from the manifest rather than hardcoded, so a release cannot forget it.
+ * Note this is the version of the *loaded* extension: reopening the options
+ * page picks up changed scripts from disk, but getManifest() only changes when
+ * the extension itself is reloaded, which is exactly the confusion this label
+ * is here to settle.
+ */
+function showVersion() {
+    const el = document.getElementById('settingsVersion');
+    if (!el) return;
+    const version = chrome.runtime?.getManifest?.().version;
+    if (version) el.textContent = `v${version}`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    showVersion();
     loadOptions();
     chrome.storage.sync.get(null, (items) => updateNavStatus(items || {}));
     // A save anywhere can turn a service from unconfigured to configured.
